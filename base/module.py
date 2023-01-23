@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Callable
 import inspect
 import os
 
 from aiogram.dispatcher.router import Router
-from aiogram.filters import Command
+from aiogram.filters import Command, Filter
 
 import yaml
 import config
@@ -20,6 +20,12 @@ class ModuleInfo:
     requires_packages: Optional[list[str]] = None  # Not used for now
 
 
+@dataclass
+class Handler:
+    filter: Filter
+    func: Callable
+
+
 class BaseModule(ABC):
     def __init__(self, loader: Optional = None):
         self.router = Router()
@@ -32,6 +38,12 @@ class BaseModule(ABC):
         for name, func in methods:
             if "_cmd" in name:
                 self.router.message.register(func, Command(name.removesuffix("_cmd")))
+
+        for handler in self.message_handlers:
+            self.router.message.register(handler.func, handler.filter)
+
+        for handler in self.callback_handlers:
+            self.router.callback_query.register(handler.func, handler.filter)
 
         # Load translations if available
         files = os.listdir("./")
@@ -59,11 +71,28 @@ class BaseModule(ABC):
         """Module info. Must be set"""
         pass
 
+    @property
+    def message_handlers(self) -> list[Handler]:
+        """
+        Custom handlers for something that exceeds function name autogeneration (extended input validation, aliases, etc.)
+        Override if necessary
+        """
+        return []
+
+    @property
+    def callback_handlers(self) -> list[Handler]:
+        """
+        Handlers for button callbacks
+        Override if necessary
+        """
+        return []
+
     def on_init(self):
         """Called when module should initialize itself. Optional"""
         pass
 
-    def get_loaded_modules(self) -> list[ModuleInfo]:
+    @property
+    def loaded_modules(self) -> list[ModuleInfo]:
         """
         Method for querying loaded modules from child instance
         :return: List of loaded modules info

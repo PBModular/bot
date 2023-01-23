@@ -5,7 +5,10 @@ ru:
       Справку по командам модулей можно получить... #TODO
       
       📥 <b>Список загруженных модулей:</b>
-      
+
+    footer: |
+      Репозиторий на GitHub: https://github.com/SanyaPilot/PBModular
+      Поставьте звезду пожалуйста 😊
 
 en:
   help:
@@ -14,3 +17,7 @@ en:
       You can get help for modules' commands... # TODO
       
       📥 <b>Loaded modules:</b>
+
+    footer: |
+      Repository on GitHub: https://github.com/SanyaPilot/PBModular
+      Star it please 😊
