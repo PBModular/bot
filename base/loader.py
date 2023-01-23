@@ -18,7 +18,7 @@ class ModuleLoader:
 
     def load_everything(self):
         """Load all modules"""
-        modules = os.listdir(path='./modules/')
+        modules = os.listdir(path="./modules/")
         for module in modules:
             self.load_module(module)
 
@@ -28,16 +28,16 @@ class ModuleLoader:
 
         :param name: Name of Python module inside modules dir
         """
-        imported = importlib.import_module('modules.' + name)
+        imported = importlib.import_module("modules." + name)
         for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
-            if 'Module' in obj_name:
-                os.chdir(f'./modules/{name}')
+            if "Module" in obj_name:
+                os.chdir(f"./modules/{name}")
                 instance: BaseModule = obj(self)
                 info = instance.module_info
                 self.__dp.include_router(instance.router)
                 self.__modules.append(instance)
                 self.__modules_info.append(info)
-                print(f'Successfully imported module {info.name}!')
+                print(f"Successfully imported module {info.name}!")
 
     def get_modules_info(self) -> list[ModuleInfo]:
         """
