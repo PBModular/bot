@@ -12,7 +12,7 @@ class CoreModule(BaseModule):
         )
 
     async def help_cmd(self, message: Message):
-        text = '📥 <b>Loaded modules:</b> \n'
+        text = self.S['help']['header']
         for module in self.get_loaded_modules():
             text += f'<b>{module.name}</b> [{module.version}] - {module.author}'
 

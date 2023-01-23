@@ -1,0 +1,16 @@
+ru:
+  help:
+    header: |
+      Привет! Спасибо за использование PBModular (название временное)
+      Справку по командам модулей можно получить... #TODO
+      
+      📥 <b>Список загруженных модулей:</b>
+      
+
+en:
+  help:
+    header: |
+      Hello! Thanks for using PBModular (name is temporary)
+      You can get help for modules' commands... # TODO
+      
+      📥 <b>Loaded modules:</b>

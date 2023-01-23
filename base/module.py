@@ -2,9 +2,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 import inspect
+import os
 
 from aiogram.dispatcher.router import Router
 from aiogram.filters import Command
+
+import yaml
+import config
 
 @dataclass
 class ModuleInfo:
@@ -27,6 +31,21 @@ class BaseModule(ABC):
         for name, func in methods:
             if '_cmd' in name:
                 self.router.message.register(func, Command(name.removesuffix('_cmd')))
+
+        # Load translations if available
+        files = os.listdir('./')
+        if 'strings.yml' in files or 'strings.yaml' in files:
+            self.rawS: dict = yaml.safe_load(open('./strings.yaml' if 'strings.yaml' in files else 'strings.yml'))
+            print(f'Available translations: {list(self.rawS.keys())}')
+            if config.language in self.rawS.keys():
+                self.S = self.rawS[config.language]
+            elif config.fallback_language in self.rawS.keys():
+                print(f'Language {config.language} not found! Falling back to {config.fallback_language}')
+                self.S = self.rawS[config.fallback_language]
+            else:
+                print(f"Can't select language... Using first in list, you've been warned!")
+                self.S = list(self.rawS.values())[0]
+
 
     @property
     @abstractmethod
