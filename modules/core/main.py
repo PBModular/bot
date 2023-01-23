@@ -12,4 +12,8 @@ class CoreModule(BaseModule):
         )
 
     async def help_cmd(self, message: Message):
-        await message.answer("Hello! It's testing test!")
+        text = '📥 <b>Loaded modules:</b> \n'
+        for module in self.get_loaded_modules():
+            text += f'<b>{module.name}</b> [{module.version}] - {module.author}'
+
+        await message.answer(text)

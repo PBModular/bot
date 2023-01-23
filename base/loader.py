@@ -30,8 +30,16 @@ class ModuleLoader:
         imported = importlib.import_module('modules.' + name)
         for name, obj in inspect.getmembers(imported, inspect.isclass):
             if 'Module' in name:
-                instance: BaseModule = obj()
+                instance: BaseModule = obj(self)
                 info = instance.module_info
                 self.dp.include_router(instance.router)
                 self.modules.append(info)
                 print(f'Successfully imported module {info.name}!')
+
+    def get_modules_info(self) -> list[ModuleInfo]:
+        """
+        Get info about all loaded modules
+
+        :return: List of ModuleInfo objects
+        """
+        return self.modules

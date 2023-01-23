@@ -1,12 +1,12 @@
 from aiogram import Bot, Dispatcher
 from base.loader import ModuleLoader
+import config
 
-TOKEN = "TOKEN HERE"
 dp = Dispatcher()
 
 
-def main() -> None:
-    bot = Bot(TOKEN, parse_mode="HTML")
+def main():
+    bot = Bot(config.token, parse_mode="HTML")
     loader = ModuleLoader(dp)
     loader.load_everything()
     dp.run_polling(bot)
