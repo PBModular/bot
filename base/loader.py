@@ -1,8 +1,12 @@
 import importlib
 import inspect
+import logging
 import os
 from base.module import BaseModule, ModuleInfo
 from aiogram import Dispatcher
+
+
+logger = logging.getLogger(__name__)
 
 
 class ModuleLoader:
@@ -37,7 +41,7 @@ class ModuleLoader:
                 self.__dp.include_router(instance.router)
                 self.__modules.append(instance)
                 self.__modules_info.append(info)
-                print(f"Successfully imported module {info.name}!")
+                logger.info(f"Successfully imported module {info.name}!")
 
     def get_modules_info(self) -> list[ModuleInfo]:
         """

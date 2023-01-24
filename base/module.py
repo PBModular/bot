@@ -1,3 +1,5 @@
+import configparser
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Callable
@@ -8,7 +10,10 @@ from aiogram.dispatcher.router import Router
 from aiogram.filters import Command, Filter
 
 import yaml
-import config
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -51,16 +56,16 @@ class BaseModule(ABC):
             self.rawS: dict = yaml.safe_load(
                 open("./strings.yaml" if "strings.yaml" in files else "strings.yml")
             )
-            print(f"Available translations: {list(self.rawS.keys())}")
-            if config.language in self.rawS.keys():
+            logger.info(f"Available translations: {list(self.rawS.keys())}")
+            if config["Bot"]["language"] in self.rawS.keys():
                 self.S = self.rawS[config.language]
-            elif config.fallback_language in self.rawS.keys():
-                print(
-                    f"Language {config.language} not found! Falling back to {config.fallback_language}"
+            elif config["Bot"]["fallback_language"] in self.rawS.keys():
+                logger.warning(
+                    f"Language {config['Bot']['language']} not found! Falling back to {config['Bot']['fallback_language']}"
                 )
                 self.S = self.rawS[config.fallback_language]
             else:
-                print(
+                logger.warning(
                     f"Can't select language... Using first in list, you've been warned!"
                 )
                 self.S = list(self.rawS.values())[0]
