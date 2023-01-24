@@ -42,6 +42,7 @@ class ModuleLoader:
                 self.__modules.append(instance)
                 self.__modules_info.append(info)
                 logger.info(f"Successfully imported module {info.name}!")
+                os.chdir("../../")
 
     def get_modules_info(self) -> list[ModuleInfo]:
         """

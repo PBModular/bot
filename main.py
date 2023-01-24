@@ -10,7 +10,7 @@ config.read('config.ini')
 dp = Dispatcher()
 
 # Logger .-.
-FORMAT = '%(asctime)s %(name)s %(levelname)s %(message)s'
+FORMAT = '%(asctime)s | %(levelname)s | %(name)s %(message)s'
 logging.basicConfig(format=FORMAT, level="INFO")
 logger = logging.getLogger(__name__)
 
