@@ -11,3 +11,11 @@ def register_command(owner: str, command: str):
 
 def get_commands(owner: str) -> list[str]:
     return commands.get(owner)
+
+
+def check_command(command: str) -> bool:
+    for cmds in commands.values():
+        if command in cmds:
+            return True
+
+    return False

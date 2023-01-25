@@ -14,8 +14,7 @@ from sqlalchemy import MetaData
 
 import yaml
 from config import config
-
-logger = logging.getLogger(__name__)
+from base import command_registry
 
 
 @dataclass
@@ -36,8 +35,10 @@ class Handler:
 class Permissions(str, Enum):
     use_db = 'use_db'
 
+
 class BaseModule(ABC):
     def __init__(self, loader: Optional = None):
+        self.logger = logging.getLogger(__name__)
         self.router = Router()
 
         if loader is not None:
@@ -48,9 +49,21 @@ class BaseModule(ABC):
         for name, func in methods:
             if "_cmd" in name:
                 self.router.message.register(func, Command(name.removesuffix("_cmd")))
+                command_registry.register_command(self.module_info.name, name.removesuffix("_cmd"))
 
         for handler in self.message_handlers:
-            self.router.message.register(handler.func, handler.filter)
+            if isinstance(handler.filter, Command):
+                for cmd in handler.filter.commands:
+                    if command_registry.check_command(cmd):
+                        self.logger.warning(
+                            f"Command conflict! "
+                            f"Module {self.module_info.name} tried to register command {cmd}, which is already used! "
+                            f"Skipping this command")
+                    else:
+                        self.router.message.register(handler.func, handler.filter)
+                        command_registry.register_command(self.module_info.name, cmd)
+            else:
+                self.router.message.register(handler.func, handler.filter)
 
         for handler in self.callback_handlers:
             self.router.callback_query.register(handler.func, handler.filter)
@@ -61,16 +74,16 @@ class BaseModule(ABC):
             self.rawS: dict = yaml.safe_load(
                 open("./strings.yaml" if "strings.yaml" in files else "strings.yml")
             )
-            logger.info(f"Available translations: {list(self.rawS.keys())}")
+            self.logger.info(f"Available translations: {list(self.rawS.keys())}")
             if config.language in self.rawS.keys():
                 self.S = self.rawS[config.language]
             elif config.fallback_language in self.rawS.keys():
-                logger.warning(
+                self.logger.warning(
                     f"Language {config.language} not found! Falling back to {config.fallback_language}"
                 )
                 self.S = self.rawS[config.fallback_language]
             else:
-                logger.warning(
+                self.logger.warning(
                     f"Can't select language... Using first in list, you've been warned!"
                 )
                 self.S = list(self.rawS.values())[0]
