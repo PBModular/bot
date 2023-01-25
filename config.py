@@ -11,6 +11,8 @@ class Config(YAMLWizard):
     token: str
     language: str
     fallback_language: str
+    enable_db: bool
+    db_url: str
 
 
 # Load from YAML

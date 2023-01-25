@@ -1,12 +1,16 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional, Callable
 import inspect
 import os
 
 from aiogram.dispatcher.router import Router
 from aiogram.filters import Command, Filter
+
+from sqlalchemy.orm import Session
+from sqlalchemy import MetaData
 
 import yaml
 from config import config
@@ -28,6 +32,9 @@ class Handler:
     filter: Filter
     func: Callable
 
+
+class Permissions(str, Enum):
+    use_db = 'use_db'
 
 class BaseModule(ABC):
     def __init__(self, loader: Optional = None):
@@ -68,11 +75,29 @@ class BaseModule(ABC):
                 )
                 self.S = list(self.rawS.values())[0]
 
+        # Place for database session. Will be set by loader if necessary
+        self.db_session: Optional[Session] = None
+
     @property
     @abstractmethod
     def module_info(self) -> ModuleInfo:
         """Module info. Must be set"""
         pass
+
+    @property
+    def module_permissions(self) -> list[Permissions]:
+        """
+        Permissions requested by the module. WIP
+        """
+        return []
+
+    @property
+    def db_meta(self):
+        """
+        SQLAlchemy MetaData object. Must be set if using database
+        :rtype: MetaData
+        """
+        return None
 
     @property
     def message_handlers(self) -> list[Handler]:

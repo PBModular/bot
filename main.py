@@ -27,9 +27,16 @@ def main(update_conf: bool = False):
         if update_conf:
             config.to_yaml_file(CONF_FILE)
 
-        logger.info("Bot starting")
+        logger.info("Bot starting...")
 
-        loader = ModuleLoader(dp)
+        if config.enable_db:
+            logger.info("Initializing database...")
+            import base.db as db
+            loader = ModuleLoader(dp, db.session, db.engine)
+        else:
+            loader = ModuleLoader(dp)
+
+        # Load modules
         loader.load_everything()
         dp.run_polling(bot)
     else:

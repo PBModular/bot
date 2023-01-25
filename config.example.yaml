@@ -3,3 +3,12 @@ token: null  # Insert bot-API token here
 # Localisation settings
 language: ru
 fallback-language: en
+
+# Database settings
+enable-db: true
+
+# Database URL. Useful links for setting this properly:
+# https://docs.sqlalchemy.org/en/20/tutorial/engine.html#establishing-connectivity-the-engine
+# https://docs.sqlalchemy.org/en/20/dialects/
+# https://docs.sqlalchemy.org/en/20/core/engines.html#backend-specific-urls
+db-url: "sqlite:///:memory:"
