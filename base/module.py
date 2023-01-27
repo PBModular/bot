@@ -97,6 +97,9 @@ class BaseModule(ABC):
         # Place for loader
         self.loader = None
 
+    def __del__(self):
+        self.router.emit_shutdown()
+
     @property
     @abstractmethod
     def module_info(self) -> ModuleInfo:
@@ -146,7 +149,7 @@ class BaseModule(ABC):
         pass
 
     @property
-    def loaded_modules(self) -> list[ModuleInfo]:
+    def loaded_modules(self) -> dict[str, ModuleInfo]:
         """
         Method for querying loaded modules from child instance
         :return: List of loaded modules info

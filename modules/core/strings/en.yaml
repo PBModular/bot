@@ -11,3 +11,51 @@ help:
 
   module_found: "📄 <b>Help for module {0}:</b>"
   module_not_found: "There's no help page for <b>{0}</b> module..."
+
+install:
+  args_err: |
+    <b>Empty module URL!</b>
+    
+    Usage:
+    <code>/mod_install https://github.com/SanyaPilot/best_module</code>
+
+  start: |
+    🛠 <b>Installing module</b> <code>{0}</code><b>...</b>
+    
+    Please wait...
+
+  down_ok: |
+    ✅ <b>Module</b> <code>{0}</code> <b>downloaded!</b>
+    
+    Loading module...
+
+  end: |
+    ✅ <b>Module</b> <code>{0}</code> <b>installed!</b>
+    
+    Usage help:
+    <code>/help {0}</code>
+
+  down_err: |
+    ❌ <b>Module download error</b> <code>{0}</code><b>!</b>
+    
+    git clone command output:
+    <code>{1}</code>
+
+  load_err: |
+    ❌ <b>Module load error</b> <code>{0}</code><b>!</b>
+    
+    Check error in bot log. Contact developer and supply this info:
+    - Python version
+    - Bot version
+    - Error from log
+
+uninstall:
+  args_err: |
+    <b>Empty module name!</b>
+    
+    Usage:
+    <code>/mod_uninstall BestModule</code>
+
+  not_found: ❌ <b>Module</b> <code>{0}</code> <b>not found!</b>
+  ok: ✅ <b>Module</b> <code>{0}</code> <b>deleted!</b>
+  err: ❌ <b>Module deletion error</b> <code>{0}</code><b>!</b>

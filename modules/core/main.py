@@ -1,6 +1,7 @@
 from base.module import BaseModule, ModuleInfo, Permissions
 from base.loader import ModuleLoader
 from aiogram.types import Message
+from urllib.parse import urlparse
 
 
 class CoreModule(BaseModule):
@@ -25,9 +26,53 @@ class CoreModule(BaseModule):
 
         else:
             text = self.S["help"]["header"]
-            for module in self.loaded_modules:
+            for module in self.loaded_modules.values():
                 text += f"<b>{module.name}</b> [{module.version}] - {module.author} \n"
 
             text += "\n"
             text += self.S["help"]["footer"]
             await message.answer(text)
+
+    async def mod_install_cmd(self, message: Message):
+        self.loader: ModuleLoader
+        if len(message.text.split()) == 1:
+            await message.reply(self.S["install"]["args_err"])
+            return
+
+        url = message.text.split()[1]
+        name = urlparse(url).path.split('/')[-1].removesuffix('.git')
+
+        msg = await message.reply(self.S["install"]["start"].format(name))
+
+        # Start downloading
+        code, stdout = self.loader.install_from_git(url)
+        if code != 0:
+            await msg.edit_text(self.S["install"]["down_err"].format(name, stdout.decode('utf-8')))
+            return
+
+        await msg.edit_text(self.S["install"]["down_ok"].format(name))
+
+        # Load module
+        result = self.loader.load_module(name)
+        if result is None:
+            await msg.edit_text(self.S["install"]["load_err"].format(name))
+            return
+
+        await msg.edit_text(self.S["install"]["end"].format(result))
+
+    async def mod_uninstall_cmd(self, message: Message):
+        self.loader: ModuleLoader
+        if len(message.text.split()) == 1:
+            await message.reply(self.S["uninstall"]["args_err"])
+            return
+
+        name = " ".join(message.text.split()[1:])
+
+        # Uninstall module
+        int_name = self.loader.get_int_name(name)
+        if int_name is None:
+            await message.reply(self.S["uninstall"]["not_found"].format(name))
+            return
+
+        result = self.loader.uninstall_module(int_name)
+        await message.reply((self.S["uninstall"]["ok"] if result else self.S["uninstall"]["err"]).format(name))

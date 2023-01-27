@@ -3,6 +3,7 @@ from aiogram.utils.token import TokenValidationError
 import logging
 from base.loader import ModuleLoader
 from config import config, CONF_FILE
+import os
 
 dp = Dispatcher()
 
@@ -10,6 +11,9 @@ dp = Dispatcher()
 FORMAT = '%(asctime)s | %(levelname)s | %(name)s %(message)s'
 logging.basicConfig(format=FORMAT, level="INFO")
 logger = logging.getLogger(__name__)
+
+# Root path
+ROOT_DIR = os.getcwd()
 
 
 def main(update_conf: bool = False):
@@ -32,9 +36,9 @@ def main(update_conf: bool = False):
         if config.enable_db:
             logger.info("Initializing database...")
             import base.db as db
-            loader = ModuleLoader(dp, db.session, db.engine)
+            loader = ModuleLoader(dp, root_dir=ROOT_DIR, db_base=db.session, db_engine=db.engine)
         else:
-            loader = ModuleLoader(dp)
+            loader = ModuleLoader(dp, root_dir=ROOT_DIR)
 
         # Load modules
         loader.load_everything()
