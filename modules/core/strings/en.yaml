@@ -1,0 +1,13 @@
+help:
+  header: |
+    Hello! Thanks for using PBModular (name is temporary)
+    You can get help for modules' commands... # TODO
+    
+    📥 <b>Loaded modules:</b>
+
+  footer: |
+    Repository on GitHub: https://github.com/PBModular/bot
+    Star it please 😊
+
+  module_found: "📄 <b>Help for module {0}:</b>"
+  module_not_found: "There's no help page for <b>{0}</b> module..."

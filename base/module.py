@@ -69,11 +69,12 @@ class BaseModule(ABC):
             self.router.callback_query.register(handler.func, handler.filter)
 
         # Load translations if available
-        files = os.listdir("./")
-        if "strings.yml" in files or "strings.yaml" in files:
-            self.rawS: dict = yaml.safe_load(
-                open("./strings.yaml" if "strings.yaml" in files else "strings.yml")
-            )
+        try:
+            files = os.listdir("./strings/")
+            self.rawS = {}
+            for file in files:
+                self.rawS[file.removesuffix('.yaml')] = yaml.safe_load(open(f"./strings/{file}"))
+
             self.logger.info(f"Available translations: {list(self.rawS.keys())}")
             if config.language in self.rawS.keys():
                 self.S = self.rawS[config.language]
@@ -87,6 +88,8 @@ class BaseModule(ABC):
                     f"Can't select language... Using first in list, you've been warned!"
                 )
                 self.S = list(self.rawS.values())[0]
+        except FileNotFoundError:
+            pass
 
         # Place for database session. Will be set by loader if necessary
         self.db_session: Optional[Session] = None
