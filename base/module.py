@@ -34,15 +34,15 @@ class Handler:
 
 class Permissions(str, Enum):
     use_db = 'use_db'
+    use_loader = 'use_loader'
 
 
 class BaseModule(ABC):
-    def __init__(self, loader: Optional = None):
+    def __init__(self, loaded_info_func: Callable):
         self.logger = logging.getLogger(__name__)
         self.router = Router()
 
-        if loader is not None:
-            self.__loader = loader
+        self.__loaded_info = loaded_info_func
 
         # Register all methods
         methods = inspect.getmembers(self, inspect.ismethod)
@@ -91,6 +91,9 @@ class BaseModule(ABC):
         # Place for database session. Will be set by loader if necessary
         self.db_session: Optional[Session] = None
 
+        # Place for loader
+        self.loader = None
+
     @property
     @abstractmethod
     def module_info(self) -> ModuleInfo:
@@ -109,6 +112,13 @@ class BaseModule(ABC):
         """
         SQLAlchemy MetaData object. Must be set if using database
         :rtype: MetaData
+        """
+        return None
+
+    @property
+    def help_page(self) -> Optional[str]:
+        """
+        Help string to be displayed in Core module help command. Highly recommended to set this!
         """
         return None
 
@@ -138,4 +148,4 @@ class BaseModule(ABC):
         Method for querying loaded modules from child instance
         :return: List of loaded modules info
         """
-        return self.__loader.get_modules_info()
+        return self.__loaded_info()

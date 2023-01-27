@@ -10,6 +10,9 @@ ru:
       Репозиторий на GitHub: https://github.com/PBModular/bot
       Поставьте звезду пожалуйста 😊
 
+    module_found: "📄 <b>Справка по модулю {0}:</b>"
+    module_not_found: "Для модуля <b>{0}</b> не нашлось страницы справки..."
+
 en:
   help:
     header: |
@@ -21,3 +24,6 @@ en:
     footer: |
       Repository on GitHub: https://github.com/PBModular/bot
       Star it please 😊
+
+    module_found: "📄 <b>Help for module {0}:</b>"
+    module_not_found: "There's no help page for <b>{0}</b> module..."

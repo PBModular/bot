@@ -22,6 +22,7 @@ class ModuleLoader:
         self.__dp = dispatcher
         self.__modules: list[BaseModule] = []
         self.__modules_info: list[ModuleInfo] = []
+        self.__modules_help: dict[str, str] = {}
         self.__db_session: Optional = db_base
         self.__db_engine = db_engine
 
@@ -41,15 +42,22 @@ class ModuleLoader:
         for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
             if "Module" in obj_name:
                 os.chdir(f"./modules/{name}")
-                instance: BaseModule = obj(self)
+                instance: BaseModule = obj(self.get_modules_info)
                 perms = instance.module_permissions
                 if Permissions.use_db in perms and self.__db_session:
                     self.__init_db(instance)
+
+                if Permissions.use_loader in perms:
+                    instance.loader = self
 
                 info = instance.module_info
                 self.__dp.include_router(instance.router)
                 self.__modules.append(instance)
                 self.__modules_info.append(info)
+
+                help_page = instance.help_page
+                if help_page:
+                    self.__modules_help[info.name.lower()] = help_page
 
                 # Custom init execution
                 instance.on_init()
@@ -71,3 +79,6 @@ class ModuleLoader:
         :return: List of ModuleInfo objects
         """
         return self.__modules_info
+
+    def get_module_help(self, name: str) -> Optional[str]:
+        return self.__modules_help.get(name)
