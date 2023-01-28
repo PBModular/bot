@@ -1,6 +1,6 @@
 from base.module import BaseModule, ModuleInfo, Permissions
 from base.loader import ModuleLoader
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from urllib.parse import urlparse
 
 
@@ -76,3 +76,22 @@ class CoreModule(BaseModule):
 
         result = self.loader.uninstall_module(int_name)
         await message.reply((self.S["uninstall"]["ok"] if result else self.S["uninstall"]["err"]).format(name))
+
+    #  Logs
+
+    async def logs_cmd(self, message: Message):
+        logs = ""
+        with open("bot.log") as file:
+            for line in (file.readlines()[-10:]):
+                logs += line
+        await message.answer(f"<code>{logs}</code>")
+
+    async def log_file_cmd(self, message: Message):
+        await message.answer_document(FSInputFile("bot.log"), caption=self.S["log_file"]["answer_caption_file"])
+
+    async def clear_log_cmd(self, message: Message):
+        with open("bot.log", 'w'):
+            pass
+
+        await message.answer(f"<code>{self.S['log_file']['answer_log_cleared']}</code>")
+        self.logger.info("Log file cleared")
