@@ -73,7 +73,7 @@ class BaseModule(ABC):
             files = os.listdir("./strings/")
             self.rawS = {}
             for file in files:
-                self.rawS[file.removesuffix('.yaml')] = yaml.safe_load(open(f"./strings/{file}"))
+                self.rawS[file.removesuffix('.yaml')] = yaml.safe_load(open(f"./strings/{file}", encoding="utf-8"))
 
             self.logger.info(f"Available translations: {list(self.rawS.keys())}")
             if config.language in self.rawS.keys():
