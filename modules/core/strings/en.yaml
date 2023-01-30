@@ -59,3 +59,7 @@ uninstall:
   not_found: ❌ <b>Module</b> <code>{0}</code> <b>not found!</b>
   ok: ✅ <b>Module</b> <code>{0}</code> <b>deleted!</b>
   err: ❌ <b>Module deletion error</b> <code>{0}</code><b>!</b>
+
+log_file:
+  answer_caption_file: 📁 <b>The entire log file as of now</b>
+  answer_log_cleared: ♻️ <b>Log file cleared</b>

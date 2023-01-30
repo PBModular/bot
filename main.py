@@ -1,15 +1,23 @@
+import sys
+
 from aiogram import Bot, Dispatcher
 from aiogram.utils.token import TokenValidationError
 import logging
 from base.loader import ModuleLoader
 from config import config, CONF_FILE
 import os
+from logging.handlers import RotatingFileHandler
 
 dp = Dispatcher()
 
 # Logger .-.
 FORMAT = '%(asctime)s | %(levelname)s | %(name)s %(message)s'
-logging.basicConfig(format=FORMAT, level="INFO")
+# File/Console Logger
+file_handler = RotatingFileHandler(filename='bot.log', maxBytes=128*1024)  # 128 MB limit
+stdout_handler = logging.StreamHandler(stream=sys.stdout)
+handlers = [file_handler, stdout_handler]
+
+logging.basicConfig(format=FORMAT, level="INFO", handlers=handlers)
 logger = logging.getLogger(__name__)
 
 # Root path
@@ -65,4 +73,3 @@ if __name__ == "__main__":
     """
     )
     main(update_conf=False)
-
