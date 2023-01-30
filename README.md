@@ -10,7 +10,7 @@
 ## Features
 
 - Modularity
-- Linux only >.<
+- Linux and Windows support >.<
 - Open Source, lol
 
 
