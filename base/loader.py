@@ -84,16 +84,15 @@ class ModuleLoader:
 
     def unload_module(self, name: str):
         """
-        Method for unloading modules
+        Method for unloading modules. Note: restart is a mandatory!
         :param name: Name of Python module inside modules dir
         """
-        obj = self.__modules.pop(name)
+        self.__modules.pop(name)
         info = self.__modules_info.pop(name)
         try:
             self.__modules_help.pop(info.name.lower())
         except KeyError:
             pass
-        del obj
         logger.info(f"Successfully unloaded module {name}!")
 
     def __init_db(self, instance: BaseModule):

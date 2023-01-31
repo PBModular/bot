@@ -2,6 +2,8 @@ from base.module import BaseModule, ModuleInfo, Permissions
 from base.loader import ModuleLoader
 from aiogram.types import Message, FSInputFile
 from urllib.parse import urlparse
+import os
+import sys
 
 
 class CoreModule(BaseModule):
@@ -76,6 +78,8 @@ class CoreModule(BaseModule):
 
         result = self.loader.uninstall_module(int_name)
         await message.reply((self.S["uninstall"]["ok"] if result else self.S["uninstall"]["err"]).format(name))
+
+        os.execl(sys.executable, sys.executable, *sys.argv)
 
     #  Logs
 
