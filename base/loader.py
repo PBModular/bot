@@ -48,6 +48,15 @@ class ModuleLoader:
                 try:
                     instance: BaseModule = obj(self.get_modules_info)
                     perms = instance.module_permissions
+                    info = instance.module_info
+
+                    # Don't allow modules with more than 1 word in name
+                    if len(info.name.split()) > 1:
+                        logger.warning(f"Module {name} has more than 1 word in name. Fuck developer! I won't load it!")
+                        del instance
+                        os.chdir("../../")
+                        return None
+
                     if Permissions.require_db in perms and not config.enable_db:
                         logger.warning(f"Module {name} requires DB, but it was disabled, skipping!")
                         del instance
@@ -65,7 +74,6 @@ class ModuleLoader:
                     # Register everything for aiogram
                     instance.register_all()
 
-                    info = instance.module_info
                     self.__dp.include_router(instance.router)
                     self.__modules[name] = instance
                     self.__modules_info[name] = info
