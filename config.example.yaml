@@ -4,11 +4,15 @@ token: null  # Insert bot-API token here
 language: ru
 fallback-language: en
 
-# Database settings
+### Database section ###
 enable-db: true
 
-# Database URL. Useful links for setting this properly:
+# Database backend selection. Fill only type and driver! <type>[+<driver>]://
+# Useful links for setting this properly:
 # https://docs.sqlalchemy.org/en/20/tutorial/engine.html#establishing-connectivity-the-engine
-# https://docs.sqlalchemy.org/en/20/dialects/
+# https://docs.sqlalchemy.org/en/20/dialects/ (Supported backends)
 # https://docs.sqlalchemy.org/en/20/core/engines.html#backend-specific-urls
-db-url: "sqlite:///:memory:"
+db-url: "sqlite://"
+
+# SQLite only! Name for database file inside modules directory
+db-file-name: "db.sqlite3"

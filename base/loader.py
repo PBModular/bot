@@ -9,8 +9,8 @@ import traceback
 from typing import Optional
 from base.module import BaseModule, ModuleInfo, Permissions
 from aiogram import Dispatcher
-from sqlalchemy.orm import Session
-from sqlalchemy import Engine
+from base.db import Database
+from config import config
 
 
 logger = logging.getLogger(__name__)
@@ -22,19 +22,11 @@ class ModuleLoader:
     Modules must be placed into modules/ directory as directories with __init__.py
     """
 
-    def __init__(
-            self,
-            dispatcher: Dispatcher,
-            root_dir: str,
-            db_base: Optional[Session] = None,
-            db_engine: Optional[Engine] = None
-    ):
+    def __init__(self, dispatcher: Dispatcher, root_dir: str):
         self.__dp = dispatcher
         self.__modules: dict[str, BaseModule] = {}
         self.__modules_info: dict[str, ModuleInfo] = {}
         self.__modules_help: dict[str, str] = {}
-        self.__db_session: Optional = db_base
-        self.__db_engine = db_engine
         self.__root_dir = root_dir
 
     def load_everything(self):
@@ -56,11 +48,22 @@ class ModuleLoader:
                 try:
                     instance: BaseModule = obj(self.get_modules_info)
                     perms = instance.module_permissions
-                    if Permissions.use_db in perms and self.__db_session:
-                        self.__init_db(instance)
+                    if Permissions.require_db in perms and not config.enable_db:
+                        logger.warning(f"Module {name} requires DB, but it was disabled, skipping!")
+                        del instance
+                        os.chdir("../../")
+                        return None
+
+                    if (Permissions.use_db in perms or Permissions.require_db in perms) and config.enable_db:
+                        os.chdir(self.__root_dir)
+                        instance.db = Database(name)
+                        os.chdir(f"./modules/{name}")
 
                     if Permissions.use_loader in perms:
                         instance.loader = self
+
+                    # Register everything for aiogram
+                    instance.register_all()
 
                     info = instance.module_info
                     self.__dp.include_router(instance.router)
@@ -80,6 +83,7 @@ class ModuleLoader:
                 except:
                     logger.error(f"Error at loading module {name}! Printing traceback")
                     traceback.print_exc()
+                    os.chdir(self.__root_dir)
                     return None
 
     def unload_module(self, name: str):
@@ -94,13 +98,6 @@ class ModuleLoader:
         except KeyError:
             pass
         logger.info(f"Successfully unloaded module {name}!")
-
-    def __init_db(self, instance: BaseModule):
-        # Insert db session into module
-        instance.db_session = self.__db_session
-
-        # Emit tables to database
-        instance.db_meta.create_all(self.__db_engine)
 
     def get_modules_info(self) -> dict[str, ModuleInfo]:
         """

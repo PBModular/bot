@@ -41,12 +41,7 @@ def main(update_conf: bool = False):
 
         logger.info("Bot starting...")
 
-        if config.enable_db:
-            logger.info("Initializing database...")
-            import base.db as db
-            loader = ModuleLoader(dp, root_dir=ROOT_DIR, db_base=db.session, db_engine=db.engine)
-        else:
-            loader = ModuleLoader(dp, root_dir=ROOT_DIR)
+        loader = ModuleLoader(dp, root_dir=ROOT_DIR)
 
         # Load modules
         loader.load_everything()

@@ -9,7 +9,7 @@ import os
 from aiogram.dispatcher.router import Router
 from aiogram.filters import Command, Filter
 
-from sqlalchemy.orm import Session
+from base.db import Database
 from sqlalchemy import MetaData
 
 import yaml
@@ -34,6 +34,7 @@ class Handler:
 
 class Permissions(str, Enum):
     use_db = 'use_db'
+    require_db = 'require_db'
     use_loader = 'use_loader'
 
 
@@ -43,30 +44,6 @@ class BaseModule(ABC):
         self.router = Router()
 
         self.__loaded_info = loaded_info_func
-
-        # Register all methods
-        methods = inspect.getmembers(self, inspect.ismethod)
-        for name, func in methods:
-            if "_cmd" in name:
-                self.router.message.register(func, Command(name.removesuffix("_cmd")))
-                command_registry.register_command(self.module_info.name, name.removesuffix("_cmd"))
-
-        for handler in self.message_handlers:
-            if isinstance(handler.filter, Command):
-                for cmd in handler.filter.commands:
-                    if command_registry.check_command(cmd):
-                        self.logger.warning(
-                            f"Command conflict! "
-                            f"Module {self.module_info.name} tried to register command {cmd}, which is already used! "
-                            f"Skipping this command")
-                    else:
-                        self.router.message.register(handler.func, handler.filter)
-                        command_registry.register_command(self.module_info.name, cmd)
-            else:
-                self.router.message.register(handler.func, handler.filter)
-
-        for handler in self.callback_handlers:
-            self.router.callback_query.register(handler.func, handler.filter)
 
         # Load translations if available
         try:
@@ -92,10 +69,37 @@ class BaseModule(ABC):
             pass
 
         # Place for database session. Will be set by loader if necessary
-        self.db_session: Optional[Session] = None
+        self.__db: Optional[Database] = None
 
         # Place for loader
         self.loader = None
+
+    def register_all(self):
+        """
+        Method that initiates method registering. Must be called only from loader!
+        """
+        methods = inspect.getmembers(self, inspect.ismethod)
+        for name, func in methods:
+            if "_cmd" in name:
+                self.router.message.register(func, Command(name.removesuffix("_cmd")))
+                command_registry.register_command(self.module_info.name, name.removesuffix("_cmd"))
+
+        for handler in self.message_handlers:
+            if isinstance(handler.filter, Command):
+                for cmd in handler.filter.commands:
+                    if command_registry.check_command(cmd):
+                        self.logger.warning(
+                            f"Command conflict! "
+                            f"Module {self.module_info.name} tried to register command {cmd}, which is already used! "
+                            f"Skipping this command")
+                    else:
+                        self.router.message.register(handler.func, handler.filter)
+                        command_registry.register_command(self.module_info.name, cmd)
+            else:
+                self.router.message.register(handler.func, handler.filter)
+
+        for handler in self.callback_handlers:
+            self.router.callback_query.register(handler.func, handler.filter)
 
     @property
     @abstractmethod
@@ -109,6 +113,19 @@ class BaseModule(ABC):
         Permissions requested by the module. WIP
         """
         return []
+
+    @property
+    def db(self):
+        return self.__db
+
+    @db.setter
+    def db(self, value):
+        """
+        Setter for DB object. Creates tables from db_meta if available
+        """
+        self.__db = value
+        if self.db_meta:
+            self.db_meta.create_all(self.__db.engine)
 
     @property
     def db_meta(self):

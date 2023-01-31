@@ -13,6 +13,7 @@ class Config(YAMLWizard):
     fallback_language: str
     enable_db: bool
     db_url: str
+    db_file_name: str
 
 
 # Load from YAML
