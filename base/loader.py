@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 import traceback
 from typing import Optional
 from base.module import BaseModule, ModuleInfo, Permissions
-from aiogram import Dispatcher
+from aiogram import Dispatcher, Bot
 from base.db import Database
 from config import config
 
@@ -22,7 +22,8 @@ class ModuleLoader:
     Modules must be placed into modules/ directory as directories with __init__.py
     """
 
-    def __init__(self, dispatcher: Dispatcher, root_dir: str):
+    def __init__(self, bot: Bot, dispatcher: Dispatcher, root_dir: str):
+        self.__bot = bot
         self.__dp = dispatcher
         self.__modules: dict[str, BaseModule] = {}
         self.__modules_info: dict[str, ModuleInfo] = {}
@@ -43,10 +44,10 @@ class ModuleLoader:
         """
         imported = importlib.import_module("modules." + name)
         for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
-            if "Module" in obj_name:
+            if BaseModule in inspect.getmro(obj):
                 os.chdir(f"./modules/{name}")
                 try:
-                    instance: BaseModule = obj(self.get_modules_info)
+                    instance: BaseModule = obj(self.__bot, self.get_modules_info)
                     perms = instance.module_permissions
                     info = instance.module_info
 

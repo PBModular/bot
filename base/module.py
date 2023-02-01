@@ -2,10 +2,11 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Callable
+from typing import Optional, Union, Callable
 import inspect
 import os
 
+from aiogram import Bot
 from aiogram.dispatcher.router import Router
 from aiogram.filters import Command, Filter
 
@@ -39,10 +40,11 @@ class Permissions(str, Enum):
 
 
 class BaseModule(ABC):
-    def __init__(self, loaded_info_func: Callable):
+    def __init__(self, bot: Bot, loaded_info_func: Callable):
         self.logger = logging.getLogger(__name__)
         self.router = Router()
 
+        self.bot = bot
         self.__loaded_info = loaded_info_func
 
         # Load translations if available
@@ -80,9 +82,10 @@ class BaseModule(ABC):
         """
         methods = inspect.getmembers(self, inspect.ismethod)
         for name, func in methods:
-            if "_cmd" in name:
-                self.router.message.register(func, Command(name.removesuffix("_cmd")))
-                command_registry.register_command(self.module_info.name, name.removesuffix("_cmd"))
+            if hasattr(func, "bot_cmds"):
+                for cmd in func.bot_cmds:
+                    self.router.message.register(func, Command(cmd))
+                    command_registry.register_command(self.module_info.name, cmd)
 
         for handler in self.message_handlers:
             if isinstance(handler.filter, Command):
@@ -169,3 +172,15 @@ class BaseModule(ABC):
         :return: List of loaded modules info
         """
         return self.__loaded_info()
+
+
+def command(cmds: Union[list[str], str]):
+    """
+    Decorator for registering module command
+    Note: if you need more complex validation, use message_handlers property
+    """
+    def wrapper(func: Callable):
+        func.bot_cmds = cmds if type(cmds) == list else [cmds]
+        return func
+
+    return wrapper

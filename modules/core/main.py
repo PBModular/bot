@@ -1,4 +1,5 @@
 from base.module import BaseModule, ModuleInfo, Permissions
+from base.module import command
 from base.loader import ModuleLoader
 from aiogram.types import Message, FSInputFile
 from urllib.parse import urlparse
@@ -16,6 +17,7 @@ class CoreModule(BaseModule):
     def module_permissions(self) -> list[Permissions]:
         return [Permissions.use_loader]
 
+    @command('help')
     async def help_cmd(self, message: Message):
         if len(message.text.split()) > 1:
             self.loader: ModuleLoader
@@ -35,6 +37,7 @@ class CoreModule(BaseModule):
             text += self.S["help"]["footer"]
             await message.answer(text)
 
+    @command('mod_install')
     async def mod_install_cmd(self, message: Message):
         self.loader: ModuleLoader
         if len(message.text.split()) == 1:
@@ -62,6 +65,7 @@ class CoreModule(BaseModule):
 
         await msg.edit_text(self.S["install"]["end"].format(result))
 
+    @command('mod_uninstall')
     async def mod_uninstall_cmd(self, message: Message):
         self.loader: ModuleLoader
         if len(message.text.split()) == 1:
@@ -83,6 +87,7 @@ class CoreModule(BaseModule):
 
     #  Logs
 
+    @command('logs')
     async def logs_cmd(self, message: Message):
         logs = ""
         with open("bot.log") as file:
@@ -90,9 +95,11 @@ class CoreModule(BaseModule):
                 logs += line
         await message.answer(f"<code>{logs}</code>")
 
+    @command("log_file")
     async def log_file_cmd(self, message: Message):
         await message.answer_document(FSInputFile("bot.log"), caption=self.S["log_file"]["answer_caption_file"])
 
+    @command("clear_log")
     async def clear_log_cmd(self, message: Message):
         with open("bot.log", 'w'):
             pass

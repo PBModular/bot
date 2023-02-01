@@ -41,7 +41,7 @@ def main(update_conf: bool = False):
 
         logger.info("Bot starting...")
 
-        loader = ModuleLoader(dp, root_dir=ROOT_DIR)
+        loader = ModuleLoader(bot, dp, root_dir=ROOT_DIR)
 
         # Load modules
         loader.load_everything()
