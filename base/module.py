@@ -24,7 +24,6 @@ class ModuleInfo:
     author: str
     version: str
     src_url: Optional[str] = None
-    requires_packages: Optional[list[str]] = None  # Not used for now
 
 
 @dataclass
@@ -51,6 +50,7 @@ class BaseModule(ABC):
         self.__loaded_info = loaded_info_func
 
         # Load translations if available
+        self.cur_lang = config.language
         try:
             files = os.listdir("./strings/")
             self.rawS = {}
@@ -64,6 +64,7 @@ class BaseModule(ABC):
                 self.logger.warning(
                     f"Language {config.language} not found! Falling back to {config.fallback_language}"
                 )
+                self.cur_lang = config.fallback_language
                 self.S = self.rawS[config.fallback_language]
             else:
                 self.logger.warning(

@@ -2,11 +2,12 @@ import importlib
 import inspect
 import logging
 import os
+import sys
 import shutil
 import subprocess
 from urllib.parse import urlparse
 import traceback
-from typing import Optional
+from typing import Optional, Union
 from base.module import BaseModule, ModuleInfo, Permissions
 from aiogram import Dispatcher, Bot
 from base.db import Database
@@ -57,6 +58,10 @@ class ModuleLoader:
                         del instance
                         os.chdir("../../")
                         return None
+
+                    # Check for dependencies update / install them
+                    if config.update_deps_at_load and "requirements.txt" in os.listdir():
+                        self.install_deps(name)
 
                     if Permissions.require_db in perms and not config.enable_db:
                         logger.warning(f"Module {name} requires DB, but it was disabled, skipping!")
@@ -137,7 +142,33 @@ class ModuleLoader:
             logger.error(p.stdout.decode('utf-8'))
             subprocess.run(["rm", f"{self.__root_dir}/modules/{name}"])
 
-        return p.returncode, p.stdout
+        return p.returncode, p.stdout.decode("utf-8")
+
+    def install_deps(self, name: str) -> (int, Union[str, list[str]]):
+        """
+        Method to install Python dependencies from requirements.txt file
+        :param name: Name of module directory
+        :return: Tuple with exit code and read STDOUT
+        """
+        logger.info(f"Upgrading dependencies for module {name}!")
+        r = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-U", "-r",
+             f"{self.__root_dir}/modules/{name}/requirements.txt"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+        )
+        if r.returncode != 0:
+            logger.error(f"Error at upgrading deps for module {name}!\nPip output:\n"
+                         f"{r.stdout.decode('utf-8')}")
+            return r.returncode, r.stdout.decode('utf-8')
+        else:
+            logger.info(f"Deps upgraded successfully!")
+            with open(f"{self.__root_dir}/modules/{name}/requirements.txt") as f:
+                reqs = [dep for dep in f]
+                if reqs[-1] == "":
+                    reqs.pop(-1)
+
+                return r.returncode, reqs
 
     def uninstall_module(self, name: str) -> bool:
         """

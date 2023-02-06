@@ -18,6 +18,7 @@ class ModuleExtension:
         self.bot = base_mod.bot
         self.S = base_mod.S
         self.rawS = base_mod.rawS
+        self.cur_lang = base_mod.cur_lang
 
         # Save base ref
         self.__base_mod = base_mod

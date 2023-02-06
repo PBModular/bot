@@ -24,10 +24,27 @@ install:
     
     Please wait...
 
-  down_ok: |
+  down_reqs_next: |
+    ✅ <b>Module</b> <code>{0}</code> <b>downloaded!</b>
+
+    Installing dependencies...
+
+  down_end_next: |
     ✅ <b>Module</b> <code>{0}</code> <b>downloaded!</b>
     
     Loading module...
+
+  reqs_ok: |
+    ✅ <b>Dependencies for module</b> <code>{0}</code> <b>installed!</b>
+    
+    Loading module...
+
+  end_reqs: |
+    ✅ <b>Module</b> <code>{0}</code> <b>installed!</b>
+    
+    <b>This Python packages were installed:</b>
+    {1}Usage help:
+    <code>/help {0}</code>
 
   end: |
     ✅ <b>Module</b> <code>{0}</code> <b>installed!</b>
@@ -40,6 +57,17 @@ install:
     
     git clone command output:
     <code>{1}</code>
+
+  reqs_err: |
+    ❌ <b>Dependencies for module</b> <code>{0}</code> <b>failed to install!</b>
+    
+    Output of pip install command:
+    <code>{1}</code>
+    
+    If error is not related to your setup, contact developer and supply this info:
+    - Python version
+    - Bot version
+    - Output above
 
   load_err: |
     ❌ <b>Module load error</b> <code>{0}</code><b>!</b>

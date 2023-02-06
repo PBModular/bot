@@ -11,6 +11,7 @@ class Config(YAMLWizard):
     token: str
     language: str
     fallback_language: str
+    update_deps_at_load: bool
     enable_db: bool
     db_url: str
     db_file_name: str

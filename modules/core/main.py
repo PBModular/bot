@@ -52,18 +52,40 @@ class CoreModule(BaseModule):
         # Start downloading
         code, stdout = self.loader.install_from_git(url)
         if code != 0:
-            await msg.edit_text(self.S["install"]["down_err"].format(name, stdout.decode('utf-8')))
+            await msg.edit_text(self.S["install"]["down_err"].format(name, stdout))
             return
 
-        await msg.edit_text(self.S["install"]["down_ok"].format(name))
+        if os.path.exists(f"{os.getcwd()}/modules/{name}/requirements.txt"):
+            # Install deps
+            await msg.edit_text(self.S["install"]["down_reqs_next"].format(name))
+            code, data = self.loader.install_deps(name)
+            if code != 0:
+                await msg.edit_text(self.S["install"]["reqs_err"].format(name, data))
+                return
 
-        # Load module
-        result = self.loader.load_module(name)
-        if result is None:
-            await msg.edit_text(self.S["install"]["load_err"].format(name))
-            return
+            # Load module
+            result = self.loader.load_module(name)
+            if result is None:
+                await msg.edit_text(self.S["install"]["load_err"].format(name))
+                return
 
-        await msg.edit_text(self.S["install"]["end"].format(result))
+            print(data)
+            reqs_list = ""
+            for req in data:
+                reqs_list += f"- {req}\n"
+
+            await msg.edit_text(self.S["install"]["end_reqs"].format(result, reqs_list))
+
+        else:
+            await msg.edit_text(self.S["install"]["down_end_next"].format(name))
+
+            # Load module
+            result = self.loader.load_module(name)
+            if result is None:
+                await msg.edit_text(self.S["install"]["load_err"].format(name))
+                return
+
+            await msg.edit_text(self.S["install"]["end"].format(result))
 
     @command('mod_uninstall')
     async def mod_uninstall_cmd(self, message: Message):
