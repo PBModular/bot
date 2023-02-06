@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, Type
 import inspect
 import os
 
@@ -40,6 +40,9 @@ class Permissions(str, Enum):
 
 
 class BaseModule(ABC):
+    """
+    Bot module superclass
+    """
     def __init__(self, bot: Bot, loaded_info_func: Callable):
         self.logger = logging.getLogger(__name__)
         self.router = Router()
@@ -75,6 +78,11 @@ class BaseModule(ABC):
 
         # Place for loader
         self.loader = None
+
+        # Load extensions
+        self.__extensions = []
+        for ext in self.module_extensions:
+            self.__extensions.append(ext(self))
 
     def register_all(self):
         """
@@ -114,6 +122,13 @@ class BaseModule(ABC):
     def module_permissions(self) -> list[Permissions]:
         """
         Permissions requested by the module. WIP
+        """
+        return []
+
+    @property
+    def module_extensions(self) -> list[Type]:
+        """
+        List of module extension classes. Override if necessary.
         """
         return []
 
