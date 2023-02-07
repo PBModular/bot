@@ -84,7 +84,6 @@ def main(update_conf: bool = False):
 
 
 if __name__ == "__main__":
-    logger.info("Bot starting")
     print(
         """
 

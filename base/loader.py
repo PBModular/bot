@@ -6,9 +6,9 @@ import sys
 import shutil
 import subprocess
 from urllib.parse import urlparse
-import traceback
 from typing import Optional, Union
 from base.module import BaseModule, ModuleInfo, Permissions
+from base.base_ext import BaseExtension
 from aiogram import Dispatcher, Bot
 from base.db import Database
 from config import config
@@ -31,6 +31,37 @@ class ModuleLoader:
         self.__modules_help: dict[str, str] = {}
         self.__root_dir = root_dir
 
+        # Load extensions
+        self.__extensions: dict[str, BaseExtension] = {}
+        extensions = os.listdir(path="./extensions/")
+        for ext in extensions:
+            try:
+                imported = importlib.import_module("extensions." + ext)
+            except ImportError as e:
+                logger.error(f"ImportError has occurred while loading extension {ext}!")
+                logger.exception(e)
+                continue
+
+            for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
+                if BaseExtension in inspect.getmro(obj):
+                    os.chdir(f"./extensions/{ext}")
+                    try:
+                        # Check for dependencies update / install them
+                        if config.update_deps_at_load and "requirements.txt" in os.listdir():
+                            self.install_deps(ext, "extensions")
+
+                        instance: BaseExtension = obj()
+                        name = instance.extension_info.name
+
+                        self.__extensions[name] = instance
+
+                        logger.info(f"Successfully loaded extension {name}!")
+                        os.chdir("../../")
+                    except Exception as e:
+                        logger.error(f"Error at loading extension {ext}! Printing traceback")
+                        logger.exception(e)
+                        os.chdir(self.__root_dir)
+
     def load_everything(self):
         """Load all modules"""
         modules = os.listdir(path="./modules/")
@@ -46,7 +77,7 @@ class ModuleLoader:
         try:
             imported = importlib.import_module("modules." + name)
         except ImportError as e:
-            logger.error(f"Module {name} has thrown an ImportError!")
+            logger.error(f"ImportError has occurred while loading module {name}!")
             logger.exception(e)
             return None
 
@@ -54,6 +85,10 @@ class ModuleLoader:
             if BaseModule in inspect.getmro(obj):
                 os.chdir(f"./modules/{name}")
                 try:
+                    # Check for dependencies update / install them
+                    if config.update_deps_at_load and "requirements.txt" in os.listdir():
+                        self.install_deps(name, "modules")
+
                     instance: BaseModule = obj(self.__bot, self.get_modules_info)
                     perms = instance.module_permissions
                     info = instance.module_info
@@ -64,10 +99,6 @@ class ModuleLoader:
                         del instance
                         os.chdir("../../")
                         return None
-
-                    # Check for dependencies update / install them
-                    if config.update_deps_at_load and "requirements.txt" in os.listdir():
-                        self.install_deps(name)
 
                     if Permissions.require_db in perms and not config.enable_db:
                         logger.warning(f"Module {name} requires DB, but it was disabled, skipping!")
@@ -83,6 +114,15 @@ class ModuleLoader:
                     if Permissions.use_loader in perms:
                         instance.loader = self
 
+                    # Stage 1 init passed ok, applying extensions
+                    for ext_name, ext in self.__extensions.items():
+                        try:
+                            ext.on_module(instance)
+                        except Exception as e:
+                            logger.error(f"Extension {ext_name} failed to apply on module {info.name}!")
+                            logger.exception(e)
+
+                    # Stage 2
                     # Register everything for aiogram
                     instance.register_all()
 
@@ -100,9 +140,9 @@ class ModuleLoader:
                     logger.info(f"Successfully imported module {info.name}!")
                     os.chdir("../../")
                     return info.name
-                except:
+                except Exception as e:
                     logger.error(f"Error at loading module {name}! Printing traceback")
-                    traceback.print_exc()
+                    logger.exception(e)
                     os.chdir(self.__root_dir)
                     return None
 
@@ -150,26 +190,27 @@ class ModuleLoader:
 
         return p.returncode, p.stdout.decode("utf-8")
 
-    def install_deps(self, name: str) -> (int, Union[str, list[str]]):
+    def install_deps(self, name: str, directory: str) -> (int, Union[str, list[str]]):
         """
         Method to install Python dependencies from requirements.txt file
-        :param name: Name of module directory
+        :param name: Name of module or extension
+        :param directory: Directory of modules or extensions
         :return: Tuple with exit code and read STDOUT
         """
-        logger.info(f"Upgrading dependencies for module {name}!")
+        logger.info(f"Upgrading dependencies for {name}!")
         r = subprocess.run(
             [sys.executable, "-m", "pip", "install", "-U", "-r",
-             f"{self.__root_dir}/modules/{name}/requirements.txt"],
+             f"{self.__root_dir}/{directory}/{name}/requirements.txt"],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
         if r.returncode != 0:
-            logger.error(f"Error at upgrading deps for module {name}!\nPip output:\n"
+            logger.error(f"Error at upgrading deps for {name}!\nPip output:\n"
                          f"{r.stdout.decode('utf-8')}")
             return r.returncode, r.stdout.decode('utf-8')
         else:
             logger.info(f"Deps upgraded successfully!")
-            with open(f"{self.__root_dir}/modules/{name}/requirements.txt") as f:
+            with open(f"{self.__root_dir}/{directory}/{name}/requirements.txt") as f:
                 reqs = [dep for dep in f]
                 if reqs[-1] == "":
                     reqs.pop(-1)
@@ -188,9 +229,9 @@ class ModuleLoader:
             shutil.rmtree(f"./modules/{name}")
             logger.info(f"Successfully removed module {name}!")
             return True
-        except:
+        except Exception as e:
             logger.error(f"Error while removing module {name}! Printing traceback...")
-            traceback.print_exc()
+            logger.exception(e)
             return False
 
     def get_int_name(self, name: str) -> Optional[str]:

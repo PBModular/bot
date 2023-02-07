@@ -58,7 +58,7 @@ class CoreModule(BaseModule):
         if os.path.exists(f"{os.getcwd()}/modules/{name}/requirements.txt"):
             # Install deps
             await msg.edit_text(self.S["install"]["down_reqs_next"].format(name))
-            code, data = self.loader.install_deps(name)
+            code, data = self.loader.install_deps(name, "modules")
             if code != 0:
                 await msg.edit_text(self.S["install"]["reqs_err"].format(name, data))
                 return
