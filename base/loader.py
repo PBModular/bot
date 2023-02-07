@@ -43,7 +43,13 @@ class ModuleLoader:
 
         :param name: Name of Python module inside modules dir
         """
-        imported = importlib.import_module("modules." + name)
+        try:
+            imported = importlib.import_module("modules." + name)
+        except ImportError as e:
+            logger.error(f"Module {name} has thrown an ImportError!")
+            logger.exception(e)
+            return None
+
         for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
             if BaseModule in inspect.getmro(obj):
                 os.chdir(f"./modules/{name}")
