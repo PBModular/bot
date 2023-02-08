@@ -94,7 +94,7 @@ class ModuleLoader:
                     if config.update_deps_at_load and "requirements.txt" in os.listdir():
                         self.install_deps(name, "modules")
 
-                    instance: BaseModule = obj(self.get_modules_info)
+                    instance: BaseModule = obj(self.__bot, self.get_modules_info)
                     perms = instance.module_permissions
                     info = instance.module_info
 
@@ -129,7 +129,7 @@ class ModuleLoader:
 
                     # Stage 2
                     # Register everything for pyrogram
-                    instance.register_all(self.__bot)
+                    instance.register_all()
 
                     self.__modules[name] = instance
                     self.__modules_info[name] = info

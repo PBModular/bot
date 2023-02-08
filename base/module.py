@@ -43,8 +43,9 @@ class BaseModule(ABC):
     """
     Bot module superclass
     """
-    def __init__(self, loaded_info_func: Callable):
+    def __init__(self, bot: Client, loaded_info_func: Callable):
         self.logger = logging.getLogger(__name__)
+        self.bot = bot
         self.__loaded_info = loaded_info_func
 
         # Load translations if available
@@ -83,7 +84,7 @@ class BaseModule(ABC):
         for ext in self.module_extensions:
             self.__extensions.append(ext(self))
 
-    def register_all(self, bot: Client):
+    def register_all(self):
         """
         Method that initiates method registering. Must be called only from loader!
         """
@@ -98,14 +99,14 @@ class BaseModule(ABC):
                             f"Skipping this command")
                     else:
                         command_registry.register_command(self.module_info.name, cmd)
-                        bot.add_handler(MessageHandler(func, filters.command(cmd)))
+                        self.bot.add_handler(MessageHandler(func, filters.command(cmd)))
 
         for handler in self.message_handlers:
             # TODO: implement command registry check
-            bot.add_handler(MessageHandler(handler.func, handler.filter))
+            self.bot.add_handler(MessageHandler(handler.func, handler.filter))
 
         for handler in self.callback_handlers:
-            bot.add_handler(CallbackQueryHandler(handler.func, handler.filter))
+            self.bot.add_handler(CallbackQueryHandler(handler.func, handler.filter))
 
     @property
     @abstractmethod

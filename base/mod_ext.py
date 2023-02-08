@@ -1,10 +1,10 @@
 import logging
 import inspect
-
-from aiogram.filters import Command
-
 from base.module import BaseModule, Handler
 from base import command_registry
+
+from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from pyrogram import filters
 
 logger = logging.getLogger(__name__)
 
@@ -28,25 +28,21 @@ class ModuleExtension:
         for name, func in methods:
             if hasattr(func, "bot_cmds"):
                 for cmd in func.bot_cmds:
-                    base_mod.router.message.register(func, Command(cmd))
-                    command_registry.register_command(base_mod.module_info.name, cmd)
-
-        for handler in self.message_handlers:
-            if isinstance(handler.filter, Command):
-                for cmd in handler.filter.commands:
                     if command_registry.check_command(cmd):
                         logger.warning(
                             f"Command conflict! "
-                            f"Module {base_mod.module_info.name} tried to register command {cmd}, "
-                            f"which is already used! Skipping this command")
+                            f"Module {base_mod.module_info.name} tried to register command {cmd}, which is already used! "
+                            f"Skipping this command")
                     else:
-                        base_mod.router.message.register(handler.func, handler.filter)
                         command_registry.register_command(base_mod.module_info.name, cmd)
-            else:
-                base_mod.router.message.register(handler.func, handler.filter)
+                        self.bot.add_handler(MessageHandler(func, filters.command(cmd)))
+
+        for handler in self.message_handlers:
+            # TODO: implement command registry check
+            self.bot.add_handler(MessageHandler(handler.func, handler.filter))
 
         for handler in self.callback_handlers:
-            base_mod.router.callback_query.register(handler.func, handler.filter)
+            self.bot.add_handler(CallbackQueryHandler(handler.func, handler.filter))
 
     @property
     def db(self):
