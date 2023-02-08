@@ -9,6 +9,8 @@ CONF_FILE = 'config.yaml'
 @dataclass
 class Config(YAMLWizard):
     token: str
+    api_id: int
+    api_hash: str
     language: str
     fallback_language: str
     update_deps_at_load: bool

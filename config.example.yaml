@@ -1,4 +1,7 @@
 token: null  # Insert bot-API token here
+# MTProto API tokens. Get them from https://my.telegram.org/
+api-id: null
+api-hash: null
 
 # Localisation settings
 language: ru

@@ -1,3 +1,10 @@
+from base.module import BaseModule, ModuleInfo, Permissions
+from base.base_ext import BaseExtension
+from base.db import Database
+from config import config
+
+from pyrogram import Client
+
 import importlib
 import inspect
 import logging
@@ -7,11 +14,6 @@ import shutil
 import subprocess
 from urllib.parse import urlparse
 from typing import Optional, Union
-from base.module import BaseModule, ModuleInfo, Permissions
-from base.base_ext import BaseExtension
-from aiogram import Dispatcher, Bot
-from base.db import Database
-from config import config
 
 
 logger = logging.getLogger(__name__)
@@ -23,9 +25,8 @@ class ModuleLoader:
     Modules must be placed into modules/ directory as directories with __init__.py
     """
 
-    def __init__(self, bot: Bot, dispatcher: Dispatcher, root_dir: str):
+    def __init__(self, bot: Client, root_dir: str):
         self.__bot = bot
-        self.__dp = dispatcher
         self.__modules: dict[str, BaseModule] = {}
         self.__modules_info: dict[str, ModuleInfo] = {}
         self.__modules_help: dict[str, str] = {}
@@ -35,6 +36,9 @@ class ModuleLoader:
         self.__extensions: dict[str, BaseExtension] = {}
         extensions = os.listdir(path="./extensions/")
         for ext in extensions:
+            if not os.path.isdir(f"./extensions/{ext}"):
+                continue
+
             try:
                 imported = importlib.import_module("extensions." + ext)
             except ImportError as e:
@@ -66,7 +70,8 @@ class ModuleLoader:
         """Load all modules"""
         modules = os.listdir(path="./modules/")
         for module in modules:
-            self.load_module(module)
+            if os.path.isdir(f"./modules/{module}"):
+                self.load_module(module)
 
     def load_module(self, name: str) -> Optional[str]:
         """
@@ -89,7 +94,7 @@ class ModuleLoader:
                     if config.update_deps_at_load and "requirements.txt" in os.listdir():
                         self.install_deps(name, "modules")
 
-                    instance: BaseModule = obj(self.__bot, self.get_modules_info)
+                    instance: BaseModule = obj(self.get_modules_info)
                     perms = instance.module_permissions
                     info = instance.module_info
 
@@ -123,10 +128,9 @@ class ModuleLoader:
                             logger.exception(e)
 
                     # Stage 2
-                    # Register everything for aiogram
-                    instance.register_all()
+                    # Register everything for pyrogram
+                    instance.register_all(self.__bot)
 
-                    self.__dp.include_router(instance.router)
                     self.__modules[name] = instance
                     self.__modules_info[name] = info
 

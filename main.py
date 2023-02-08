@@ -1,14 +1,13 @@
 import sys
 
-from aiogram import Bot, Dispatcher
-from aiogram.utils.token import TokenValidationError
+from pyrogram import Client
+from pyrogram.enums import ParseMode
+from pyrogram.errors.exceptions.bad_request_400 import BadRequest
 import logging
 from base.loader import ModuleLoader
 from config import config, CONF_FILE
 import os
 from logging.handlers import RotatingFileHandler
-
-dp = Dispatcher()
 
 
 # Logger .-.
@@ -29,7 +28,7 @@ class ColorFormatter(logging.Formatter):
     }
     name_color = "\u001b[37;1m"
     reset = "\u001b[0m"
-    text_spacing = "\t" * 7
+    text_spacing = "\t" * 8
 
     def format(self, record: logging.LogRecord) -> str:
         f = f'%(asctime)s | ' \
@@ -60,11 +59,19 @@ def main(update_conf: bool = False):
     if config.token:
         # Try to run bot
         try:
-            bot = Bot(config.token, parse_mode="HTML")
+            bot = Client(
+                name="bot",
+                api_id=config.api_id,
+                api_hash=config.api_hash,
+                bot_token=config.token,
+                parse_mode=ParseMode.HTML
+            )
 
         # Reset token and again run main
-        except TokenValidationError:
+        except BadRequest:
             config.token = None
+            config.api_id = None
+            config.api_hash = None
             main(update_conf=True)
 
         # All ok, write token to config
@@ -73,11 +80,13 @@ def main(update_conf: bool = False):
 
         logger.info("Bot starting...")
 
-        loader = ModuleLoader(bot, dp, root_dir=ROOT_DIR)
+        loader = ModuleLoader(bot, root_dir=ROOT_DIR)
 
         # Load modules
         loader.load_everything()
-        dp.run_polling(bot)
+
+        # Launch bot
+        bot.run()
     else:
         config.token = input("Input token: ")
         main(update_conf=True)

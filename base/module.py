@@ -6,9 +6,10 @@ from typing import Optional, Union, Callable, Type
 import inspect
 import os
 
-from aiogram import Bot
-from aiogram.dispatcher.router import Router
-from aiogram.filters import Command, Filter
+from pyrogram import Client
+from pyrogram import filters
+from pyrogram.filters import Filter
+from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 
 from base.db import Database
 from sqlalchemy import MetaData
@@ -42,11 +43,8 @@ class BaseModule(ABC):
     """
     Bot module superclass
     """
-    def __init__(self, bot: Bot, loaded_info_func: Callable):
+    def __init__(self, loaded_info_func: Callable):
         self.logger = logging.getLogger(__name__)
-        self.router = Router()
-
-        self.bot = bot
         self.__loaded_info = loaded_info_func
 
         # Load translations if available
@@ -85,7 +83,7 @@ class BaseModule(ABC):
         for ext in self.module_extensions:
             self.__extensions.append(ext(self))
 
-    def register_all(self):
+    def register_all(self, bot: Client):
         """
         Method that initiates method registering. Must be called only from loader!
         """
@@ -93,25 +91,21 @@ class BaseModule(ABC):
         for name, func in methods:
             if hasattr(func, "bot_cmds"):
                 for cmd in func.bot_cmds:
-                    self.router.message.register(func, Command(cmd))
-                    command_registry.register_command(self.module_info.name, cmd)
-
-        for handler in self.message_handlers:
-            if isinstance(handler.filter, Command):
-                for cmd in handler.filter.commands:
                     if command_registry.check_command(cmd):
                         self.logger.warning(
                             f"Command conflict! "
                             f"Module {self.module_info.name} tried to register command {cmd}, which is already used! "
                             f"Skipping this command")
                     else:
-                        self.router.message.register(handler.func, handler.filter)
                         command_registry.register_command(self.module_info.name, cmd)
-            else:
-                self.router.message.register(handler.func, handler.filter)
+                        bot.add_handler(MessageHandler(func, filters.command(cmd)))
+
+        for handler in self.message_handlers:
+            # TODO: implement command registry check
+            bot.add_handler(MessageHandler(handler.func, handler.filter))
 
         for handler in self.callback_handlers:
-            self.router.callback_query.register(handler.func, handler.filter)
+            bot.add_handler(CallbackQueryHandler(handler.func, handler.filter))
 
     @property
     @abstractmethod
