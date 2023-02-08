@@ -35,7 +35,9 @@ class ModuleExtension:
                             f"Skipping this command")
                     else:
                         command_registry.register_command(base_mod.module_info.name, cmd)
-                        self.bot.add_handler(MessageHandler(func, filters.command(cmd)))
+                        final_filter = filters.command(cmd) & func.bot_msg_filter if func.bot_msg_filter \
+                            else filters.command(cmd)
+                        self.bot.add_handler(MessageHandler(func, final_filter))
 
         for handler in self.message_handlers:
             # TODO: implement command registry check

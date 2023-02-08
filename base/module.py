@@ -99,7 +99,9 @@ class BaseModule(ABC):
                             f"Skipping this command")
                     else:
                         command_registry.register_command(self.module_info.name, cmd)
-                        self.bot.add_handler(MessageHandler(func, filters.command(cmd)))
+                        final_filter = filters.command(cmd) & func.bot_msg_filter if func.bot_msg_filter \
+                            else filters.command(cmd)
+                        self.bot.add_handler(MessageHandler(func, final_filter))
 
         for handler in self.message_handlers:
             # TODO: implement command registry check
@@ -185,13 +187,14 @@ class BaseModule(ABC):
         return self.__loaded_info()
 
 
-def command(cmds: Union[list[str], str]):
+def command(cmds: Union[list[str], str], filters: Optional[Filter] = None):
     """
     Decorator for registering module command
     Note: if you need more complex validation, use message_handlers property
     """
     def wrapper(func: Callable):
         func.bot_cmds = cmds if type(cmds) == list else [cmds]
+        func.bot_msg_filter = filters
         return func
 
     return wrapper
