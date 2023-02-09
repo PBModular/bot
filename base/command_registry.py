@@ -1,5 +1,3 @@
-from typing import Optional
-
 commands: dict[str, list[str]] = {}
 
 
@@ -19,3 +17,11 @@ def check_command(command: str) -> bool:
             return True
 
     return False
+
+
+def remove_all(owner: str) -> bool:
+    try:
+        commands.pop(owner)
+        return True
+    except KeyError:
+        return False

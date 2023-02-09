@@ -155,6 +155,7 @@ class ModuleLoader:
         Method for unloading modules. Note: restart is a mandatory!
         :param name: Name of Python module inside modules dir
         """
+        self.__modules[name].unregister_all()
         self.__modules.pop(name)
         info = self.__modules_info.pop(name)
         try:

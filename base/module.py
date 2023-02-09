@@ -79,10 +79,22 @@ class BaseModule(ABC):
         # Place for loader
         self.loader = None
 
-        # Load extensions
+        # Place for message handlers and extensions
         self.__extensions = []
-        for ext in self.module_extensions:
-            self.__extensions.append(ext(self))
+        self.__handlers = []
+
+    def unregister_all(self):
+        """Unregister handlers"""
+        # Unload extensions
+        for ext in self.__extensions:
+            ext.unregister_all()
+        del self.__extensions
+
+        # Unregister handlers
+        for handler in self.__handlers:
+            self.bot.remove_handler(handler)
+
+        command_registry.remove_all(self.module_info.name)
 
     def register_all(self):
         """
@@ -101,14 +113,24 @@ class BaseModule(ABC):
                         command_registry.register_command(self.module_info.name, cmd)
                         final_filter = filters.command(cmd) & func.bot_msg_filter if func.bot_msg_filter \
                             else filters.command(cmd)
-                        self.bot.add_handler(MessageHandler(func, final_filter))
+                        handler = MessageHandler(func, final_filter)
+                        self.bot.add_handler(handler)
+                        self.__handlers.append(handler)
 
         for handler in self.message_handlers:
             # TODO: implement command registry check
-            self.bot.add_handler(MessageHandler(handler.func, handler.filter))
+            bot_handler = MessageHandler(handler.func, handler.filter)
+            self.bot.add_handler(bot_handler)
+            self.__handlers.append(bot_handler)
 
         for handler in self.callback_handlers:
-            self.bot.add_handler(CallbackQueryHandler(handler.func, handler.filter))
+            bot_handler = CallbackQueryHandler(handler.func, handler.filter)
+            self.bot.add_handler(bot_handler)
+            self.__handlers.append(bot_handler)
+
+        # Load extensions
+        for ext in self.module_extensions:
+            self.__extensions.append(ext(self))
 
     @property
     @abstractmethod

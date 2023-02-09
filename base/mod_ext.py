@@ -24,6 +24,7 @@ class ModuleExtension:
         self.__base_mod = base_mod
 
         # Register methods
+        self.__handlers = []
         methods = inspect.getmembers(self, inspect.ismethod)
         for name, func in methods:
             if hasattr(func, "bot_cmds"):
@@ -37,14 +38,25 @@ class ModuleExtension:
                         command_registry.register_command(base_mod.module_info.name, cmd)
                         final_filter = filters.command(cmd) & func.bot_msg_filter if func.bot_msg_filter \
                             else filters.command(cmd)
-                        self.bot.add_handler(MessageHandler(func, final_filter))
+                        handler = MessageHandler(func, final_filter)
+                        self.bot.add_handler(handler)
+                        self.__handlers.append(handler)
 
         for handler in self.message_handlers:
             # TODO: implement command registry check
-            self.bot.add_handler(MessageHandler(handler.func, handler.filter))
+            bot_handler = MessageHandler(handler.func, handler.filter)
+            self.bot.add_handler(bot_handler)
+            self.__handlers.append(bot_handler)
 
         for handler in self.callback_handlers:
-            self.bot.add_handler(CallbackQueryHandler(handler.func, handler.filter))
+            bot_handler = CallbackQueryHandler(handler.func, handler.filter)
+            self.bot.add_handler(bot_handler)
+            self.__handlers.append(bot_handler)
+
+    def unregister_all(self):
+        """Unregister handlers"""
+        for handler in self.__handlers:
+            self.bot.remove_handler(handler)
 
     @property
     def db(self):

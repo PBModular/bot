@@ -41,7 +41,7 @@ class CoreModule(BaseModule):
             await message.reply(text)
 
     @command('mod_install')
-    async def mod_install_cmd(self, bot: Client, message: Message):
+    async def mod_install_cmd(self, _, message: Message):
         self.loader: ModuleLoader
         if len(message.text.split()) == 1:
             await message.reply(self.S["install"]["args_err"])
@@ -72,7 +72,6 @@ class CoreModule(BaseModule):
                 await msg.edit_text(self.S["install"]["load_err"].format(name))
                 return
 
-            print(data)
             reqs_list = ""
             for req in data:
                 reqs_list += f"- {req}\n"
@@ -91,7 +90,7 @@ class CoreModule(BaseModule):
             await msg.edit_text(self.S["install"]["end"].format(result))
 
     @command('mod_uninstall')
-    async def mod_uninstall_cmd(self, bot: Client, message: Message):
+    async def mod_uninstall_cmd(self, _, message: Message):
         self.loader: ModuleLoader
         if len(message.text.split()) == 1:
             await message.reply(self.S["uninstall"]["args_err"])
@@ -108,12 +107,9 @@ class CoreModule(BaseModule):
         result = self.loader.uninstall_module(int_name)
         await message.reply((self.S["uninstall"]["ok"] if result else self.S["uninstall"]["err"]).format(name))
 
-        os.execl(sys.executable, sys.executable, *sys.argv)
-
     #  Logs
-
     @command('logs')
-    async def logs_cmd(self, bot: Client, message: Message):
+    async def logs_cmd(self, _, message: Message):
         logs = ""
         with open("bot.log") as file:
             for line in (file.readlines()[-10:]):
