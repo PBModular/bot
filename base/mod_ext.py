@@ -14,12 +14,20 @@ class ModuleExtension:
         self.S = base_mod.S
         self.rawS = base_mod.rawS
         self.cur_lang = base_mod.cur_lang
+        self.loader = base_mod.loader
 
         # Save base ref
         self.__base_mod = base_mod
 
         # Register methods
         base_mod.register_all(ext=self)
+
+        # Execute custom init
+        self.on_init()
+
+    def on_init(self):
+        """Custom init goes here"""
+        pass
 
     @property
     def db(self):
