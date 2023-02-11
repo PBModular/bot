@@ -1,6 +1,7 @@
-pyrogram == 2.0.97
-tgcrypto == 1.2.5
-uvloop == 0.17.0
-PyYAML == 6.0
-dataclass-wizard == 0.22.2
-SQLAlchemy == 2.0.0rc3
+pyrogram==2.0.97
+tgcrypto==1.2.5
+uvloop==0.17.0
+PyYAML==6.0
+dataclass-wizard==0.22.2
+SQLAlchemy==2.0.0rc3
+requirements-parser==0.5.0

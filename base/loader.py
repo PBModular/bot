@@ -5,6 +5,8 @@ from config import config
 
 from pyrogram import Client
 
+import requirements
+
 import importlib
 import inspect
 import logging
@@ -30,6 +32,7 @@ class ModuleLoader:
         self.__bot = bot
         self.__modules: dict[str, BaseModule] = {}
         self.__modules_info: dict[str, ModuleInfo] = {}
+        self.__modules_deps: dict[str, list[str]] = {}
         self.__root_dir = root_dir
 
         # Load extensions
@@ -90,9 +93,15 @@ class ModuleLoader:
             if BaseModule in inspect.getmro(obj):
                 os.chdir(f"./modules/{name}")
                 try:
-                    # Check for dependencies update / install them
-                    if config.update_deps_at_load and "requirements.txt" in os.listdir():
-                        self.install_deps(name, "modules")
+                    if "requirements.txt" in os.listdir():
+                        # Check for dependencies update / install them
+                        if config.update_deps_at_load:
+                            self.install_deps(name, "modules")
+
+                        # Load dependencies into dict
+                        self.__modules_deps[name] = []
+                        for req in requirements.parse(open("requirements.txt", encoding='utf-8')):
+                            self.__modules_deps[name].append(req.name.lower())
 
                     instance: BaseModule = obj(self.__bot, self.get_modules_info)
                     perms = self.get_module_perms(name)
@@ -225,6 +234,29 @@ class ModuleLoader:
 
                 return r.returncode, reqs
 
+    def uninstall_mod_deps(self, name: str):
+        """
+        Method to uninstall module dependencies. Removes package only if it isn't required by other module
+        :param name: Name of module
+        :return:
+        """
+        for mod_dep in self.__modules_deps[name]:
+            found = False
+            for other_name, deps in self.__modules_deps.items():
+                if other_name == name:
+                    continue
+                if mod_dep in deps:
+                    found = True
+                    break
+            if found:
+                continue
+
+            subprocess.run(
+                [sys.executable, "-m", "pip", "uninstall", "-y", mod_dep],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
+
     def uninstall_module(self, name: str) -> bool:
         """
         Module uninstallation method. Unloads and removes module directory
@@ -234,6 +266,8 @@ class ModuleLoader:
         try:
             # Unload first
             self.unload_module(name)
+            # Remove deps
+            self.uninstall_mod_deps(name)
             shutil.rmtree(f"./modules/{name}")
             logger.info(f"Successfully removed module {name}!")
             return True
