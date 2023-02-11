@@ -1,27 +1,29 @@
 from base.module import BaseModule, ModuleInfo, Permissions
-from base.module import command
+from base.module import command, callback_query
 from base.loader import ModuleLoader
 
 from pyrogram import Client
-from pyrogram.types import Message
+from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram import filters
 
 from urllib.parse import urlparse
 import os
-import sys
+from typing import Callable
+import shutil
 
 
 class CoreModule(BaseModule):
+    def __init__(self, bot: Client, loaded_info_func: Callable):
+        super().__init__(bot, loaded_info_func)
+
+        self.install_confirmations = {}
+
     @property
     def module_info(self) -> ModuleInfo:
         return ModuleInfo(name="Core", author="Developers", version="0.0.1")
 
-    # Use raw loader object. Very dangerous permission!
-    @property
-    def module_permissions(self) -> list[Permissions]:
-        return [Permissions.use_loader]
-
     @command('help')
-    async def help_cmd(self, bot: Client, message: Message):
+    async def help_cmd(self, _, message: Message):
         if len(message.text.split()) > 1:
             self.loader: ModuleLoader
             name = " ".join(message.text.split()[1:])
@@ -58,6 +60,35 @@ class CoreModule(BaseModule):
             await msg.edit_text(self.S["install"]["down_err"].format(name, stdout))
             return
 
+        # Check for permissions
+        perms = self.loader.get_module_perms(name)
+        text = self.S["install"]["confirm"].format(name=name) + "\n"
+        perm_list = ""
+        for p in perms:
+            perm_list += f"- {self.S['install']['perms'][p.value]}\n"
+
+        if len(perms) > 0:
+            text += self.S["install"]["confirm_perms"].format(perms=perm_list)
+        if Permissions.use_loader in perms:
+            text += self.S["install"]["confirm_warn_perms"]
+
+        self.install_confirmations[msg.id] = [msg, name]
+
+        keyboard = InlineKeyboardMarkup(
+            [[
+                InlineKeyboardButton(self.S["yes_btn"], callback_data=f"install_yes"),
+                InlineKeyboardButton(self.S["no_btn"], callback_data=f"install_no")
+            ]]
+        )
+        await msg.edit_text(text, reply_markup=keyboard)
+
+    @callback_query(filters.regex("install_yes"))
+    async def install_yes(self, _, call: CallbackQuery):
+        msg, name = self.install_confirmations[call.message.id]
+        self.install_confirmations.pop(call.message.id)
+
+        await call.answer()
+
         if os.path.exists(f"{os.getcwd()}/modules/{name}/requirements.txt"):
             # Install deps
             await msg.edit_text(self.S["install"]["down_reqs_next"].format(name))
@@ -89,6 +120,15 @@ class CoreModule(BaseModule):
 
             await msg.edit_text(self.S["install"]["end"].format(result))
 
+    @callback_query(filters.regex("install_no"))
+    async def install_no(self, _, call: CallbackQuery):
+        msg, name = self.install_confirmations[call.message.id]
+        self.install_confirmations.pop(call.message.id)
+
+        shutil.rmtree(f"./modules/{name}")
+        await call.answer(self.S["install"]["aborted"])
+        await msg.delete()
+
     @command('mod_uninstall')
     async def mod_uninstall_cmd(self, _, message: Message):
         self.loader: ModuleLoader
@@ -117,11 +157,11 @@ class CoreModule(BaseModule):
         await message.reply(f"<code>{logs}</code>")
 
     @command("log_file")
-    async def log_file_cmd(self, message: Message):
+    async def log_file_cmd(self, _, message: Message):
         await message.reply_document("bot.log", caption=self.S["log_file"]["answer_caption_file"])
 
     @command("clear_log")
-    async def clear_log_cmd(self, message: Message):
+    async def clear_log_cmd(self, _, message: Message):
         with open("bot.log", 'w'):
             pass
 

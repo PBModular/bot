@@ -1,3 +1,6 @@
+yes_btn: Yes ✅
+no_btn: No ❌
+
 help:
   header: |
     Hello! Thanks for using PBModular (name is temporary)
@@ -13,6 +16,11 @@ help:
   module_not_found: "There's no help page for <b>{0}</b> module..."
 
 install:
+  perms:
+    use_loader: Access to the module loader ⚠️
+    use_db: DB usage
+    require_db: DB usage
+
   args_err: |
     <b>Empty module URL!</b>
     
@@ -24,18 +32,25 @@ install:
     
     Please wait...
 
+  confirm: "<b>Are ypu sure to install module</b> <code>{name}</code><b>?</b>"
+  confirm_perms: |
+    Requested permissions:
+    {perms}
+
+  confirm_warn_perms: "<b>Warning!</b> This module requests dangerous permissions (With ⚠ sign)!"
+
   down_reqs_next: |
-    ✅ <b>Module</b> <code>{0}</code> <b>downloaded!</b>
+    🛠 <b>Module</b> <code>{0}</code> <b>downloaded!</b>
 
     Installing dependencies...
 
   down_end_next: |
-    ✅ <b>Module</b> <code>{0}</code> <b>downloaded!</b>
+    🛠 <b>Module</b> <code>{0}</code> <b>downloaded!</b>
     
     Loading module...
 
   reqs_ok: |
-    ✅ <b>Dependencies for module</b> <code>{0}</code> <b>installed!</b>
+    🛠 <b>Dependencies for module</b> <code>{0}</code> <b>installed!</b>
     
     Loading module...
 
@@ -51,6 +66,8 @@ install:
     
     Usage help:
     <code>/help {0}</code>
+
+  aborted: "Installation aborted!"
 
   down_err: |
     ❌ <b>Module download error</b> <code>{0}</code><b>!</b>

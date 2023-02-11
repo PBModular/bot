@@ -10,6 +10,7 @@ from pyrogram import Client
 from pyrogram import filters
 from pyrogram.filters import Filter
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from pyrogram.handlers.handler import Handler
 
 from base.db import Database
 from sqlalchemy import MetaData
@@ -25,12 +26,6 @@ class ModuleInfo:
     author: str
     version: str
     src_url: Optional[str] = None
-
-
-@dataclass
-class Handler:
-    filter: Filter
-    func: Callable
 
 
 class Permissions(str, Enum):
@@ -103,6 +98,7 @@ class BaseModule(ABC):
         methods = inspect.getmembers(self, inspect.ismethod)
         for name, func in methods:
             if hasattr(func, "bot_cmds"):
+                # Func with @command decorator
                 for cmd in func.bot_cmds:
                     if command_registry.check_command(cmd):
                         self.logger.warning(
@@ -116,17 +112,16 @@ class BaseModule(ABC):
                         handler = MessageHandler(func, final_filter)
                         self.bot.add_handler(handler)
                         self.__handlers.append(handler)
+            elif hasattr(func, "bot_callback_filter"):
+                # Func with @callback_query decorator
+                handler = CallbackQueryHandler(func, func.bot_callback_filter)
+                self.bot.add_handler(handler)
+                self.__handlers.append(handler)
 
-        for handler in self.message_handlers:
-            # TODO: implement command registry check
-            bot_handler = MessageHandler(handler.func, handler.filter)
-            self.bot.add_handler(bot_handler)
-            self.__handlers.append(bot_handler)
-
-        for handler in self.callback_handlers:
-            bot_handler = CallbackQueryHandler(handler.func, handler.filter)
-            self.bot.add_handler(bot_handler)
-            self.__handlers.append(bot_handler)
+        # Custom handlers
+        for handler in self.custom_handlers:
+            self.bot.add_handler(handler)
+            self.__handlers.append(handler)
 
         # Load extensions
         for ext in self.module_extensions:
@@ -181,17 +176,9 @@ class BaseModule(ABC):
         return None
 
     @property
-    def message_handlers(self) -> list[Handler]:
+    def custom_handlers(self) -> list[Handler]:
         """
-        Custom handlers for something that exceeds function name autogeneration (extended input validation, aliases, etc.)
-        Override if necessary
-        """
-        return []
-
-    @property
-    def callback_handlers(self) -> list[Handler]:
-        """
-        Handlers for button callbacks
+        Custom handlers for something that exceeds message / callback query validation (raw messages, etc.)
         Override if necessary
         """
         return []
@@ -212,11 +199,24 @@ class BaseModule(ABC):
 def command(cmds: Union[list[str], str], filters: Optional[Filter] = None):
     """
     Decorator for registering module command
-    Note: if you need more complex validation, use message_handlers property
+    :param cmds: List of commands w/o prefix. It may be a string if there's only one command
+    :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters
     """
     def wrapper(func: Callable):
         func.bot_cmds = cmds if type(cmds) == list else [cmds]
         func.bot_msg_filter = filters
+        return func
+
+    return wrapper
+
+
+def callback_query(filters: Optional[Filter] = None):
+    """
+    Decorator for registering callback query handlers
+    :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters
+    """
+    def wrapper(func: Callable):
+        func.bot_callback_filter = filters
         return func
 
     return wrapper

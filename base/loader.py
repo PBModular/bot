@@ -12,6 +12,7 @@ import os
 import sys
 import shutil
 import subprocess
+import yaml
 from urllib.parse import urlparse
 from typing import Optional, Union
 
@@ -95,7 +96,7 @@ class ModuleLoader:
                         self.install_deps(name, "modules")
 
                     instance: BaseModule = obj(self.__bot, self.get_modules_info)
-                    perms = instance.module_permissions
+                    perms = self.get_module_perms(name)
                     info = instance.module_info
 
                     # Don't allow modules with more than 1 word in name
@@ -174,6 +175,13 @@ class ModuleLoader:
 
     def get_module_help(self, name: str) -> Optional[str]:
         return self.__modules_help.get(name)
+
+    def get_module_perms(self, name: str) -> list[Permissions]:
+        file_path = f"{self.__root_dir}/modules/{name}/permissions.yaml"
+        if os.path.exists(file_path):
+            return [Permissions[val] for val in yaml.safe_load(open(file_path, encoding="utf-8"))]
+        else:
+            return []
 
     def install_from_git(self, url: str) -> (int, str):
         """
