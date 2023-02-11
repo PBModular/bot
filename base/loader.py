@@ -207,6 +207,27 @@ class ModuleLoader:
 
         return p.returncode, p.stdout.decode("utf-8")
 
+    def update_from_git(self, name: str, directory: str) -> (int, str):
+        """
+        Method to update git repository (module or extensions)
+        :param name: Name of module or extension
+        :param directory: Directory of modules or extensions
+        :return: Exit code and output of git pull
+        """
+        # Unload first
+        self.unload_module(name)
+        logger.info(f"Updating {name}!")
+        cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" \
+              f"git pull"
+        p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        if p.returncode != 0:
+            logger.error(f"Error while updating module {name}!")
+            logger.error(f"Printing STDOUT and STDERR:")
+            logger.error(p.stdout.decode("utf-8"))
+
+        return p.returncode, p.stdout.decode("utf-8")
+
     def install_deps(self, name: str, directory: str) -> (int, Union[str, list[str]]):
         """
         Method to install Python dependencies from requirements.txt file
@@ -257,6 +278,22 @@ class ModuleLoader:
                 stderr=subprocess.STDOUT
             )
 
+    def uninstall_packages(self, pkgs: list[str]):
+        for dep in pkgs:
+            found = False
+            for other_name, deps in self.__modules_deps.items():
+                if dep in deps:
+                    found = True
+                    break
+            if found:
+                continue
+
+            subprocess.run(
+                [sys.executable, "-m", "pip", "uninstall", "-y", dep],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
+
     def uninstall_module(self, name: str) -> bool:
         """
         Module uninstallation method. Unloads and removes module directory
@@ -268,6 +305,7 @@ class ModuleLoader:
             self.unload_module(name)
             # Remove deps
             self.uninstall_mod_deps(name)
+            self.__modules_deps.pop(name)
             shutil.rmtree(f"./modules/{name}")
             logger.info(f"Successfully removed module {name}!")
             return True

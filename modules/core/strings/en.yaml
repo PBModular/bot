@@ -32,7 +32,7 @@ install:
     
     Please wait...
 
-  confirm: "<b>Are ypu sure to install module</b> <code>{name}</code><b>?</b>"
+  confirm: "<b>Are you sure to install module</b> <code>{name}</code><b>?</b>"
   confirm_perms: |
     Requested permissions:
     {perms}
@@ -104,6 +104,30 @@ uninstall:
   not_found: ❌ <b>Module</b> <code>{0}</code> <b>not found!</b>
   ok: ✅ <b>Module</b> <code>{0}</code> <b>deleted!</b>
   err: ❌ <b>Module deletion error</b> <code>{0}</code><b>!</b>
+
+update:
+  args_err: |
+    <b>Empty module name!</b>
+    
+    Usage:
+    <code>/mod_update BestModule</code>
+
+  confirm: "<b>Are you sure to update module</b> <code>{name}</code><b>?</b>"
+
+  err: |
+    ❌ <b>Error while updating module</b> <code>{name}</code><b>!</b>
+    
+    <code>git pull</code> output:
+    {out}
+
+  ok: |
+    ✅ <b>Module</b> <code>{name}</code> <b>updated!</b>
+    
+    <b>Version</b> {old_ver} -> {new_ver}
+    <b>Repository URL:</b> {url}
+
+  reqs: "<b>Python dependencies for module:</b>"
+  abort: "Update aborted!"
 
 log_file:
   answer_caption_file: 📁 <b>The entire log file as of now</b>

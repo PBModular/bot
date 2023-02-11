@@ -7,11 +7,13 @@ from pyrogram import filters
 from urllib.parse import urlparse
 import os
 import shutil
+import requirements
 
 
 class ModManageExtension(ModuleExtension):
     def on_init(self):
         self.install_confirmations = {}
+        self.update_confirmations = {}
 
     @command('mod_install')
     async def mod_install_cmd(self, _, message: Message):
@@ -119,3 +121,107 @@ class ModManageExtension(ModuleExtension):
 
         result = self.loader.uninstall_module(int_name)
         await message.reply((self.S["uninstall"]["ok"] if result else self.S["uninstall"]["err"]).format(name))
+
+    @command("mod_update")
+    async def mod_update_cmd(self, _, message: Message):
+        """Update module to the upstream version"""
+        self.loader: ModuleLoader
+        if len(message.text.split()) == 1:
+            await message.reply(self.S["update"]["args_err"])
+            return
+
+        name = " ".join(message.text.split()[1:])
+        int_name = self.loader.get_int_name(name)
+        if int_name is None:
+            await message.reply(self.S["uninstall"]["not_found"].format(name))
+            return
+
+        keyboard = InlineKeyboardMarkup(
+            [[
+                InlineKeyboardButton(self.S["yes_btn"], callback_data=f"update_yes"),
+                InlineKeyboardButton(self.S["no_btn"], callback_data=f"update_no")
+            ]]
+        )
+        msg = await message.reply(self.S["update"]["confirm"].format(name=name), reply_markup=keyboard)
+        self.update_confirmations[msg.id] = [msg, name, int_name]
+
+    @callback_query(filters.regex("update_yes"))
+    async def update_yes(self, _, call: CallbackQuery):
+        msg, name, int_name = self.update_confirmations[call.message.id]
+        await call.answer()
+
+        old_ver = self.loader.get_modules_info()[name].version
+        reqs_path = f"{os.getcwd()}/modules/{name}/requirements.txt"
+        old_reqs = None
+        if os.path.exists(reqs_path):
+            old_reqs = requirements.parse(open(reqs_path, encoding="utf-8"))
+
+        code, stdout = self.loader.update_from_git(int_name, "modules")
+        if code != 0:
+            await msg.edit_text(self.S["update"]["err"].format(name=name, out=stdout))
+            return
+
+        reqs_path = f"{os.getcwd()}/modules/{name}/requirements.txt"
+        if os.path.exists(reqs_path):
+            reqs = requirements.parse(open(reqs_path, encoding="utf-8"))
+            del_reqs = []
+            for req in old_reqs:
+                found = False
+                for new_req in reqs:
+                    if req.name.lower() == new_req.name.lower():
+                        found = True
+                        break
+
+                if not found:
+                    del_reqs.append(req.name.lower())
+
+            # Install deps
+            await msg.edit_text(self.S["install"]["down_reqs_next"].format(name))
+            code, data = self.loader.install_deps(name, "modules")
+            if code != 0:
+                await msg.edit_text(self.S["install"]["reqs_err"].format(name, data))
+                return
+
+            # Load module
+            result = self.loader.load_module(name)
+            if result is None:
+                await msg.edit_text(self.S["install"]["load_err"].format(name))
+                return
+
+            # Cleanup
+            self.loader.uninstall_packages(del_reqs)
+
+            info = self.loader.get_modules_info()[int_name]
+            text = self.S["update"]["ok"].format(
+                name=result, old_ver=old_ver,
+                new_ver=info.version,
+                url=info.src_url
+            ) + "\n" + self.S["update"]["reqs"] + "\n"
+
+            for req in data:
+                text += f"- {req}\n"
+
+            await msg.edit_text(text)
+        else:
+            await msg.edit_text(self.S["install"]["down_end_next"].format(name))
+
+            # Load module
+            result = self.loader.load_module(name)
+            if result is None:
+                await msg.edit_text(self.S["install"]["load_err"].format(name))
+                return
+
+            info = self.loader.get_modules_info()[int_name]
+            await msg.edit_text(self.S["update"]["ok"].format(
+                name=result, old_ver=old_ver,
+                new_ver=info.version,
+                url=info.src_url
+            ))
+
+    @callback_query(filters.regex("update_no"))
+    async def update_no(self, _, call: CallbackQuery):
+        msg, name, _ = self.update_confirmations[call.message.id]
+        self.update_confirmations.pop(call.message.id)
+
+        await call.answer(self.S["update"]["abort"])
+        await msg.delete()
