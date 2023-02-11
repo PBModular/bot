@@ -78,11 +78,17 @@ class BaseModule(ABC):
         self.__extensions = []
         self.__handlers = []
 
+        # Auto-generated help
+        self.__auto_help = None
+
+    def stage2(self):
+        self.register_all()
+        # Load extensions
+        for ext in self.module_extensions:
+            self.__extensions.append(ext(self))
+
     def unregister_all(self):
         """Unregister handlers"""
-        # Unload extensions
-        for ext in self.__extensions:
-            ext.unregister_all()
         del self.__extensions
 
         # Unregister handlers
@@ -91,11 +97,11 @@ class BaseModule(ABC):
 
         command_registry.remove_all(self.module_info.name)
 
-    def register_all(self):
+    def register_all(self, ext: Optional = None):
         """
-        Method that initiates method registering. Must be called only from loader!
+        Method that initiates method registering. Must be called only from loader or extension!
         """
-        methods = inspect.getmembers(self, inspect.ismethod)
+        methods = inspect.getmembers(ext if ext else self, inspect.ismethod)
         for name, func in methods:
             if hasattr(func, "bot_cmds"):
                 # Func with @command decorator
@@ -112,6 +118,11 @@ class BaseModule(ABC):
                         handler = MessageHandler(func, final_filter)
                         self.bot.add_handler(handler)
                         self.__handlers.append(handler)
+
+                        if self.__auto_help is None:
+                            self.__auto_help = "Available commands:\n"
+                        self.__auto_help += f"/{cmd}" + (f" - {func.__doc__}" if func.__doc__ else "") + "\n"
+
             elif hasattr(func, "bot_callback_filter"):
                 # Func with @callback_query decorator
                 handler = CallbackQueryHandler(func, func.bot_callback_filter)
@@ -119,13 +130,9 @@ class BaseModule(ABC):
                 self.__handlers.append(handler)
 
         # Custom handlers
-        for handler in self.custom_handlers:
+        for handler in ext.custom_handlers if ext else self.custom_handlers:
             self.bot.add_handler(handler)
             self.__handlers.append(handler)
-
-        # Load extensions
-        for ext in self.module_extensions:
-            self.__extensions.append(ext(self))
 
     @property
     @abstractmethod
@@ -172,8 +179,9 @@ class BaseModule(ABC):
     def help_page(self) -> Optional[str]:
         """
         Help string to be displayed in Core module help command. Highly recommended to set this!
+        Defaults to auto-generated command listing, which uses callback func __doc__ for description
         """
-        return None
+        return self.__auto_help
 
     @property
     def custom_handlers(self) -> list[Handler]:

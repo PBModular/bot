@@ -130,7 +130,7 @@ class ModuleLoader:
 
                     # Stage 2
                     # Register everything for pyrogram
-                    instance.register_all()
+                    instance.stage2()
 
                     self.__modules[name] = instance
                     self.__modules_info[name] = info

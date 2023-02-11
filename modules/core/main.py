@@ -24,6 +24,7 @@ class CoreModule(BaseModule):
 
     @command('help')
     async def help_cmd(self, _, message: Message):
+        """Displays help page"""
         if len(message.text.split()) > 1:
             self.loader: ModuleLoader
             name = " ".join(message.text.split()[1:])
@@ -44,6 +45,7 @@ class CoreModule(BaseModule):
 
     @command('mod_install')
     async def mod_install_cmd(self, _, message: Message):
+        """Install new module from git repo"""
         self.loader: ModuleLoader
         if len(message.text.split()) == 1:
             await message.reply(self.S["install"]["args_err"])
@@ -131,6 +133,7 @@ class CoreModule(BaseModule):
 
     @command('mod_uninstall')
     async def mod_uninstall_cmd(self, _, message: Message):
+        """Uninstall module"""
         self.loader: ModuleLoader
         if len(message.text.split()) == 1:
             await message.reply(self.S["uninstall"]["args_err"])
@@ -150,6 +153,7 @@ class CoreModule(BaseModule):
     #  Logs
     @command('logs')
     async def logs_cmd(self, _, message: Message):
+        """Get logs in a message"""
         logs = ""
         with open("bot.log") as file:
             for line in (file.readlines()[-10:]):
@@ -158,10 +162,12 @@ class CoreModule(BaseModule):
 
     @command("log_file")
     async def log_file_cmd(self, _, message: Message):
+        """Get logs as a file"""
         await message.reply_document("bot.log", caption=self.S["log_file"]["answer_caption_file"])
 
     @command("clear_log")
     async def clear_log_cmd(self, _, message: Message):
+        """Clear logfile"""
         with open("bot.log", 'w'):
             pass
 
