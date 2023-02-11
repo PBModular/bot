@@ -28,7 +28,7 @@ class CoreModule(BaseModule):
         if len(message.text.split()) > 1:
             self.loader: ModuleLoader
             name = " ".join(message.text.split()[1:])
-            data = self.loader.get_module_help(name.lower())
+            data = self.loader.get_module_help(self.loader.get_int_name(name))
             if data is None:
                 await message.reply(self.S["help"]["module_not_found"].format(name))
             else:

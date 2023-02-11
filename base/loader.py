@@ -30,7 +30,6 @@ class ModuleLoader:
         self.__bot = bot
         self.__modules: dict[str, BaseModule] = {}
         self.__modules_info: dict[str, ModuleInfo] = {}
-        self.__modules_help: dict[str, str] = {}
         self.__root_dir = root_dir
 
         # Load extensions
@@ -135,10 +134,6 @@ class ModuleLoader:
                     self.__modules[name] = instance
                     self.__modules_info[name] = info
 
-                    help_page = instance.help_page
-                    if help_page:
-                        self.__modules_help[info.name.lower()] = help_page
-
                     # Custom init execution
                     instance.on_init()
 
@@ -158,11 +153,7 @@ class ModuleLoader:
         """
         self.__modules[name].unregister_all()
         self.__modules.pop(name)
-        info = self.__modules_info.pop(name)
-        try:
-            self.__modules_help.pop(info.name.lower())
-        except KeyError:
-            pass
+        self.__modules_info.pop(name)
         logger.info(f"Successfully unloaded module {name}!")
 
     def get_modules_info(self) -> dict[str, ModuleInfo]:
@@ -174,7 +165,11 @@ class ModuleLoader:
         return self.__modules_info
 
     def get_module_help(self, name: str) -> Optional[str]:
-        return self.__modules_help.get(name)
+        mod = self.__modules.get(name)
+        if mod is None:
+            return None
+        else:
+            return mod.help_page
 
     def get_module_perms(self, name: str) -> list[Permissions]:
         file_path = f"{self.__root_dir}/modules/{name}/permissions.yaml"
