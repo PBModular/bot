@@ -1,4 +1,4 @@
-from base.module import BaseModule, ModuleInfo
+from base.module import BaseModule
 from base.module import command
 from base.loader import ModuleLoader
 from base.mod_ext import ModuleExtension
@@ -12,10 +12,6 @@ from .extensions.logs import LogsExtension
 
 
 class CoreModule(BaseModule):
-    @property
-    def module_info(self) -> ModuleInfo:
-        return ModuleInfo(name="Core", author="Developers", version="0.0.1")
-
     @property
     def module_extensions(self) -> list[Type[ModuleExtension]]:
         return [

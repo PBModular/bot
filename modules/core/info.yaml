@@ -1,0 +1,8 @@
+info:
+  name: Core
+  author: Developers
+  version: 0.0.1
+
+# Use raw loader object. Very dangerous permission!
+permissions:
+  - use_loader

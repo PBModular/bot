@@ -34,7 +34,11 @@ install:
     
     Подождите пожалуйста...
 
-  confirm: "<b>Вы уверены, что хотите установить модуль</b> <code>{name}</code><b>?</b>"
+  confirm: |
+    <b>Вы уверены, что хотите установить модуль</b> <code>{name}</code><b>?</b>
+    <b>Автор:</b> {author}
+    <b>Версия:</b> {version}
+
   confirm_perms: |
     Запрашиваемые разрешения:
     {perms}
@@ -114,7 +118,10 @@ update:
     Пример использования:
     <code>/mod_update BestModule</code>
 
-  confirm: "<b>Вы уверены, что хотите обновить модуль</b> <code>{name}</code><b>?</b>"
+  confirm: |
+    <b>Вы уверены, что хотите обновить модуль</b> <code>{name}</code><b>?</b>
+    <b>Автор:</b> {author}
+    <b>Версия:</b> {version}
 
   err: |
     ❌ <b>Ошибка обновления модуля</b> <code>{name}</code><b>!</b>

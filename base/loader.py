@@ -14,7 +14,6 @@ import os
 import sys
 import shutil
 import subprocess
-import yaml
 from urllib.parse import urlparse
 from typing import Optional, Union
 
@@ -105,7 +104,7 @@ class ModuleLoader:
                             self.__modules_deps[name].append(req.name.lower())
 
                     instance: BaseModule = obj(self.__bot, self.get_modules_info)
-                    perms = self.get_module_perms(name)
+                    perms = instance.module_permissions
                     info = instance.module_info
 
                     # Don't allow modules with more than 1 word in name
@@ -178,7 +177,24 @@ class ModuleLoader:
         """
         return self.__modules_info
 
+    def get_module_info(self, name: str) -> Optional[ModuleInfo]:
+        """
+        Get module info
+        :param name: Name of Python module inside modules dir
+        :return: Object with module info
+        """
+        mod = self.__modules.get(name)
+        if mod is None:
+            return None
+        else:
+            return mod.module_info
+
     def get_module_help(self, name: str) -> Optional[str]:
+        """
+        Get module help page
+        :param name: Name of Python module inside modules dir
+        :return: Help page as string
+        """
         mod = self.__modules.get(name)
         if mod is None:
             return None
@@ -186,11 +202,16 @@ class ModuleLoader:
             return mod.help_page
 
     def get_module_perms(self, name: str) -> list[Permissions]:
-        file_path = f"{self.__root_dir}/modules/{name}/permissions.yaml"
-        if os.path.exists(file_path):
-            return [Permissions[val] for val in yaml.safe_load(open(file_path, encoding="utf-8"))]
-        else:
+        """
+        Get module permissions
+        :param name: Name of Python module inside modules dir
+        :return: Object with permissions
+        """
+        mod = self.__modules.get(name)
+        if mod is None:
             return []
+        else:
+            return mod.module_permissions
 
     def install_from_git(self, url: str) -> (int, str):
         """

@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Union, Callable, Type
 import inspect
@@ -18,6 +18,7 @@ from sqlalchemy import MetaData
 import yaml
 from config import config
 from base import command_registry
+from dataclass_wizard import YAMLWizard
 
 
 @dataclass
@@ -34,6 +35,12 @@ class Permissions(str, Enum):
     use_loader = 'use_loader'
 
 
+@dataclass
+class InfoFile(YAMLWizard):
+    info: ModuleInfo
+    permissions: list[Permissions] = field(default_factory=list)
+
+
 class BaseModule(ABC):
     """
     Bot module superclass
@@ -42,6 +49,11 @@ class BaseModule(ABC):
         self.logger = logging.getLogger(__name__)
         self.bot = bot
         self.__loaded_info = loaded_info_func
+
+        # Parse info and extensions
+        info_file = InfoFile.from_yaml_file("./info.yaml")
+        self.module_info = info_file.info
+        self.module_permissions = info_file.permissions
 
         # Load translations if available
         self.cur_lang = config.language
@@ -133,19 +145,6 @@ class BaseModule(ABC):
         for handler in ext.custom_handlers if ext else self.custom_handlers:
             self.bot.add_handler(handler)
             self.__handlers.append(handler)
-
-    @property
-    @abstractmethod
-    def module_info(self) -> ModuleInfo:
-        """Module info. Must be set"""
-        pass
-
-    @property
-    def module_permissions(self) -> list[Permissions]:
-        """
-        Permissions requested by the module. WIP
-        """
-        return []
 
     @property
     def module_extensions(self) -> list[Type]:

@@ -1,5 +1,5 @@
 from base.mod_ext import ModuleExtension
-from base.module import command, callback_query, Permissions
+from base.module import command, callback_query, Permissions, InfoFile
 from base.loader import ModuleLoader
 
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
@@ -34,16 +34,25 @@ class ModManageExtension(ModuleExtension):
             await msg.edit_text(self.S["install"]["down_err"].format(name, stdout))
             return
 
+        # Parse info file
+        info_file = InfoFile.from_yaml_file("./info.yaml")
+        info = info_file.info
+        permissions = info_file.permissions
+
+        text = self.S["install"]["confirm"].format(
+            name=name,
+            author=info.author,
+            version=info.version
+        ) + "\n"
+
         # Check for permissions
-        perms = self.loader.get_module_perms(name)
-        text = self.S["install"]["confirm"].format(name=name) + "\n"
         perm_list = ""
-        for p in perms:
+        for p in permissions:
             perm_list += f"- {self.S['install']['perms'][p.value]}\n"
 
-        if len(perms) > 0:
+        if len(permissions) > 0:
             text += self.S["install"]["confirm_perms"].format(perms=perm_list)
-        if Permissions.use_loader in perms:
+        if Permissions.use_loader in permissions:
             text += self.S["install"]["confirm_warn_perms"]
 
         self.install_confirmations[msg.id] = [msg, name]
@@ -138,7 +147,7 @@ class ModManageExtension(ModuleExtension):
 
         msg = await message.reply(self.S["install"]["start"].format(name))
 
-        old_ver = self.loader.get_modules_info()[int_name].version
+        old_ver = self.loader.get_module_info(int_name).version
         old_reqs = None
 
         reqs_path = f"{os.getcwd()}/modules/{int_name}/requirements.txt"
@@ -151,16 +160,29 @@ class ModManageExtension(ModuleExtension):
             self.loader.revert_update(int_name, "modules")
             return
 
+        # Parse info file
+        try:
+            info_file = InfoFile.from_yaml_file(f"{os.getcwd()}/modules/{int_name}/info.yaml")
+        except FileNotFoundError:
+            return
+
+        info = info_file.info
+        permissions = info_file.permissions
+
+        text = self.S["update"]["confirm"].format(
+            name=name,
+            author=info.author,
+            version=info.version
+        ) + "\n"
+
         # Check for permissions
-        perms = self.loader.get_module_perms(int_name)
-        text = self.S["update"]["confirm"].format(name=name) + "\n"
         perm_list = ""
-        for p in perms:
+        for p in permissions:
             perm_list += f"- {self.S['install']['perms'][p.value]}\n"
 
-        if len(perms) > 0:
+        if len(permissions) > 0:
             text += self.S["install"]["confirm_perms"].format(perms=perm_list)
-        if Permissions.use_loader in perms:
+        if Permissions.use_loader in permissions:
             text += self.S["install"]["confirm_warn_perms"]
 
         keyboard = InlineKeyboardMarkup(
@@ -215,7 +237,7 @@ class ModManageExtension(ModuleExtension):
             # Cleanup
             self.loader.uninstall_packages(del_reqs)
 
-            info = self.loader.get_modules_info()[int_name]
+            info = self.loader.get_module_info(int_name)
             text = self.S["update"]["ok"].format(
                 name=result, old_ver=old_ver,
                 new_ver=info.version,
@@ -235,7 +257,7 @@ class ModManageExtension(ModuleExtension):
                 await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
                 return
 
-            info = self.loader.get_modules_info()[int_name]
+            info = self.loader.get_module_info(int_name)
             await msg.edit_text(self.S["update"]["ok"].format(
                 name=result, old_ver=old_ver,
                 new_ver=info.version,
