@@ -6,7 +6,8 @@ abort_btn: Abort ❌
 help:
   header: |
     Hello! Thanks for using PBModular (name is temporary)
-    You can get help for modules' commands... # TODO
+    You can get help for modules' commands using
+    <code>/help &lt;name&gt;</code>
     
     📥 <b>Loaded modules:</b>
 
@@ -16,6 +17,28 @@ help:
 
   module_found: "📄 <b>Help for module {0}:</b>"
   module_not_found: "There's no help page for <b>{0}</b> module..."
+
+info:
+  args_err: |
+    <b>Empty module name!</b>
+    
+    Usage:
+    <code>/mod_info BestModule</code>
+
+  not_found: Hmm... I can't find this module!
+
+  header: |
+    📄 <b>Module</b> <code>{name}</code> <b>info</b>:
+    <b>Author:</b> {author}
+    <b>Version:</b> {version}
+
+  src_url: |
+    <b>Sources link:</b>
+    {url}
+
+  description: |
+    <b>Description:</b>
+    {description}
 
 install:
   perms:

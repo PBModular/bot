@@ -26,6 +26,7 @@ class ModuleInfo:
     name: str
     author: str
     version: str
+    description: str
     src_url: Optional[str] = None
 
 

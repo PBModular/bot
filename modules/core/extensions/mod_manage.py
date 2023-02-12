@@ -264,6 +264,8 @@ class ModManageExtension(ModuleExtension):
                 url=info.src_url
             ))
 
+        self.update_confirmations.pop(call.message.id)
+
     @callback_query(filters.regex("update_no"))
     async def update_no(self, _, call: CallbackQuery):
         msg, name, int_name, _, _ = self.update_confirmations[call.message.id]
@@ -274,3 +276,32 @@ class ModManageExtension(ModuleExtension):
 
         await call.answer(self.S["update"]["abort"])
         await msg.delete()
+
+    @command("mod_info")
+    async def mod_info_cmd(self, _, message: Message):
+        """Displays full info about module"""
+        self.loader: ModuleLoader
+
+        args = message.text.split()
+        if len(args) != 2:
+            await message.reply(self.S["info"]["args_err"], quote=True)
+            return
+
+        int_name = self.loader.get_int_name(args[-1])
+        if int_name is None:
+            await message.reply(self.S["info"]["not_found"], quote=True)
+            return
+
+        info = self.loader.get_module_info(int_name)
+        text = self.S["info"]["header"].format(
+            name=info.name,
+            author=info.author,
+            version=info.version
+        )
+
+        if info.src_url:
+            text += self.S["info"]["src_url"].format(url=info.src_url)
+
+        text += "\n" + self.S["info"]["description"].format(description=info.description)
+
+        await message.reply(text, quote=True)
