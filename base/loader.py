@@ -34,6 +34,7 @@ class ModuleLoader:
         self.__modules_info: dict[str, ModuleInfo] = {}
         self.__modules_deps: dict[str, list[str]] = {}
         self.__root_dir = root_dir
+        self.__hash_backups: dict[str, str] = {}
 
         # Load extensions
         self.__extensions: dict[str, BaseExtension] = {}
@@ -146,6 +147,10 @@ class ModuleLoader:
                     # Custom init execution
                     instance.on_init()
 
+                    # Remove hash backup
+                    if self.__hash_backups.get(name) is not None:
+                        self.__hash_backups.pop(name)
+
                     logger.info(f"Successfully imported module {info.name}!")
                     os.chdir("../../")
                     return info.name
@@ -210,6 +215,7 @@ class ModuleLoader:
     def update_from_git(self, name: str, directory: str) -> (int, str):
         """
         Method to update git repository (module or extensions)
+        Remembers commit hash for reverting and executes git pull
         :param name: Name of module or extension
         :param directory: Directory of modules or extensions
         :return: Exit code and output of git pull
@@ -217,6 +223,18 @@ class ModuleLoader:
         # Unload first
         self.unload_module(name)
         logger.info(f"Updating {name}!")
+
+        # Backup
+        hash_cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" \
+                   f"git rev-parse HEAD"
+        hash_p = subprocess.run(hash_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if hash_p.returncode != 0:
+            logger.error(f"Wtf, failed to retrieve HEAD hash... STDOUT below")
+            logger.error(hash_p.stdout.decode("utf-8"))
+            return hash_p.returncode, hash_p.stdout.decode("utf-8")
+
+        self.__hash_backups[name] = hash_p.stdout.decode("utf-8")
+
         cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" \
               f"git pull"
         p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -227,6 +245,29 @@ class ModuleLoader:
             logger.error(p.stdout.decode("utf-8"))
 
         return p.returncode, p.stdout.decode("utf-8")
+
+    def revert_update(self, name: str, directory: str) -> bool:
+        """
+        Reverts update caused by update_from_git(). Removes updated dir and places backup
+        :param name: Name of module or extension
+        :param directory: Directory of modules or extensions
+        :return: Boolean (success or not)
+        """
+        try:
+            cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" \
+                  f"git reset --hard {self.__hash_backups[name]}"
+            p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+            if p.returncode != 0:
+                logger.error(f"Failed to revert update of module {name}! Printing STDOUT")
+                logger.error(p.stdout.decode("utf-8"))
+                return False
+
+            logger.info(f"Update of module {name} reverted!")
+            return True
+        except KeyError:
+            logger.error(f"Tried to revert module {name} with no pending update!")
+            return False
 
     def install_deps(self, name: str, directory: str) -> (int, Union[str, list[str]]):
         """
@@ -249,7 +290,7 @@ class ModuleLoader:
         else:
             logger.info(f"Deps upgraded successfully!")
             with open(f"{self.__root_dir}/{directory}/{name}/requirements.txt") as f:
-                reqs = [dep for dep in f]
+                reqs = [dep.removesuffix("\n") for dep in f]
                 if reqs[-1] == "":
                     reqs.pop(-1)
 

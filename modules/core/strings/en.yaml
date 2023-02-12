@@ -1,5 +1,7 @@
 yes_btn: Yes ✅
 no_btn: No ❌
+try_again_btn: Try again 🔄
+abort_btn: Abort ❌
 
 help:
   header: |

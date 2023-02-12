@@ -79,7 +79,7 @@ class ModManageExtension(ModuleExtension):
 
             reqs_list = ""
             for req in data:
-                reqs_list += f"- {req}\n"
+                reqs_list += f"- {req}"
 
             await msg.edit_text(self.S["install"]["end_reqs"].format(result, reqs_list))
 
@@ -136,32 +136,56 @@ class ModManageExtension(ModuleExtension):
             await message.reply(self.S["uninstall"]["not_found"].format(name))
             return
 
-        keyboard = InlineKeyboardMarkup(
-            [[
-                InlineKeyboardButton(self.S["yes_btn"], callback_data=f"update_yes"),
-                InlineKeyboardButton(self.S["no_btn"], callback_data=f"update_no")
-            ]]
-        )
-        msg = await message.reply(self.S["update"]["confirm"].format(name=name), reply_markup=keyboard)
-        self.update_confirmations[msg.id] = [msg, name, int_name]
+        msg = await message.reply(self.S["install"]["start"].format(name))
 
-    @callback_query(filters.regex("update_yes"))
-    async def update_yes(self, _, call: CallbackQuery):
-        msg, name, int_name = self.update_confirmations[call.message.id]
-        await call.answer()
-
-        old_ver = self.loader.get_modules_info()[name].version
-        reqs_path = f"{os.getcwd()}/modules/{name}/requirements.txt"
+        old_ver = self.loader.get_modules_info()[int_name].version
         old_reqs = None
+
+        reqs_path = f"{os.getcwd()}/modules/{int_name}/requirements.txt"
         if os.path.exists(reqs_path):
             old_reqs = requirements.parse(open(reqs_path, encoding="utf-8"))
 
         code, stdout = self.loader.update_from_git(int_name, "modules")
         if code != 0:
             await msg.edit_text(self.S["update"]["err"].format(name=name, out=stdout))
+            self.loader.revert_update(int_name, "modules")
             return
 
-        reqs_path = f"{os.getcwd()}/modules/{name}/requirements.txt"
+        # Check for permissions
+        perms = self.loader.get_module_perms(int_name)
+        text = self.S["update"]["confirm"].format(name=name) + "\n"
+        perm_list = ""
+        for p in perms:
+            perm_list += f"- {self.S['install']['perms'][p.value]}\n"
+
+        if len(perms) > 0:
+            text += self.S["install"]["confirm_perms"].format(perms=perm_list)
+        if Permissions.use_loader in perms:
+            text += self.S["install"]["confirm_warn_perms"]
+
+        keyboard = InlineKeyboardMarkup(
+            [[
+                InlineKeyboardButton(self.S["yes_btn"], callback_data=f"update_yes"),
+                InlineKeyboardButton(self.S["no_btn"], callback_data=f"update_no")
+            ]]
+        )
+        await msg.edit_text(text, reply_markup=keyboard)
+        self.update_confirmations[msg.id] = [msg, name, int_name, old_ver, old_reqs]
+
+    @callback_query(filters.regex("update_yes"))
+    async def update_yes(self, _, call: CallbackQuery):
+        self.loader: ModuleLoader
+        msg, name, int_name, old_ver, old_reqs = self.update_confirmations[call.message.id]
+        await call.answer()
+
+        try_again_keyboard = InlineKeyboardMarkup(
+            [[
+                InlineKeyboardButton(self.S["try_again_btn"], callback_data=f"update_yes"),
+                InlineKeyboardButton(self.S["abort_btn"], callback_data=f"update_no")
+            ]]
+        )
+
+        reqs_path = f"{os.getcwd()}/modules/{int_name}/requirements.txt"
         if os.path.exists(reqs_path):
             reqs = requirements.parse(open(reqs_path, encoding="utf-8"))
             del_reqs = []
@@ -177,15 +201,15 @@ class ModManageExtension(ModuleExtension):
 
             # Install deps
             await msg.edit_text(self.S["install"]["down_reqs_next"].format(name))
-            code, data = self.loader.install_deps(name, "modules")
+            code, data = self.loader.install_deps(int_name, "modules")
             if code != 0:
-                await msg.edit_text(self.S["install"]["reqs_err"].format(name, data))
+                await msg.edit_text(self.S["install"]["reqs_err"].format(name, data), reply_markup=try_again_keyboard)
                 return
 
             # Load module
-            result = self.loader.load_module(name)
+            result = self.loader.load_module(int_name)
             if result is None:
-                await msg.edit_text(self.S["install"]["load_err"].format(name))
+                await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
                 return
 
             # Cleanup
@@ -206,9 +230,9 @@ class ModManageExtension(ModuleExtension):
             await msg.edit_text(self.S["install"]["down_end_next"].format(name))
 
             # Load module
-            result = self.loader.load_module(name)
+            result = self.loader.load_module(int_name)
             if result is None:
-                await msg.edit_text(self.S["install"]["load_err"].format(name))
+                await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
                 return
 
             info = self.loader.get_modules_info()[int_name]
@@ -220,8 +244,11 @@ class ModManageExtension(ModuleExtension):
 
     @callback_query(filters.regex("update_no"))
     async def update_no(self, _, call: CallbackQuery):
-        msg, name, _ = self.update_confirmations[call.message.id]
+        msg, name, int_name, _, _ = self.update_confirmations[call.message.id]
         self.update_confirmations.pop(call.message.id)
+
+        self.loader.revert_update(int_name, "modules")
+        self.loader.load_module(int_name)
 
         await call.answer(self.S["update"]["abort"])
         await msg.delete()
