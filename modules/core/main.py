@@ -55,4 +55,4 @@ class CoreModule(BaseModule):
             return
 
         module = self.loader.get_module(int_name)
-        module.start_cmd(bot, message)
+        await module.start_cmd(bot, message)

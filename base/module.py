@@ -182,7 +182,7 @@ class BaseModule(ABC):
         """
         return None
 
-    def start_cmd(self, bot: Client, message: Message):
+    async def start_cmd(self, bot: Client, message: Message):
         """
         Start command handler, which will be called from main start dispatcher.
         For example: /start BestModule will execute this func in BestModule
