@@ -4,6 +4,7 @@ from base.loader import ModuleLoader
 from base.mod_ext import ModuleExtension
 
 from pyrogram.types import Message
+from pyrogram import Client, filters
 from typing import Type
 
 # Extensions
@@ -39,3 +40,19 @@ class CoreModule(BaseModule):
             text += "\n"
             text += self.S["help"]["footer"]
             await message.reply(text)
+
+    @command("start", filters.regex(r"/start \w+$"))
+    async def start_cmd(self, bot: Client, message: Message):
+        """Execute start for specific module"""
+        self.loader: ModuleLoader
+        modname = message.text.split()[1]
+
+        if modname.lower() == "core":
+            return
+
+        int_name = self.loader.get_int_name(modname)
+        if int_name is None:
+            return
+
+        module = self.loader.get_module(int_name)
+        module.start_cmd(bot, message)

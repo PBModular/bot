@@ -72,6 +72,11 @@ class ModuleLoader:
     def load_everything(self):
         """Load all modules"""
         modules = os.listdir(path="./modules/")
+        # Force core module to load first
+        if "core" in modules:
+            modules.remove("core")
+            modules.insert(0, "core")
+
         for module in modules:
             if os.path.isdir(f"./modules/{module}"):
                 self.load_module(module)
@@ -168,6 +173,14 @@ class ModuleLoader:
         self.__modules.pop(name)
         self.__modules_info.pop(name)
         logger.info(f"Successfully unloaded module {name}!")
+
+    def get_module(self, name: str) -> Optional[BaseModule]:
+        """
+        Get module instance object
+        :param name: Name of Python module inside modules dir
+        :return: Module object
+        """
+        return self.__modules.get(name)
 
     def get_modules_info(self) -> dict[str, ModuleInfo]:
         """
