@@ -6,8 +6,8 @@ from typing import Optional, Union, Callable, Type
 import inspect
 import os
 
-from pyrogram import Client
-from pyrogram import filters
+from pyrogram import Client, filters
+from pyrogram.types import Message
 from pyrogram.filters import Filter
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.handlers.handler import Handler
@@ -143,6 +143,12 @@ class BaseModule(ABC):
                 self.bot.add_handler(handler)
                 self.__handlers.append(handler)
 
+            elif hasattr(func, "bot_msg_filter"):
+                # Func with @message decorator
+                handler = MessageHandler(func, func.bot_msg_filter)
+                self.bot.add_handler(handler)
+                self.__handlers.append(handler)
+
         # Custom handlers
         for handler in ext.custom_handlers if ext else self.custom_handlers:
             self.bot.add_handler(handler)
@@ -175,6 +181,13 @@ class BaseModule(ABC):
         :rtype: MetaData
         """
         return None
+
+    def start_cmd(self, bot: Client, message: Message):
+        """
+        Start command handler, which will be called from main start dispatcher.
+        For example: /start BestModule will execute this func in BestModule
+        :return:
+        """
 
     @property
     def help_page(self) -> Optional[str]:
@@ -226,6 +239,19 @@ def callback_query(filters: Optional[Filter] = None):
     """
     def wrapper(func: Callable):
         func.bot_callback_filter = filters
+        return func
+
+    return wrapper
+
+
+def message(filters: Optional[Filter] = None):
+    """
+    Decorator for registering all messages handler
+    :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters.
+    Highly recommended to set this!
+    """
+    def wrapper(func: Callable):
+        func.bot_msg_filter = filters
         return func
 
     return wrapper
