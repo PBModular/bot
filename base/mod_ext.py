@@ -15,6 +15,7 @@ class ModuleExtension:
         self.rawS = base_mod.rawS
         self.cur_lang = base_mod.cur_lang
         self.loader = base_mod.loader
+        self.logger = base_mod.logger
 
         # Save base ref
         self.__base_mod = base_mod

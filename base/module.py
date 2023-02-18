@@ -47,7 +47,6 @@ class BaseModule(ABC):
     Bot module superclass
     """
     def __init__(self, bot: Client, loaded_info_func: Callable):
-        self.logger = logging.getLogger(__name__)
         self.bot = bot
         self.__loaded_info = loaded_info_func
 
@@ -55,6 +54,8 @@ class BaseModule(ABC):
         info_file = InfoFile.from_yaml_file("./info.yaml")
         self.module_info = info_file.info
         self.module_permissions = info_file.permissions
+
+        self.logger = logging.getLogger(self.module_info.name)
 
         # Load translations if available
         self.cur_lang = config.language
