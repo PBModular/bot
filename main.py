@@ -1,5 +1,3 @@
-import sys
-
 from pyrogram import Client
 from pyrogram.enums import ParseMode
 from pyrogram.errors.exceptions.bad_request_400 import BadRequest

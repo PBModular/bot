@@ -87,7 +87,8 @@ install:
     ✅ <b>Module</b> <code>{0}</code> <b>installed!</b>
     
     <b>Python dependencies for module:</b>
-    {1}Usage help:
+    {1}
+    Usage help:
     <code>/help {0}</code>
 
   end: |

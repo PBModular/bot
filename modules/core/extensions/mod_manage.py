@@ -35,7 +35,7 @@ class ModManageExtension(ModuleExtension):
             return
 
         # Parse info file
-        info_file = InfoFile.from_yaml_file("./info.yaml")
+        info_file = InfoFile.from_yaml_file(f"{os.getcwd()}/modules/{name}/info.yaml")
         info = info_file.info
         permissions = info_file.permissions
 
