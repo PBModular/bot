@@ -54,7 +54,7 @@ ROOT_DIR = os.getcwd()
 
 
 def main(update_conf: bool = False):
-    if config.token:
+    if config.token and config.api_id and config.api_hash:
         # Try to run bot
         try:
             bot = Client(
@@ -87,6 +87,8 @@ def main(update_conf: bool = False):
         bot.run()
     else:
         config.token = input("Input token: ")
+        config.api_id = int(input("Input api_id: "))
+        config.api_hash = input("Input api_hash: ") 
         main(update_conf=True)
 
 
