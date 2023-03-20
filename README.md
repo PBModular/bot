@@ -16,8 +16,8 @@
 
 ## Authors
 
-- [@SanyaPilot](github.com/SanyaPilot)
-- [@CakesTwix](github.com/CakesTwix)
+- [@SanyaPilot](https://github.com/SanyaPilot)
+- [@CakesTwix](https://github.com/CakesTwix)
 
 
 ## Contributing
