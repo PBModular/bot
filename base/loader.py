@@ -1,6 +1,7 @@
 from base.module import BaseModule, ModuleInfo, Permissions
 from base.base_ext import BaseExtension
 from base.db import Database
+from base.db_migration import DBMigration
 from config import config
 
 from pyrogram import Client
@@ -16,6 +17,7 @@ import shutil
 import subprocess
 from urllib.parse import urlparse
 from typing import Optional, Union
+from packaging import version
 
 
 logger = logging.getLogger(__name__)
@@ -255,6 +257,10 @@ class ModuleLoader:
         :return: Exit code and output of git pull
         """
         # Unload first
+        prev_version = self.__modules[name].module_info.version
+        prev_db = self.__modules[name].db
+        prev_db_meta = self.__modules[name].db_meta
+
         self.unload_module(name)
         logger.info(f"Updating {name}!")
 
@@ -277,6 +283,22 @@ class ModuleLoader:
             logger.error(f"Error while updating module {name}!")
             logger.error(f"Printing STDOUT and STDERR:")
             logger.error(p.stdout.decode("utf-8"))
+
+        # Start database migration
+        if prev_db is not None and os.path.exists(f"{self.__root_dir}/{directory}/{name}/db_migrations"):
+            for file in os.listdir(f"{self.__root_dir}/{directory}/{name}/db_migrations"):
+                mig_ver = file.removesuffix(".py")
+                if version.parse(prev_version) < version.parse(mig_ver):
+                    logger.info(f"Migrating database for module {name} to version {mig_ver}...")
+                    imported = importlib.import_module(f"modules.{name}.db_migrations.{mig_ver}")
+                    classes = inspect.getmembers(imported, inspect.isclass)
+                    if len(classes) == 0:
+                        logger.error("Invalid migration! No DBMigration classes found!")
+                        continue
+
+                    obj = classes[0][1]  # Use first detected class
+                    instance: DBMigration = obj()
+                    instance.apply(prev_db.session, prev_db.engine, prev_db_meta)
 
         return p.returncode, p.stdout.decode("utf-8")
 

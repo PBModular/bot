@@ -46,7 +46,7 @@ stdout_handler.setFormatter(ColorFormatter())
 
 handlers = [file_handler, stdout_handler]
 
-logging.basicConfig(level="INFO", handlers=handlers)
+logging.basicConfig(format="%(asctime)s | %(levelname)s | %(name)s %(message)s", level="INFO", handlers=handlers)
 logger = logging.getLogger(__name__)
 
 # Root path
