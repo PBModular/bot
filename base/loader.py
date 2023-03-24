@@ -6,9 +6,9 @@ from config import config
 
 from pyrogram import Client
 import requirements
-from sqlalchemy.orm import Session
-from sqlalchemy import Engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncEngine
 
+import asyncio
 import importlib
 import inspect
 import logging
@@ -30,7 +30,7 @@ class ModuleLoader:
     Modules must be placed into modules/ directory as directories with __init__.py
     """
 
-    def __init__(self, bot: Client, root_dir: str, bot_db_session: Session, bot_db_engine: Engine):
+    def __init__(self, bot: Client, root_dir: str, bot_db_session: async_sessionmaker, bot_db_engine: AsyncEngine):
         self.__bot = bot
         self.__modules: dict[str, BaseModule] = {}
         self.__modules_info: dict[str, ModuleInfo] = {}
@@ -134,7 +134,7 @@ class ModuleLoader:
 
                     if (Permissions.use_db in perms or Permissions.require_db in perms) and config.enable_db:
                         os.chdir(self.__root_dir)
-                        instance.db = Database(name)
+                        asyncio.create_task(instance.set_db(Database(name)))
                         os.chdir(f"./modules/{name}")
 
                     if Permissions.use_loader in perms:

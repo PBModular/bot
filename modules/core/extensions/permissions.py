@@ -26,13 +26,15 @@ class PermissionsExtension(ModuleExtension):
             await message.reply(self.S["allow_cmd"]["command_not_found"])
             return
 
-        db_cmd = self.loader.bot_db_session.scalar(select(CommandPermission).where(CommandPermission.command == cmd))
-        if db_cmd is None:
-            db_cmd = CommandPermission(command=cmd, module=command_registry.get_command_owner(cmd))
-            self.loader.bot_db_session.add(db_cmd)
+        async with self.loader.bot_db_session() as session:
+            db_cmd = await session.scalar(select(CommandPermission).where(CommandPermission.command == cmd))
+            if db_cmd is None:
+                db_cmd = CommandPermission(command=cmd, module=command_registry.get_command_owner(cmd))
+                session.add(db_cmd)
 
-        db_cmd.allowed_for = ":".join(roles)
-        self.loader.bot_db_session.commit()
+            db_cmd.allowed_for = ":".join(roles)
+            await session.commit()
+
         await message.reply(self.S["allow_cmd"]["ok"].format(command=cmd, roles=" ".join(roles)))
 
     @command('reset_perms')
@@ -48,13 +50,14 @@ class PermissionsExtension(ModuleExtension):
             await message.reply(self.S["reset_perms"]["command_not_found"])
             return
 
-        db_cmd = self.loader.bot_db_session.scalar(select(CommandPermission).where(CommandPermission.command == cmd))
-        if db_cmd is None:
-            await message.reply(self.S["reset_perms"]["settings_not_found"])
-            return
+        async with self.loader.bot_db_session() as session:
+            db_cmd = await session.scalar(select(CommandPermission).where(CommandPermission.command == cmd))
+            if db_cmd is None:
+                await message.reply(self.S["reset_perms"]["settings_not_found"])
+                return
 
-        self.loader.bot_db_session.delete(db_cmd)
-        self.loader.bot_db_session.commit()
+            await session.delete(db_cmd)
+            await session.commit()
 
         await message.reply(self.S["reset_perms"]["ok"].format(command=cmd))
 
@@ -77,13 +80,15 @@ class PermissionsExtension(ModuleExtension):
             await message.reply(self.S["set_role"]["reserved_role"])
             return
 
-        db_user = self.loader.bot_db_session.scalar(select(User).where(User.id == user.id))
-        if db_user is None:
-            db_user = User(id=user.id, name=user.username)
-            self.loader.bot_db_session.add(db_user)
+        async with self.loader.bot_db_session() as session:
+            db_user = await session.scalar(select(User).where(User.id == user.id))
+            if db_user is None:
+                db_user = User(id=user.id, name=user.username)
+                session.add(db_user)
 
-        db_user.role = role
-        self.loader.bot_db_session.commit()
+            db_user.role = role
+            await session.commit()
+
         await message.reply(self.S["set_role"]["ok"].format(user=user.username, role=role))
 
     @command('reset_role')
@@ -101,13 +106,14 @@ class PermissionsExtension(ModuleExtension):
             await message.reply(self.S["reset_role"]["user_not_found"])
             return
 
-        db_user = self.loader.bot_db_session.scalar(select(User).where(User.id == user.id))
-        if db_user is None:
-            await message.reply(self.S["reset_role"]["settings_not_found"])
-            return
+        async with self.loader.bot_db_session() as session:
+            db_user = await session.scalar(select(User).where(User.id == user.id))
+            if db_user is None:
+                await message.reply(self.S["reset_role"]["settings_not_found"])
+                return
 
-        self.loader.bot_db_session.delete(db_user)
-        self.loader.bot_db_session.commit()
+            await session.delete(db_user)
+            await session.commit()
 
         await message.reply(self.S["reset_role"]["ok"].format(user=user.username))
 
@@ -119,21 +125,22 @@ class PermissionsExtension(ModuleExtension):
             await message.reply(self.S["perm_settings"]["args_err"])
             return
 
-        if args[1] == "commands":
-            permissions = self.loader.bot_db_session.scalars(select(CommandPermission)).all()
-            if len(permissions) == 0:
-                text = self.S["perm_settings"]["no_perms"]
+        async with self.loader.bot_db_session() as session:
+            if args[1] == "commands":
+                permissions = (await session.scalars(select(CommandPermission))).all()
+                if len(permissions) == 0:
+                    text = self.S["perm_settings"]["no_perms"]
+                else:
+                    text = self.S["perm_settings"]["perms_header"] + "\n"
+                    for perm in permissions:
+                        text += f"/{perm.command}: <code>{perm.allowed_for.replace(':', ' ')}</code>\n"
             else:
-                text = self.S["perm_settings"]["perms_header"] + "\n"
-                for perm in permissions:
-                    text += f"/{perm.command}: <code>{perm.allowed_for.replace(':', ' ')}</code>\n"
-        else:
-            users = self.loader.bot_db_session.scalars(select(User)).all()
-            if len(users) == 0:
-                text = self.S["perm_settings"]["no_roles"]
-            else:
-                text = self.S["perm_settings"]["roles_header"] + "\n"
-                for user in users:
-                    text += f"@{user.name}: <code>{user.role}</code>\n"
+                users = (await session.scalars(select(User))).all()
+                if len(users) == 0:
+                    text = self.S["perm_settings"]["no_roles"]
+                else:
+                    text = self.S["perm_settings"]["roles_header"] + "\n"
+                    for user in users:
+                        text += f"@{user.name}: <code>{user.role}</code>\n"
 
         await message.reply(text)

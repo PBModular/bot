@@ -1,4 +1,4 @@
-from pyrogram import Client
+from pyrogram import Client, idle
 from pyrogram.enums import ParseMode
 from pyrogram.errors.exceptions.bad_request_400 import BadRequest
 import logging
@@ -7,8 +7,7 @@ from config import config, CONF_FILE
 import os
 from logging.handlers import RotatingFileHandler
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from db import Base
 
 
@@ -82,16 +81,24 @@ def main(update_conf: bool = False):
 
         logger.info("Bot starting...")
 
-        engine = create_engine("sqlite:///bot_db.sqlite3")
-        session = Session(engine)
-        Base.metadata.create_all(engine)
-        loader = ModuleLoader(bot, root_dir=ROOT_DIR, bot_db_session=session, bot_db_engine=engine)
+        async def start():
+            # Init database
+            engine = create_async_engine("sqlite+aiosqlite:///bot_db.sqlite3")
+            session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
-        # Load modules
-        loader.load_everything()
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
 
-        # Launch bot
-        bot.run()
+            # Load modules
+            loader = ModuleLoader(bot, root_dir=ROOT_DIR, bot_db_session=session_maker, bot_db_engine=engine)
+            loader.load_everything()
+
+            # Launch bot
+            await bot.start()
+            await idle()
+            await bot.stop()
+
+        bot.run(start())
     else:
         config.token = input("Input token: ")
         config.api_id = int(input("Input api_id: "))

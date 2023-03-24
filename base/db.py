@@ -1,5 +1,4 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from config import config
 import logging
@@ -11,8 +10,8 @@ logger = logging.getLogger(__name__)
 class Database:
     def __init__(self, modname: str):
         try:
-            self.engine = create_engine(self.decide_url(modname))
-            self.session = Session(self.engine)
+            self.engine = create_async_engine(self.decide_url(modname))
+            self.session_maker = async_sessionmaker(self.engine, expire_on_commit=False)
         except:
             logger.error("Failed to initialize database! Disabling for runtime!")
             traceback.print_exc()

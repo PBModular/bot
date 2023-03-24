@@ -169,35 +169,36 @@ class BaseModule(ABC):
 
     @staticmethod
     async def __check_role(flt: Filter, client: Client, update) -> bool:
-        if hasattr(flt.handler, "bot_cmds"):
-            db_command = flt.session.scalar(
-                select(CommandPermission).where(CommandPermission.command == update.text.split()[0][1:])
-            )
-            if db_command is None and not hasattr(flt.handler, "bot_allowed_for"):
+        async with flt.session() as session:
+            if hasattr(flt.handler, "bot_cmds"):
+                db_command = await session.scalar(
+                    select(CommandPermission).where(CommandPermission.command == update.text.split()[0][1:])
+                )
+                if db_command is None and not hasattr(flt.handler, "bot_allowed_for"):
+                    return True
+
+                allowed_to = db_command.allowed_for.split(':') if db_command else flt.handler.bot_allowed_for
+            else:
+                if not hasattr(flt.handler, "bot_allowed_for"):
+                    return True
+
+                allowed_to = flt.handler.bot_allowed_for
+
+            db_user = await session.scalar(select(User).where(User.id == update.from_user.id))
+            if "all" in allowed_to or \
+                    f"@{update.from_user.username}" in allowed_to or \
+                    (db_user is not None and db_user.role in allowed_to):
+                return True
+            if "owner" in allowed_to and (update.from_user.id == config.owner or update.from_user.username == config.owner):
                 return True
 
-            allowed_to = db_command.allowed_for.split(':') if db_command else flt.handler.bot_allowed_for
-        else:
-            if not hasattr(flt.handler, "bot_allowed_for"):
-                return True
+            if "chat_owner" in allowed_to or "chat_admins" in allowed_to:
+                member = await client.get_chat_member(chat_id=update.chat.id, user_id=update.from_user.id)
+                if ("chat_owner" in allowed_to and member.status == ChatMemberStatus.OWNER) or \
+                   ("chat_admins" in allowed_to and member.status == ChatMemberStatus.ADMINISTRATOR):
+                    return True
 
-            allowed_to = flt.handler.bot_allowed_for
-
-        db_user = flt.session.scalar(select(User).where(User.id == update.from_user.id))
-        if "all" in allowed_to or \
-                f"@{update.from_user.username}" in allowed_to or \
-                (db_user is not None and db_user.role in allowed_to):
-            return True
-        if "owner" in allowed_to and (update.from_user.id == config.owner or update.from_user.username == config.owner):
-            return True
-
-        if "chat_owner" in allowed_to or "chat_admins" in allowed_to:
-            member = await client.get_chat_member(chat_id=update.chat.id, user_id=update.from_user.id)
-            if ("chat_owner" in allowed_to and member.status == ChatMemberStatus.OWNER) or \
-               ("chat_admins" in allowed_to and member.status == ChatMemberStatus.ADMINISTRATOR):
-                return True
-
-        return False
+            return False
 
     @property
     def module_extensions(self) -> list[Type]:
@@ -210,14 +211,14 @@ class BaseModule(ABC):
     def db(self):
         return self.__db
 
-    @db.setter
-    def db(self, value):
+    async def set_db(self, value):
         """
         Setter for DB object. Creates tables from db_meta if available
         """
         self.__db = value
         if self.db_meta:
-            self.db_meta.create_all(self.__db.engine)
+            async with self.__db.engine.begin() as conn:
+                await conn.run_sync(self.db_meta.create_all)
 
     @property
     def db_meta(self):

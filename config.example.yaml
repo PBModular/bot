@@ -18,7 +18,7 @@ enable-db: true
 # https://docs.sqlalchemy.org/en/20/tutorial/engine.html#establishing-connectivity-the-engine
 # https://docs.sqlalchemy.org/en/20/dialects/ (Supported backends)
 # https://docs.sqlalchemy.org/en/20/core/engines.html#backend-specific-urls
-db-url: "sqlite://"
+db-url: "sqlite+aiosqlite://"
 
 # SQLite only! Name for database file inside modules directory
 db-file-name: "db.sqlite3"
