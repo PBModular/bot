@@ -7,6 +7,10 @@ from config import config, CONF_FILE
 import os
 from logging.handlers import RotatingFileHandler
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from db import Base
+
 
 # Logger .-.
 class ColorFormatter(logging.Formatter):
@@ -78,7 +82,10 @@ def main(update_conf: bool = False):
 
         logger.info("Bot starting...")
 
-        loader = ModuleLoader(bot, root_dir=ROOT_DIR)
+        engine = create_engine("sqlite:///bot_db.sqlite3")
+        session = Session(engine)
+        Base.metadata.create_all(engine)
+        loader = ModuleLoader(bot, root_dir=ROOT_DIR, bot_db_session=session, bot_db_engine=engine)
 
         # Load modules
         loader.load_everything()

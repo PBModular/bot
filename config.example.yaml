@@ -22,3 +22,6 @@ db-url: "sqlite://"
 
 # SQLite only! Name for database file inside modules directory
 db-file-name: "db.sqlite3"
+
+# Bot owner Telegram ID or username
+owner: "sanyapilot"

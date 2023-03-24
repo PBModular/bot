@@ -10,6 +10,7 @@ from typing import Type
 # Extensions
 from .extensions.mod_manage import ModManageExtension
 from .extensions.logs import LogsExtension
+from .extensions.permissions import PermissionsExtension
 
 
 class CoreModule(BaseModule):
@@ -17,7 +18,8 @@ class CoreModule(BaseModule):
     def module_extensions(self) -> list[Type[ModuleExtension]]:
         return [
             ModManageExtension,
-            LogsExtension
+            LogsExtension,
+            PermissionsExtension
         ]
 
     @command('help')

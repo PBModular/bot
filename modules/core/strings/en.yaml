@@ -165,3 +165,76 @@ update:
 log_file:
   answer_caption_file: 📁 <b>The entire log file as of now</b>
   answer_log_cleared: ♻️ <b>Log file cleared</b>
+
+allow_cmd:
+  args_err: |
+    <b>Command or role isn't specified!</b>
+    
+    Usage:
+    <code>/allow_cmd best_command &lt;role&gt;</code>
+    
+    Where &lt;role&gt; is one of
+    <code>chat_owner</code> - Chat owner
+    <code>chat_admins</code> - Chat admins
+    <code>owner</code> - Bot instance owner
+    <code>all</code> - All users
+    Or any other role name, or username with @
+
+  command_not_found: "<b>Such command is not found!</b>"
+  ok: |
+    <b>Okay!</b>
+    The following permissions were set for the command <code>{command}</code>:
+    <code>{roles}</code>
+
+reset_perms:
+  args_err: |
+    <b>Command is not specified!</b>
+    
+    Usage:
+    <code>/reset_perms best_command</code>
+
+  command_not_found: "<b>Such command is not found!</b>"
+  settings_not_found: "<b>Settings not found!</b>"
+  ok: |
+    <b>Okay!</b>
+    Permissions were reset for the command <code>{command}</code>!
+
+set_role:
+  args_err: |
+    <b>User or role is not specified!</b>
+    
+    Usage:
+    <code>/set_role @best_user &lt;role&gt;</code>
+    
+    Where &lt;role&gt; - role name
+
+  reserved_role: "<b>This role is reserved!</b>"
+  user_not_found: "<b>Such user is not found!</b>"
+  ok: |
+    <b>Okay!</b>
+    The following role was set for the user <code>{user}</code>:
+    <code>{role}</code>
+
+reset_role:
+  args_err: |
+    <b>User is not specified!</b>
+    
+    Usage:
+    <code>/reset_role @best_user</code>
+
+  user_not_found: "<b>Such user is not found!</b>"
+  settings_not_found: "<b>Settings not found!</b>"
+  ok: |
+    <b>Okay!</b>
+    The role was reset for the user <code>{user}</code>!
+
+perm_settings:
+  args_err: |
+    <b>Usage:</b>
+    <code>/perms roles</code>
+    <code>/perms commands</code>
+
+  perms_header: "📄 List of custom permissions for commands:"
+  roles_header: "📄 List of user roles:"
+  no_perms: "❌ <b>No custom permissions!</b>"
+  no_roles: "❌ <b>Roles aren't set!</b>"

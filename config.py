@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from dataclass_wizard import YAMLWizard
 import os
 import shutil
+from typing import Union
 
 CONF_FILE = 'config.yaml'
 
@@ -17,6 +18,7 @@ class Config(YAMLWizard):
     enable_db: bool
     db_url: str
     db_file_name: str
+    owner: Union[int, str]
 
 
 # Load from YAML

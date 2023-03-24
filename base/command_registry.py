@@ -1,3 +1,5 @@
+from typing import Optional
+
 commands: dict[str, list[str]] = {}
 
 
@@ -17,6 +19,14 @@ def check_command(command: str) -> bool:
             return True
 
     return False
+
+
+def get_command_owner(command: str) -> Optional[str]:
+    for owner, cmds in commands.items():
+        if command in cmds:
+            return owner
+
+    return None
 
 
 def remove_all(owner: str) -> bool:

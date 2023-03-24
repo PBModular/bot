@@ -5,8 +5,9 @@ from base.db_migration import DBMigration
 from config import config
 
 from pyrogram import Client
-
 import requirements
+from sqlalchemy.orm import Session
+from sqlalchemy import Engine
 
 import importlib
 import inspect
@@ -29,13 +30,15 @@ class ModuleLoader:
     Modules must be placed into modules/ directory as directories with __init__.py
     """
 
-    def __init__(self, bot: Client, root_dir: str):
+    def __init__(self, bot: Client, root_dir: str, bot_db_session: Session, bot_db_engine: Engine):
         self.__bot = bot
         self.__modules: dict[str, BaseModule] = {}
         self.__modules_info: dict[str, ModuleInfo] = {}
         self.__modules_deps: dict[str, list[str]] = {}
         self.__root_dir = root_dir
         self.__hash_backups: dict[str, str] = {}
+        self.bot_db_session = bot_db_session
+        self.bot_db_engine = bot_db_engine
 
         # Load extensions
         self.__extensions: dict[str, BaseExtension] = {}
@@ -110,7 +113,9 @@ class ModuleLoader:
                         for req in requirements.parse(open("requirements.txt", encoding='utf-8')):
                             self.__modules_deps[name].append(req.name.lower())
 
-                    instance: BaseModule = obj(self.__bot, self.get_modules_info)
+                    instance: BaseModule = obj(
+                        self.__bot, self.get_modules_info, self.bot_db_session, self.bot_db_engine
+                    )
                     perms = instance.module_permissions
                     info = instance.module_info
 
