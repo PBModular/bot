@@ -18,7 +18,7 @@ class Database:
 
     @staticmethod
     def decide_url(modname: str) -> str:
-        if 'sqlite' in config.db_url:
+        if "sqlite" in config.db_url:
             return config.db_url + f"/modules/{modname}/{config.db_file_name}"
         else:
             return config.db_url + f"/{modname}"

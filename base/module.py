@@ -34,9 +34,9 @@ class ModuleInfo:
 
 
 class Permissions(str, Enum):
-    use_db = 'use_db'
-    require_db = 'require_db'
-    use_loader = 'use_loader'
+    use_db = "use_db"
+    require_db = "require_db"
+    use_loader = "use_loader"
 
 
 @dataclass
@@ -49,7 +49,14 @@ class BaseModule(ABC):
     """
     Bot module superclass
     """
-    def __init__(self, bot: Client, loaded_info_func: Callable, bot_db_session: Session, bot_db_engine: Engine):
+
+    def __init__(
+        self,
+        bot: Client,
+        loaded_info_func: Callable,
+        bot_db_session: Session,
+        bot_db_engine: Engine,
+    ):
         self.bot = bot
         self.__loaded_info = loaded_info_func
 
@@ -66,7 +73,9 @@ class BaseModule(ABC):
             files = os.listdir("./strings/")
             self.rawS = {}
             for file in files:
-                self.rawS[file.removesuffix('.yaml')] = yaml.safe_load(open(f"./strings/{file}", encoding="utf-8"))
+                self.rawS[file.removesuffix(".yaml")] = yaml.safe_load(
+                    open(f"./strings/{file}", encoding="utf-8")
+                )
 
             self.logger.info(f"Available translations: {list(self.rawS.keys())}")
             if config.language in self.rawS.keys():
@@ -131,12 +140,19 @@ class BaseModule(ABC):
                         self.logger.warning(
                             f"Command conflict! "
                             f"Module {self.module_info.name} tried to register command {cmd}, which is already used! "
-                            f"Skipping this command")
+                            f"Skipping this command"
+                        )
                     else:
                         command_registry.register_command(self.module_info.name, cmd)
-                        final_filter = (filters.command(cmd) & func.bot_msg_filter
-                                        if func.bot_msg_filter else filters.command(cmd)) &\
-                                        filters.create(self.__check_role, handler=func, session=self.__bot_db_session)
+                        final_filter = (
+                            filters.command(cmd) & func.bot_msg_filter
+                            if func.bot_msg_filter
+                            else filters.command(cmd)
+                        ) & filters.create(
+                            self.__check_role,
+                            handler=func,
+                            session=self.__bot_db_session,
+                        )
 
                         handler = MessageHandler(func, final_filter)
                         self.bot.add_handler(handler)
@@ -144,20 +160,26 @@ class BaseModule(ABC):
 
                         if self.__auto_help is None:
                             self.__auto_help = "Available commands:\n"
-                        self.__auto_help += f"/{cmd}" + (f" - {func.__doc__}" if func.__doc__ else "") + "\n"
+                        self.__auto_help += (
+                            f"/{cmd}"
+                            + (f" - {func.__doc__}" if func.__doc__ else "")
+                            + "\n"
+                        )
 
             elif hasattr(func, "bot_callback_filter"):
                 # Func with @callback_query decorator
-                final_filter = func.bot_callback_filter &\
-                               filters.create(self.__check_role, handler=func, session=self.__bot_db_session)
+                final_filter = func.bot_callback_filter & filters.create(
+                    self.__check_role, handler=func, session=self.__bot_db_session
+                )
                 handler = CallbackQueryHandler(func, final_filter)
                 self.bot.add_handler(handler)
                 self.__handlers.append(handler)
 
             elif hasattr(func, "bot_msg_filter"):
                 # Func with @message decorator
-                final_filter = func.bot_msg_filter &\
-                               filters.create(self.__check_role, handler=func, session=self.__bot_db_session)
+                final_filter = func.bot_msg_filter & filters.create(
+                    self.__check_role, handler=func, session=self.__bot_db_session
+                )
                 handler = MessageHandler(func, final_filter)
                 self.bot.add_handler(handler)
                 self.__handlers.append(handler)
@@ -172,30 +194,50 @@ class BaseModule(ABC):
         async with flt.session() as session:
             if hasattr(flt.handler, "bot_cmds"):
                 db_command = await session.scalar(
-                    select(CommandPermission).where(CommandPermission.command == update.text.split()[0][1:])
+                    select(CommandPermission).where(
+                        CommandPermission.command == update.text.split()[0][1:]
+                    )
                 )
                 if db_command is None and not hasattr(flt.handler, "bot_allowed_for"):
                     return True
 
-                allowed_to = db_command.allowed_for.split(':') if db_command else flt.handler.bot_allowed_for
+                allowed_to = (
+                    db_command.allowed_for.split(":")
+                    if db_command
+                    else flt.handler.bot_allowed_for
+                )
             else:
                 if not hasattr(flt.handler, "bot_allowed_for"):
                     return True
 
                 allowed_to = flt.handler.bot_allowed_for
 
-            db_user = await session.scalar(select(User).where(User.id == update.from_user.id))
-            if "all" in allowed_to or \
-                    f"@{update.from_user.username}" in allowed_to or \
-                    (db_user is not None and db_user.role in allowed_to):
+            db_user = await session.scalar(
+                select(User).where(User.id == update.from_user.id)
+            )
+            if (
+                "all" in allowed_to
+                or f"@{update.from_user.username}" in allowed_to
+                or (db_user is not None and db_user.role in allowed_to)
+            ):
                 return True
-            if "owner" in allowed_to and (update.from_user.id == config.owner or update.from_user.username == config.owner):
+            if "owner" in allowed_to and (
+                update.from_user.id == config.owner
+                or update.from_user.username == config.owner
+            ):
                 return True
 
             if "chat_owner" in allowed_to or "chat_admins" in allowed_to:
-                member = await client.get_chat_member(chat_id=update.chat.id, user_id=update.from_user.id)
-                if ("chat_owner" in allowed_to and member.status == ChatMemberStatus.OWNER) or \
-                   ("chat_admins" in allowed_to and member.status == ChatMemberStatus.ADMINISTRATOR):
+                member = await client.get_chat_member(
+                    chat_id=update.chat.id, user_id=update.from_user.id
+                )
+                if (
+                    "chat_owner" in allowed_to
+                    and member.status == ChatMemberStatus.OWNER
+                ) or (
+                    "chat_admins" in allowed_to
+                    and member.status == ChatMemberStatus.ADMINISTRATOR
+                ):
                     return True
 
             return False
@@ -270,6 +312,7 @@ def command(cmds: Union[list[str], str], filters: Optional[Filter] = None):
     :param cmds: List of commands w/o prefix. It may be a string if there's only one command
     :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters
     """
+
     def wrapper(func: Callable):
         func.bot_cmds = cmds if type(cmds) == list else [cmds]
         func.bot_msg_filter = filters
@@ -283,6 +326,7 @@ def callback_query(filters: Optional[Filter] = None):
     Decorator for registering callback query handlers
     :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters
     """
+
     def wrapper(func: Callable):
         func.bot_callback_filter = filters
         return func
@@ -296,6 +340,7 @@ def message(filters: Optional[Filter] = None):
     :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters.
     Highly recommended to set this!
     """
+
     def wrapper(func: Callable):
         func.bot_msg_filter = filters
         return func
@@ -308,9 +353,9 @@ def allowed_for(roles: list[str]):
     Decorator for built-in permission system. Allows certain roles or users to use this command.
     May be overwritten by user
     """
+
     def wrapper(func: Callable):
         func.bot_allowed_for = roles
         return func
 
     return wrapper
-

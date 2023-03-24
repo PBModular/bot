@@ -12,7 +12,7 @@ from db import CommandPermission, User
 
 
 class PermissionsExtension(ModuleExtension):
-    @command('allow_cmd')
+    @command("allow_cmd")
     async def allow_cmd(self, _, message: Message):
         self.loader: ModuleLoader
         args = message.text.split()
@@ -27,17 +27,23 @@ class PermissionsExtension(ModuleExtension):
             return
 
         async with self.loader.bot_db_session() as session:
-            db_cmd = await session.scalar(select(CommandPermission).where(CommandPermission.command == cmd))
+            db_cmd = await session.scalar(
+                select(CommandPermission).where(CommandPermission.command == cmd)
+            )
             if db_cmd is None:
-                db_cmd = CommandPermission(command=cmd, module=command_registry.get_command_owner(cmd))
+                db_cmd = CommandPermission(
+                    command=cmd, module=command_registry.get_command_owner(cmd)
+                )
                 session.add(db_cmd)
 
             db_cmd.allowed_for = ":".join(roles)
             await session.commit()
 
-        await message.reply(self.S["allow_cmd"]["ok"].format(command=cmd, roles=" ".join(roles)))
+        await message.reply(
+            self.S["allow_cmd"]["ok"].format(command=cmd, roles=" ".join(roles))
+        )
 
-    @command('reset_perms')
+    @command("reset_perms")
     async def reset_perms(self, _, message: Message):
         self.loader: ModuleLoader
         args = message.text.split()
@@ -51,7 +57,9 @@ class PermissionsExtension(ModuleExtension):
             return
 
         async with self.loader.bot_db_session() as session:
-            db_cmd = await session.scalar(select(CommandPermission).where(CommandPermission.command == cmd))
+            db_cmd = await session.scalar(
+                select(CommandPermission).where(CommandPermission.command == cmd)
+            )
             if db_cmd is None:
                 await message.reply(self.S["reset_perms"]["settings_not_found"])
                 return
@@ -61,7 +69,7 @@ class PermissionsExtension(ModuleExtension):
 
         await message.reply(self.S["reset_perms"]["ok"].format(command=cmd))
 
-    @command('set_role')
+    @command("set_role")
     async def set_role_cmd(self, bot: Client, message: Message):
         self.loader: ModuleLoader
         args = message.text.split()
@@ -89,9 +97,11 @@ class PermissionsExtension(ModuleExtension):
             db_user.role = role
             await session.commit()
 
-        await message.reply(self.S["set_role"]["ok"].format(user=user.username, role=role))
+        await message.reply(
+            self.S["set_role"]["ok"].format(user=user.username, role=role)
+        )
 
-    @command('reset_role')
+    @command("reset_role")
     async def reset_role(self, bot: Client, message: Message):
         self.loader: ModuleLoader
         args = message.text.split()
@@ -117,7 +127,7 @@ class PermissionsExtension(ModuleExtension):
 
         await message.reply(self.S["reset_role"]["ok"].format(user=user.username))
 
-    @command('perms')
+    @command("perms")
     async def perm_settings_cmd(self, _, message: Message):
         self.loader: ModuleLoader
         args = message.text.split()

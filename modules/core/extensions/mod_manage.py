@@ -2,7 +2,12 @@ from base.mod_ext import ModuleExtension
 from base.module import command, callback_query, Permissions, InfoFile
 from base.loader import ModuleLoader
 
-from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import (
+    Message,
+    CallbackQuery,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+)
 from pyrogram import filters
 from urllib.parse import urlparse
 import os
@@ -15,7 +20,7 @@ class ModManageExtension(ModuleExtension):
         self.install_confirmations = {}
         self.update_confirmations = {}
 
-    @command('mod_install')
+    @command("mod_install")
     async def mod_install_cmd(self, _, message: Message):
         """Install new module from git repo"""
         self.loader: ModuleLoader
@@ -24,7 +29,7 @@ class ModManageExtension(ModuleExtension):
             return
 
         url = message.text.split()[1]
-        name = urlparse(url).path.split('/')[-1].removesuffix('.git')
+        name = urlparse(url).path.split("/")[-1].removesuffix(".git")
 
         msg = await message.reply(self.S["install"]["start"].format(name))
 
@@ -39,11 +44,12 @@ class ModManageExtension(ModuleExtension):
         info = info_file.info
         permissions = info_file.permissions
 
-        text = self.S["install"]["confirm"].format(
-            name=name,
-            author=info.author,
-            version=info.version
-        ) + "\n"
+        text = (
+            self.S["install"]["confirm"].format(
+                name=name, author=info.author, version=info.version
+            )
+            + "\n"
+        )
 
         # Check for permissions
         perm_list = ""
@@ -58,10 +64,14 @@ class ModManageExtension(ModuleExtension):
         self.install_confirmations[msg.id] = [msg, name]
 
         keyboard = InlineKeyboardMarkup(
-            [[
-                InlineKeyboardButton(self.S["yes_btn"], callback_data=f"install_yes"),
-                InlineKeyboardButton(self.S["no_btn"], callback_data=f"install_no")
-            ]]
+            [
+                [
+                    InlineKeyboardButton(
+                        self.S["yes_btn"], callback_data=f"install_yes"
+                    ),
+                    InlineKeyboardButton(self.S["no_btn"], callback_data=f"install_no"),
+                ]
+            ]
         )
         await msg.edit_text(text, reply_markup=keyboard)
 
@@ -112,7 +122,7 @@ class ModManageExtension(ModuleExtension):
         await call.answer(self.S["install"]["aborted"])
         await msg.delete()
 
-    @command('mod_uninstall')
+    @command("mod_uninstall")
     async def mod_uninstall_cmd(self, _, message: Message):
         """Uninstall module"""
         self.loader: ModuleLoader
@@ -129,7 +139,11 @@ class ModManageExtension(ModuleExtension):
             return
 
         result = self.loader.uninstall_module(int_name)
-        await message.reply((self.S["uninstall"]["ok"] if result else self.S["uninstall"]["err"]).format(name))
+        await message.reply(
+            (
+                self.S["uninstall"]["ok"] if result else self.S["uninstall"]["err"]
+            ).format(name)
+        )
 
     @command("mod_update")
     async def mod_update_cmd(self, _, message: Message):
@@ -162,18 +176,21 @@ class ModManageExtension(ModuleExtension):
 
         # Parse info file
         try:
-            info_file = InfoFile.from_yaml_file(f"{os.getcwd()}/modules/{int_name}/info.yaml")
+            info_file = InfoFile.from_yaml_file(
+                f"{os.getcwd()}/modules/{int_name}/info.yaml"
+            )
         except FileNotFoundError:
             return
 
         info = info_file.info
         permissions = info_file.permissions
 
-        text = self.S["update"]["confirm"].format(
-            name=name,
-            author=info.author,
-            version=info.version
-        ) + "\n"
+        text = (
+            self.S["update"]["confirm"].format(
+                name=name, author=info.author, version=info.version
+            )
+            + "\n"
+        )
 
         # Check for permissions
         perm_list = ""
@@ -186,10 +203,14 @@ class ModManageExtension(ModuleExtension):
             text += self.S["install"]["confirm_warn_perms"]
 
         keyboard = InlineKeyboardMarkup(
-            [[
-                InlineKeyboardButton(self.S["yes_btn"], callback_data=f"update_yes"),
-                InlineKeyboardButton(self.S["no_btn"], callback_data=f"update_no")
-            ]]
+            [
+                [
+                    InlineKeyboardButton(
+                        self.S["yes_btn"], callback_data=f"update_yes"
+                    ),
+                    InlineKeyboardButton(self.S["no_btn"], callback_data=f"update_no"),
+                ]
+            ]
         )
         await msg.edit_text(text, reply_markup=keyboard)
         self.update_confirmations[msg.id] = [msg, name, int_name, old_ver, old_reqs]
@@ -197,14 +218,22 @@ class ModManageExtension(ModuleExtension):
     @callback_query(filters.regex("update_yes"))
     async def update_yes(self, _, call: CallbackQuery):
         self.loader: ModuleLoader
-        msg, name, int_name, old_ver, old_reqs = self.update_confirmations[call.message.id]
+        msg, name, int_name, old_ver, old_reqs = self.update_confirmations[
+            call.message.id
+        ]
         await call.answer()
 
         try_again_keyboard = InlineKeyboardMarkup(
-            [[
-                InlineKeyboardButton(self.S["try_again_btn"], callback_data=f"update_yes"),
-                InlineKeyboardButton(self.S["abort_btn"], callback_data=f"update_no")
-            ]]
+            [
+                [
+                    InlineKeyboardButton(
+                        self.S["try_again_btn"], callback_data=f"update_yes"
+                    ),
+                    InlineKeyboardButton(
+                        self.S["abort_btn"], callback_data=f"update_no"
+                    ),
+                ]
+            ]
         )
 
         reqs_path = f"{os.getcwd()}/modules/{int_name}/requirements.txt"
@@ -225,24 +254,33 @@ class ModManageExtension(ModuleExtension):
             await msg.edit_text(self.S["install"]["down_reqs_next"].format(name))
             code, data = self.loader.install_deps(int_name, "modules")
             if code != 0:
-                await msg.edit_text(self.S["install"]["reqs_err"].format(name, data), reply_markup=try_again_keyboard)
+                await msg.edit_text(
+                    self.S["install"]["reqs_err"].format(name, data),
+                    reply_markup=try_again_keyboard,
+                )
                 return
 
             # Load module
             result = self.loader.load_module(int_name)
             if result is None:
-                await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
+                await msg.edit_text(
+                    self.S["install"]["load_err"].format(name),
+                    reply_markup=try_again_keyboard,
+                )
                 return
 
             # Cleanup
             self.loader.uninstall_packages(del_reqs)
 
             info = self.loader.get_module_info(int_name)
-            text = self.S["update"]["ok"].format(
-                name=result, old_ver=old_ver,
-                new_ver=info.version,
-                url=info.src_url
-            ) + "\n" + self.S["update"]["reqs"] + "\n"
+            text = (
+                self.S["update"]["ok"].format(
+                    name=result, old_ver=old_ver, new_ver=info.version, url=info.src_url
+                )
+                + "\n"
+                + self.S["update"]["reqs"]
+                + "\n"
+            )
 
             for req in data:
                 text += f"- {req}\n"
@@ -254,15 +292,18 @@ class ModManageExtension(ModuleExtension):
             # Load module
             result = self.loader.load_module(int_name)
             if result is None:
-                await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
+                await msg.edit_text(
+                    self.S["install"]["load_err"].format(name),
+                    reply_markup=try_again_keyboard,
+                )
                 return
 
             info = self.loader.get_module_info(int_name)
-            await msg.edit_text(self.S["update"]["ok"].format(
-                name=result, old_ver=old_ver,
-                new_ver=info.version,
-                url=info.src_url
-            ))
+            await msg.edit_text(
+                self.S["update"]["ok"].format(
+                    name=result, old_ver=old_ver, new_ver=info.version, url=info.src_url
+                )
+            )
 
         self.update_confirmations.pop(call.message.id)
 
@@ -294,14 +335,14 @@ class ModManageExtension(ModuleExtension):
 
         info = self.loader.get_module_info(int_name)
         text = self.S["info"]["header"].format(
-            name=info.name,
-            author=info.author,
-            version=info.version
+            name=info.name, author=info.author, version=info.version
         )
 
         if info.src_url:
             text += self.S["info"]["src_url"].format(url=info.src_url)
 
-        text += "\n" + self.S["info"]["description"].format(description=info.description)
+        text += "\n" + self.S["info"]["description"].format(
+            description=info.description
+        )
 
         await message.reply(text, quote=True)

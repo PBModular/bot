@@ -16,13 +16,9 @@ from .extensions.permissions import PermissionsExtension
 class CoreModule(BaseModule):
     @property
     def module_extensions(self) -> list[Type[ModuleExtension]]:
-        return [
-            ModManageExtension,
-            LogsExtension,
-            PermissionsExtension
-        ]
+        return [ModManageExtension, LogsExtension, PermissionsExtension]
 
-    @command('help')
+    @command("help")
     async def help_cmd(self, _, message: Message):
         """Displays help page"""
         if len(message.text.split()) > 1:
@@ -32,7 +28,9 @@ class CoreModule(BaseModule):
             if data is None:
                 await message.reply(self.S["help"]["module_not_found"].format(name))
             else:
-                await message.reply(f"{self.S['help']['module_found'].format(name)}\n\n{data}")
+                await message.reply(
+                    f"{self.S['help']['module_found'].format(name)}\n\n{data}"
+                )
 
         else:
             text = self.S["help"]["header"]

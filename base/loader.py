@@ -30,7 +30,13 @@ class ModuleLoader:
     Modules must be placed into modules/ directory as directories with __init__.py
     """
 
-    def __init__(self, bot: Client, root_dir: str, bot_db_session: async_sessionmaker, bot_db_engine: AsyncEngine):
+    def __init__(
+        self,
+        bot: Client,
+        root_dir: str,
+        bot_db_session: async_sessionmaker,
+        bot_db_engine: AsyncEngine,
+    ):
         self.__bot = bot
         self.__modules: dict[str, BaseModule] = {}
         self.__modules_info: dict[str, ModuleInfo] = {}
@@ -59,7 +65,10 @@ class ModuleLoader:
                     os.chdir(f"./extensions/{ext}")
                     try:
                         # Check for dependencies update / install them
-                        if config.update_deps_at_load and "requirements.txt" in os.listdir():
+                        if (
+                            config.update_deps_at_load
+                            and "requirements.txt" in os.listdir()
+                        ):
                             self.install_deps(ext, "extensions")
 
                         instance: BaseExtension = obj()
@@ -70,7 +79,9 @@ class ModuleLoader:
                         logger.info(f"Successfully loaded extension {name}!")
                         os.chdir("../../")
                     except Exception as e:
-                        logger.error(f"Error at loading extension {ext}! Printing traceback")
+                        logger.error(
+                            f"Error at loading extension {ext}! Printing traceback"
+                        )
                         logger.exception(e)
                         os.chdir(self.__root_dir)
 
@@ -110,29 +121,40 @@ class ModuleLoader:
 
                         # Load dependencies into dict
                         self.__modules_deps[name] = []
-                        for req in requirements.parse(open("requirements.txt", encoding='utf-8')):
+                        for req in requirements.parse(
+                            open("requirements.txt", encoding="utf-8")
+                        ):
                             self.__modules_deps[name].append(req.name.lower())
 
                     instance: BaseModule = obj(
-                        self.__bot, self.get_modules_info, self.bot_db_session, self.bot_db_engine
+                        self.__bot,
+                        self.get_modules_info,
+                        self.bot_db_session,
+                        self.bot_db_engine,
                     )
                     perms = instance.module_permissions
                     info = instance.module_info
 
                     # Don't allow modules with more than 1 word in name
                     if len(info.name.split()) > 1:
-                        logger.warning(f"Module {name} has more than 1 word in name. Fuck developer! I won't load it!")
+                        logger.warning(
+                            f"Module {name} has more than 1 word in name. Fuck developer! I won't load it!"
+                        )
                         del instance
                         os.chdir("../../")
                         return None
 
                     if Permissions.require_db in perms and not config.enable_db:
-                        logger.warning(f"Module {name} requires DB, but it was disabled, skipping!")
+                        logger.warning(
+                            f"Module {name} requires DB, but it was disabled, skipping!"
+                        )
                         del instance
                         os.chdir("../../")
                         return None
 
-                    if (Permissions.use_db in perms or Permissions.require_db in perms) and config.enable_db:
+                    if (
+                        Permissions.use_db in perms or Permissions.require_db in perms
+                    ) and config.enable_db:
                         os.chdir(self.__root_dir)
                         asyncio.create_task(instance.set_db(Database(name)))
                         os.chdir(f"./modules/{name}")
@@ -145,7 +167,9 @@ class ModuleLoader:
                         try:
                             ext.on_module(instance)
                         except Exception as e:
-                            logger.error(f"Extension {ext_name} failed to apply on module {info.name}!")
+                            logger.error(
+                                f"Extension {ext_name} failed to apply on module {info.name}!"
+                            )
                             logger.exception(e)
 
                     # Stage 2
@@ -240,15 +264,16 @@ class ModuleLoader:
         :return: Tuple with exit code and read STDOUT
         """
         logger.info(f"Downloading module from git URL {url}!")
-        name = urlparse(url).path.split('/')[-1].removesuffix('.git')
-        cmd = f"cd {self.__root_dir}/modules\n" \
-              f"git clone {url}"
-        p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        name = urlparse(url).path.split("/")[-1].removesuffix(".git")
+        cmd = f"cd {self.__root_dir}/modules\n" f"git clone {url}"
+        p = subprocess.run(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
 
         if p.returncode != 0:
             logger.error(f"Error while cloning module {name}!")
             logger.error(f"Printing STDOUT and STDERR:")
-            logger.error(p.stdout.decode('utf-8'))
+            logger.error(p.stdout.decode("utf-8"))
             subprocess.run(["rm", f"{self.__root_dir}/modules/{name}"])
 
         return p.returncode, p.stdout.decode("utf-8")
@@ -270,9 +295,10 @@ class ModuleLoader:
         logger.info(f"Updating {name}!")
 
         # Backup
-        hash_cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" \
-                   f"git rev-parse HEAD"
-        hash_p = subprocess.run(hash_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        hash_cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" f"git rev-parse HEAD"
+        hash_p = subprocess.run(
+            hash_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
         if hash_p.returncode != 0:
             logger.error(f"Wtf, failed to retrieve HEAD hash... STDOUT below")
             logger.error(hash_p.stdout.decode("utf-8"))
@@ -280,9 +306,10 @@ class ModuleLoader:
 
         self.__hash_backups[name] = hash_p.stdout.decode("utf-8")
 
-        cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" \
-              f"git pull"
-        p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" f"git pull"
+        p = subprocess.run(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
 
         if p.returncode != 0:
             logger.error(f"Error while updating module {name}!")
@@ -290,12 +317,20 @@ class ModuleLoader:
             logger.error(p.stdout.decode("utf-8"))
 
         # Start database migration
-        if prev_db is not None and os.path.exists(f"{self.__root_dir}/{directory}/{name}/db_migrations"):
-            for file in os.listdir(f"{self.__root_dir}/{directory}/{name}/db_migrations"):
+        if prev_db is not None and os.path.exists(
+            f"{self.__root_dir}/{directory}/{name}/db_migrations"
+        ):
+            for file in os.listdir(
+                f"{self.__root_dir}/{directory}/{name}/db_migrations"
+            ):
                 mig_ver = file.removesuffix(".py")
                 if version.parse(prev_version) < version.parse(mig_ver):
-                    logger.info(f"Migrating database for module {name} to version {mig_ver}...")
-                    imported = importlib.import_module(f"modules.{name}.db_migrations.{mig_ver}")
+                    logger.info(
+                        f"Migrating database for module {name} to version {mig_ver}..."
+                    )
+                    imported = importlib.import_module(
+                        f"modules.{name}.db_migrations.{mig_ver}"
+                    )
                     classes = inspect.getmembers(imported, inspect.isclass)
                     if len(classes) == 0:
                         logger.error("Invalid migration! No DBMigration classes found!")
@@ -315,12 +350,18 @@ class ModuleLoader:
         :return: Boolean (success or not)
         """
         try:
-            cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" \
-                  f"git reset --hard {self.__hash_backups[name]}"
-            p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            cmd = (
+                f"cd {self.__root_dir}/{directory}/{name}/\n"
+                f"git reset --hard {self.__hash_backups[name]}"
+            )
+            p = subprocess.run(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
 
             if p.returncode != 0:
-                logger.error(f"Failed to revert update of module {name}! Printing STDOUT")
+                logger.error(
+                    f"Failed to revert update of module {name}! Printing STDOUT"
+                )
                 logger.error(p.stdout.decode("utf-8"))
                 return False
 
@@ -339,15 +380,24 @@ class ModuleLoader:
         """
         logger.info(f"Upgrading dependencies for {name}!")
         r = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", "-r",
-             f"{self.__root_dir}/{directory}/{name}/requirements.txt"],
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "-U",
+                "-r",
+                f"{self.__root_dir}/{directory}/{name}/requirements.txt",
+            ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT,
         )
         if r.returncode != 0:
-            logger.error(f"Error at upgrading deps for {name}!\nPip output:\n"
-                         f"{r.stdout.decode('utf-8')}")
-            return r.returncode, r.stdout.decode('utf-8')
+            logger.error(
+                f"Error at upgrading deps for {name}!\nPip output:\n"
+                f"{r.stdout.decode('utf-8')}"
+            )
+            return r.returncode, r.stdout.decode("utf-8")
         else:
             logger.info(f"Deps upgraded successfully!")
             with open(f"{self.__root_dir}/{directory}/{name}/requirements.txt") as f:
@@ -377,7 +427,7 @@ class ModuleLoader:
             subprocess.run(
                 [sys.executable, "-m", "pip", "uninstall", "-y", mod_dep],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT,
             )
 
     def uninstall_packages(self, pkgs: list[str]):
@@ -393,7 +443,7 @@ class ModuleLoader:
             subprocess.run(
                 [sys.executable, "-m", "pip", "uninstall", "-y", dep],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT,
             )
 
     def uninstall_module(self, name: str) -> bool:

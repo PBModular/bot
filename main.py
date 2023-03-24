@@ -18,30 +18,34 @@ class ColorFormatter(logging.Formatter):
         logging.INFO: "\u001b[32;1m",
         logging.WARN: "\u001b[1m\u001b[33;1m",
         logging.ERROR: "\u001b[1m\u001b[31;1m",
-        logging.CRITICAL: "\u001b[1m\u001b[31;1m"
+        logging.CRITICAL: "\u001b[1m\u001b[31;1m",
     }
     text_colors = {
         logging.DEBUG: "",
         logging.INFO: "",
         logging.WARN: "\u001b[33m",
         logging.ERROR: "\u001b[31m",
-        logging.CRITICAL: "\u001b[31m"
+        logging.CRITICAL: "\u001b[31m",
     }
     name_color = "\u001b[37;1m"
     reset = "\u001b[0m"
     text_spacing = "\t" * 8
 
     def format(self, record: logging.LogRecord) -> str:
-        f = f'%(asctime)s | ' \
-            f'{self.status_colors[record.levelno]}%(levelname)s{self.reset} | ' \
-            f'{self.name_color}%(name)s{self.reset} ' \
-            f'\r{self.text_spacing}{self.text_colors[record.levelno]}%(message)s{self.reset}'
+        f = (
+            f"%(asctime)s | "
+            f"{self.status_colors[record.levelno]}%(levelname)s{self.reset} | "
+            f"{self.name_color}%(name)s{self.reset} "
+            f"\r{self.text_spacing}{self.text_colors[record.levelno]}%(message)s{self.reset}"
+        )
 
         return logging.Formatter(f).format(record)
 
 
 # File/Console Logger
-file_handler = RotatingFileHandler(filename='bot.log', maxBytes=128*1024)  # 128 MB limit
+file_handler = RotatingFileHandler(
+    filename="bot.log", maxBytes=128 * 1024
+)  # 128 MB limit
 
 stdout_handler = logging.StreamHandler()
 stdout_handler.setLevel(logging.DEBUG)
@@ -49,7 +53,11 @@ stdout_handler.setFormatter(ColorFormatter())
 
 handlers = [file_handler, stdout_handler]
 
-logging.basicConfig(format="%(asctime)s | %(levelname)s | %(name)s %(message)s", level="INFO", handlers=handlers)
+logging.basicConfig(
+    format="%(asctime)s | %(levelname)s | %(name)s %(message)s",
+    level="INFO",
+    handlers=handlers,
+)
 logger = logging.getLogger(__name__)
 
 # Root path
@@ -65,7 +73,7 @@ def main(update_conf: bool = False):
                 api_id=config.api_id,
                 api_hash=config.api_hash,
                 bot_token=config.token,
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
             )
 
         # Reset token and again run main
@@ -90,7 +98,12 @@ def main(update_conf: bool = False):
                 await conn.run_sync(Base.metadata.create_all)
 
             # Load modules
-            loader = ModuleLoader(bot, root_dir=ROOT_DIR, bot_db_session=session_maker, bot_db_engine=engine)
+            loader = ModuleLoader(
+                bot,
+                root_dir=ROOT_DIR,
+                bot_db_session=session_maker,
+                bot_db_engine=engine,
+            )
             loader.load_everything()
 
             # Launch bot
@@ -102,7 +115,7 @@ def main(update_conf: bool = False):
     else:
         config.token = input("Input token: ")
         config.api_id = int(input("Input api_id: "))
-        config.api_hash = input("Input api_hash: ") 
+        config.api_hash = input("Input api_hash: ")
         main(update_conf=True)
 
 

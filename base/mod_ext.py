@@ -8,6 +8,7 @@ class ModuleExtension:
     """
     Module extension for BaseModule. Allows to split code in several files
     """
+
     def __init__(self, base_mod: BaseModule):
         # Inherit some attrs from BaseModule object
         self.bot = base_mod.bot

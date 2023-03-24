@@ -4,7 +4,7 @@ import os
 import shutil
 from typing import Union
 
-CONF_FILE = 'config.yaml'
+CONF_FILE = "config.yaml"
 
 
 @dataclass
@@ -22,7 +22,7 @@ class Config(YAMLWizard):
 
 
 # Load from YAML
-if CONF_FILE not in os.listdir('./'):
-    shutil.copy('config.example.yaml', CONF_FILE)
+if CONF_FILE not in os.listdir("./"):
+    shutil.copy("config.example.yaml", CONF_FILE)
 
 config = Config.from_yaml_file(CONF_FILE)
