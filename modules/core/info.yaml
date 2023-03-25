@@ -1,7 +1,7 @@
 info:
   name: Core
   author: Developers
-  version: 0.0.1
+  version: 1.0.0
   description: Module with core functionality like managing other modules, reading logs
 
 # Use raw loader object. Very dangerous permission!

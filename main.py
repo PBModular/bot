@@ -132,6 +132,8 @@ if __name__ == "__main__":
 
 
 
+    Version 1.0.0-rc1
+    Date: 26.03.2023
     """
     )
     main(update_conf=False)
