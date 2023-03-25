@@ -1,5 +1,5 @@
 from base.mod_ext import ModuleExtension
-from base.module import command
+from base.module import command, allowed_for
 from base import command_registry
 from base.loader import ModuleLoader
 
@@ -12,6 +12,7 @@ from db import CommandPermission, User
 
 
 class PermissionsExtension(ModuleExtension):
+    @allowed_for("owner")
     @command("allow_cmd")
     async def allow_cmd(self, _, message: Message):
         self.loader: ModuleLoader
@@ -43,6 +44,7 @@ class PermissionsExtension(ModuleExtension):
             self.S["allow_cmd"]["ok"].format(command=cmd, roles=" ".join(roles))
         )
 
+    @allowed_for("owner")
     @command("reset_perms")
     async def reset_perms(self, _, message: Message):
         self.loader: ModuleLoader
@@ -69,6 +71,7 @@ class PermissionsExtension(ModuleExtension):
 
         await message.reply(self.S["reset_perms"]["ok"].format(command=cmd))
 
+    @allowed_for("owner")
     @command("set_role")
     async def set_role_cmd(self, bot: Client, message: Message):
         self.loader: ModuleLoader
@@ -101,6 +104,7 @@ class PermissionsExtension(ModuleExtension):
             self.S["set_role"]["ok"].format(user=user.username, role=role)
         )
 
+    @allowed_for("owner")
     @command("reset_role")
     async def reset_role(self, bot: Client, message: Message):
         self.loader: ModuleLoader
@@ -127,6 +131,7 @@ class PermissionsExtension(ModuleExtension):
 
         await message.reply(self.S["reset_role"]["ok"].format(user=user.username))
 
+    @allowed_for("owner")
     @command("perms")
     async def perm_settings_cmd(self, _, message: Message):
         self.loader: ModuleLoader

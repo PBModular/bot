@@ -348,14 +348,14 @@ def message(filters: Optional[Filter] = None):
     return wrapper
 
 
-def allowed_for(roles: list[str]):
+def allowed_for(roles: Union[list[str], str]):
     """
     Decorator for built-in permission system. Allows certain roles or users to use this command.
     May be overwritten by user
     """
 
     def wrapper(func: Callable):
-        func.bot_allowed_for = roles
+        func.bot_allowed_for = roles if type(roles) == roles else [roles]
         return func
 
     return wrapper

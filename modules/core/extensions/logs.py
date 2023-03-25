@@ -1,10 +1,11 @@
 from base.mod_ext import ModuleExtension
-from base.module import command
+from base.module import command, allowed_for
 
 from pyrogram.types import Message
 
 
 class LogsExtension(ModuleExtension):
+    @allowed_for("owner")
     @command("logs")
     async def logs_cmd(self, _, message: Message):
         """Get logs in a message"""
@@ -14,6 +15,7 @@ class LogsExtension(ModuleExtension):
                 logs += line
         await message.reply(f"<code>{logs}</code>")
 
+    @allowed_for("owner")
     @command("log_file")
     async def log_file_cmd(self, _, message: Message):
         """Get logs as a file"""
@@ -21,6 +23,7 @@ class LogsExtension(ModuleExtension):
             "bot.log", caption=self.S["log_file"]["answer_caption_file"]
         )
 
+    @allowed_for("owner")
     @command("clear_log")
     async def clear_log_cmd(self, _, message: Message):
         """Clear logfile"""

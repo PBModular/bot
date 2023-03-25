@@ -1,5 +1,5 @@
 from base.mod_ext import ModuleExtension
-from base.module import command, callback_query, Permissions, InfoFile
+from base.module import command, callback_query, allowed_for, Permissions, InfoFile
 from base.loader import ModuleLoader
 
 from pyrogram.types import (
@@ -20,6 +20,7 @@ class ModManageExtension(ModuleExtension):
         self.install_confirmations = {}
         self.update_confirmations = {}
 
+    @allowed_for("owner")
     @command("mod_install")
     async def mod_install_cmd(self, _, message: Message):
         """Install new module from git repo"""
@@ -75,6 +76,7 @@ class ModManageExtension(ModuleExtension):
         )
         await msg.edit_text(text, reply_markup=keyboard)
 
+    @allowed_for("owner")
     @callback_query(filters.regex("install_yes"))
     async def install_yes(self, _, call: CallbackQuery):
         msg, name = self.install_confirmations[call.message.id]
@@ -113,6 +115,7 @@ class ModManageExtension(ModuleExtension):
 
             await msg.edit_text(self.S["install"]["end"].format(result))
 
+    @allowed_for("owner")
     @callback_query(filters.regex("install_no"))
     async def install_no(self, _, call: CallbackQuery):
         msg, name = self.install_confirmations[call.message.id]
@@ -122,6 +125,7 @@ class ModManageExtension(ModuleExtension):
         await call.answer(self.S["install"]["aborted"])
         await msg.delete()
 
+    @allowed_for("owner")
     @command("mod_uninstall")
     async def mod_uninstall_cmd(self, _, message: Message):
         """Uninstall module"""
@@ -145,6 +149,7 @@ class ModManageExtension(ModuleExtension):
             ).format(name)
         )
 
+    @allowed_for("owner")
     @command("mod_update")
     async def mod_update_cmd(self, _, message: Message):
         """Update module to the upstream version"""
@@ -215,6 +220,7 @@ class ModManageExtension(ModuleExtension):
         await msg.edit_text(text, reply_markup=keyboard)
         self.update_confirmations[msg.id] = [msg, name, int_name, old_ver, old_reqs]
 
+    @allowed_for("owner")
     @callback_query(filters.regex("update_yes"))
     async def update_yes(self, _, call: CallbackQuery):
         self.loader: ModuleLoader
@@ -307,6 +313,7 @@ class ModManageExtension(ModuleExtension):
 
         self.update_confirmations.pop(call.message.id)
 
+    @allowed_for("owner")
     @callback_query(filters.regex("update_no"))
     async def update_no(self, _, call: CallbackQuery):
         msg, name, int_name, _, _ = self.update_confirmations[call.message.id]
@@ -318,6 +325,7 @@ class ModManageExtension(ModuleExtension):
         await call.answer(self.S["update"]["abort"])
         await msg.delete()
 
+    @allowed_for("owner")
     @command("mod_info")
     async def mod_info_cmd(self, _, message: Message):
         """Displays full info about module"""
