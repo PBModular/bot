@@ -4,3 +4,4 @@ __pycache__/
 config.yaml
 bot.log
 bot.session*
+bot_db.sqlite3
