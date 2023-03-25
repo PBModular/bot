@@ -197,7 +197,7 @@ class ModuleLoader:
 
     def unload_module(self, name: str):
         """
-        Method for unloading modules. Note: restart is a mandatory!
+        Method for unloading modules.
         :param name: Name of Python module inside modules dir
         """
         self.__modules[name].unregister_all()
@@ -315,6 +315,7 @@ class ModuleLoader:
             logger.error(f"Error while updating module {name}!")
             logger.error(f"Printing STDOUT and STDERR:")
             logger.error(p.stdout.decode("utf-8"))
+            return p.returncode, p.stdout.decode("utf-8")
 
         # Start database migration
         if prev_db is not None and os.path.exists(
