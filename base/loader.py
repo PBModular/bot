@@ -103,6 +103,19 @@ class ModuleLoader:
 
         :param name: Name of Python module inside modules dir
         """
+        os.chdir(f"./modules/{name}")
+        if "requirements.txt" in os.listdir():
+            # Check for dependencies update / install them
+            if config.update_deps_at_load:
+                self.install_deps(name, "modules")
+
+            # Load dependencies into dict
+            self.__modules_deps[name] = []
+            for req in requirements.parse(
+                    open("requirements.txt", encoding="utf-8")
+            ):
+                self.__modules_deps[name].append(req.name.lower())
+
         try:
             imported = importlib.import_module("modules." + name)
         except ImportError as e:
@@ -112,20 +125,7 @@ class ModuleLoader:
 
         for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
             if BaseModule in inspect.getmro(obj):
-                os.chdir(f"./modules/{name}")
                 try:
-                    if "requirements.txt" in os.listdir():
-                        # Check for dependencies update / install them
-                        if config.update_deps_at_load:
-                            self.install_deps(name, "modules")
-
-                        # Load dependencies into dict
-                        self.__modules_deps[name] = []
-                        for req in requirements.parse(
-                            open("requirements.txt", encoding="utf-8")
-                        ):
-                            self.__modules_deps[name].append(req.name.lower())
-
                     instance: BaseModule = obj(
                         self.__bot,
                         self.get_modules_info,
