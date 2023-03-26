@@ -8,24 +8,24 @@ help:
     Hello! Thanks for using PBModular (name is temporary)
     You can get help for modules' commands using
     <code>/help &lt;name&gt;</code>
-    
+
     📥 <b>Loaded modules:</b>
 
   footer: |
     Repository on GitHub: https://github.com/PBModular/bot
     Star it please 😊
 
-  module_found: "📄 <b>Help for module {0}:</b>"
-  module_not_found: "There's no help page for <b>{0}</b> module..."
+  module_found: "\U0001F4C4 <b>Help for module {0}:</b>"
+  module_not_found: "There's no help page for <b>{0}</b> module…"
 
 info:
   args_err: |
     <b>Empty module name!</b>
-    
+
     Usage:
     <code>/mod_info BestModule</code>
 
-  not_found: Hmm... I can't find this module!
+  not_found: Hmm… I can't find this module!
 
   header: |
     📄 <b>Module</b> <code>{name}</code> <b>info</b>:
@@ -48,14 +48,14 @@ install:
 
   args_err: |
     <b>Empty module URL!</b>
-    
+
     Usage:
     <code>/mod_install https://github.com/SanyaPilot/best_module</code>
 
   start: |
-    🛠 <b>Installing module</b> <code>{0}</code><b>...</b>
-    
-    Please wait...
+    🛠 <b>Installing module</b> <code>{0}</code><b>…</b>
+
+    Please wait…
 
   confirm: |
     <b>Are you sure to install module</b> <code>{name}</code><b>?</b>
@@ -66,26 +66,27 @@ install:
     Requested permissions:
     {perms}
 
-  confirm_warn_perms: "<b>Warning!</b> This module requests dangerous permissions (With ⚠ sign)!"
+  confirm_warn_perms: "<b>Warning!</b> This module requests dangerous permissions\
+    \ (With ⚠ sign)!"
 
   down_reqs_next: |
     🛠 <b>Module</b> <code>{0}</code> <b>downloaded!</b>
 
-    Installing dependencies...
+    Installing dependencies…
 
   down_end_next: |
     🛠 <b>Module</b> <code>{0}</code> <b>downloaded!</b>
-    
-    Loading module...
+
+    Loading module…
 
   reqs_ok: |
     🛠 <b>Dependencies for module</b> <code>{0}</code> <b>installed!</b>
-    
-    Loading module...
+
+    Loading module…
 
   end_reqs: |
     ✅ <b>Module</b> <code>{0}</code> <b>installed!</b>
-    
+
     <b>Python dependencies for module:</b>
     {1}
     Usage help:
@@ -93,7 +94,7 @@ install:
 
   end: |
     ✅ <b>Module</b> <code>{0}</code> <b>installed!</b>
-    
+
     Usage help:
     <code>/help {0}</code>
 
@@ -101,16 +102,16 @@ install:
 
   down_err: |
     ❌ <b>Module download error</b> <code>{0}</code><b>!</b>
-    
+
     git clone command output:
     <code>{1}</code>
 
   reqs_err: |
     ❌ <b>Dependencies for module</b> <code>{0}</code> <b>failed to install!</b>
-    
+
     Output of pip install command:
     <code>{1}</code>
-    
+
     If error is not related to your setup, contact developer and supply this info:
     - Python version
     - Bot version
@@ -118,7 +119,7 @@ install:
 
   load_err: |
     ❌ <b>Module load error</b> <code>{0}</code><b>!</b>
-    
+
     Check error in bot log. Contact developer and supply this info:
     - Python version
     - Bot version
@@ -127,7 +128,7 @@ install:
 uninstall:
   args_err: |
     <b>Empty module name!</b>
-    
+
     Usage:
     <code>/mod_uninstall BestModule</code>
 
@@ -138,7 +139,7 @@ uninstall:
 update:
   args_err: |
     <b>Empty module name!</b>
-    
+
     Usage:
     <code>/mod_update BestModule</code>
 
@@ -149,13 +150,13 @@ update:
 
   err: |
     ❌ <b>Error while updating module</b> <code>{name}</code><b>!</b>
-    
+
     <code>git pull</code> output:
     {out}
 
   ok: |
     ✅ <b>Module</b> <code>{name}</code> <b>updated!</b>
-    
+
     <b>Version</b> {old_ver} -> {new_ver}
     <b>Repository URL:</b> {url}
 
@@ -169,10 +170,10 @@ log_file:
 allow_cmd:
   args_err: |
     <b>Command or role isn't specified!</b>
-    
+
     Usage:
     <code>/allow_cmd best_command &lt;role&gt;</code>
-    
+
     Where &lt;role&gt; is one of
     <code>chat_owner</code> - Chat owner
     <code>chat_admins</code> - Chat admins
@@ -189,7 +190,7 @@ allow_cmd:
 reset_perms:
   args_err: |
     <b>Command is not specified!</b>
-    
+
     Usage:
     <code>/reset_perms best_command</code>
 
@@ -202,10 +203,10 @@ reset_perms:
 set_role:
   args_err: |
     <b>User or role is not specified!</b>
-    
+
     Usage:
     <code>/set_role @best_user &lt;role&gt;</code>
-    
+
     Where &lt;role&gt; - role name
 
   reserved_role: "<b>This role is reserved!</b>"
@@ -218,7 +219,7 @@ set_role:
 reset_role:
   args_err: |
     <b>User is not specified!</b>
-    
+
     Usage:
     <code>/reset_role @best_user</code>
 
@@ -234,7 +235,7 @@ perm_settings:
     <code>/perms roles</code>
     <code>/perms commands</code>
 
-  perms_header: "📄 List of custom permissions for commands:"
-  roles_header: "📄 List of user roles:"
+  perms_header: "\U0001F4C4 List of custom permissions for commands:"
+  roles_header: "\U0001F4C4 List of user roles:"
   no_perms: "❌ <b>No custom permissions!</b>"
   no_roles: "❌ <b>Roles aren't set!</b>"
