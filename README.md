@@ -1,4 +1,4 @@
-![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows11&logoColor=white)
 
 # PBModular
 
@@ -10,7 +10,7 @@
 ## Features
 
 - Modularity
-- Linux support >.<
+- Linux (and occasionally Windows) support >.<
 - Open Source, lol
 
 ## Authors
@@ -27,6 +27,8 @@ Contributions are always welcome!
 [GNU GPLv3](https://github.com/SanyaPilot/PBModular/blob/master/LICENSE)
 
 ## Installation
+
+> You can use `install.sh` bash installation script (thanks to @vilander1337) or proceed with manual installation below
 
 1. Clone repository  
    
@@ -77,4 +79,5 @@ WantedBy=multi-user.target
 
 English wiki is in progress now... Currently the only available language is russian.
 
-
+## Windows support
+It should be mentioned that Windows support is not gueranteed at all! Something can break randomly just because we are writing for *nix environment.
