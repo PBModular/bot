@@ -403,7 +403,9 @@ class ModuleLoader:
             logger.info(f"Deps upgraded successfully!")
             with open(f"{self.__root_dir}/{directory}/{name}/requirements.txt") as f:
                 reqs = [dep.removesuffix("\n") for dep in f]
-                if reqs[-1] == "":
+                if not reqs:
+                    logger.warning(f"{name} requirements.txt is empty")
+                elif reqs[-1] == "":
                     reqs.pop(-1)
 
                 return r.returncode, reqs
