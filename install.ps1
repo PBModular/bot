@@ -12,6 +12,10 @@ git clone https://github.com/PBModular/bot PBModular
 
 cd PBModular
 
+python -m venv venv
+
+source venv/bin/activate
+
 pip install -r requirements.txt
 
 Copy-Item config.example.yaml config.yaml
