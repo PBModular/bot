@@ -219,6 +219,8 @@ class BaseModule(ABC):
                 "all" in allowed_to
                 or f"@{update.from_user.username}" in allowed_to
                 or (db_user is not None and db_user.role in allowed_to)
+                or update.from_user.username == config.owner
+                or update.from_user.id == config.owner
             ):
                 return True
             if "owner" in allowed_to and (
