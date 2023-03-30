@@ -6,6 +6,7 @@ from base.mod_ext import ModuleExtension
 from pyrogram.types import Message
 from pyrogram import Client, filters
 from typing import Type
+import time
 
 # Extensions
 from .extensions.mod_manage import ModManageExtension
@@ -40,6 +41,18 @@ class CoreModule(BaseModule):
             text += "\n"
             text += self.S["help"]["footer"]
             await message.reply(text)
+
+    @command("ping")
+    async def ping_cmd(self, _: Client, message: Message):
+        """Execute a ping to get the processing time"""
+        start_time = time.perf_counter()
+        response_message = await message.reply("pong!")
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+
+        formatted_time = f"{elapsed_time * 1000:.2f} ms"
+        response_text = self.S["ping"]["response"].format(time=formatted_time, locale=self.cur_lang)
+        await response_message.edit(response_text)
 
     @command("start", filters.regex(r"/start \w+$"))
     async def start_cmd(self, bot: Client, message: Message):

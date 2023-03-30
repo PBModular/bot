@@ -124,6 +124,9 @@ install:
     - Python version
     - Bot version
     - Error from log
+    
+ping:
+  response: "Pong! It took {time} to process"
 
 uninstall:
   args_err: |
