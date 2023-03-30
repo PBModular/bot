@@ -1,3 +1,5 @@
+Set-ExecutionPolicy Unrestricted
+
 Clear-Host
 
 Write-Output "
@@ -14,7 +16,7 @@ cd PBModular
 
 python -m venv venv
 
-source venv/bin/activate
+.\venv\Scripts\activate.ps1
 
 pip install -r requirements.txt
 
