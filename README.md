@@ -10,7 +10,11 @@
 ## Features
 
 - Modularity
-- Linux (and occasionally Windows) support >.<
+
+- Linux, Windows and Android (Termux) support >.<
+
+  > To work on Windows and Android, you must remove the uvloop dependency from the requrements.txt before installing
+
 - Open Source, lol
 
 ## Authors
