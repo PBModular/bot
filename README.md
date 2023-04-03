@@ -34,6 +34,11 @@ Contributions are always welcome!
 
 > You can use `install.sh` bash installation script (thanks to @vilander1337) or proceed with manual installation below
 
+  ```bash
+  sh -c "$(curl -fsSL https://raw.githubusercontent.com/pbmodular/bot/master/install.sh)"
+  ```
+## Manual installation
+
 1. Clone repository  
    
    ```bash
