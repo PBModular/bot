@@ -263,6 +263,7 @@ class BaseModule(ABC):
         if self.db_meta:
             async with self.__db.engine.begin() as conn:
                 await conn.run_sync(self.db_meta.create_all)
+                await self.on_db_ready()
 
     @property
     def db_meta(self):
@@ -297,6 +298,10 @@ class BaseModule(ABC):
 
     def on_init(self):
         """Called when module should initialize itself. Optional"""
+        pass
+
+    async def on_db_ready(self):
+        """Called when module's database is fully initialized. Optional"""
         pass
 
     @property
