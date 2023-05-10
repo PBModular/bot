@@ -36,11 +36,13 @@ read -p "Enter bot token: " bottoken
 read -p "Enter API ID: " api_id
 read -p "Enter API Hash: " api_hash
 read -p "Enter ur telegram username/id: " username
+read -p "Chose your language (ru/en/ua): " language
 
 sed -i 's/token: null/token: '"$bottoken"'/' config.yaml
 sed -i 's/api-id: null/api-id: '"$api_id"'/' config.yaml
 sed -i 's/api-hash: null/api-hash: '"$api_hash"'/' config.yaml
 sed -i 's/owner: "sanyapilot"/owner: "'"$username"'"/' config.yaml
+sed -i 's/language: ru/language: '"$language"'/' config.yaml
 
 clear
 
