@@ -5,41 +5,73 @@ import logging
 from base.loader import ModuleLoader
 from config import config, CONF_FILE
 import os
+import platform    # for system detect
 from logging.handlers import RotatingFileHandler
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from db import Base
 
+operating_system = platform.system()   # for system detect
 
-# Logger .-.
-class ColorFormatter(logging.Formatter):
-    status_colors = {
-        logging.DEBUG: "",
-        logging.INFO: "\u001b[32;1m",
-        logging.WARN: "\u001b[1m\u001b[33;1m",
-        logging.ERROR: "\u001b[1m\u001b[31;1m",
-        logging.CRITICAL: "\u001b[1m\u001b[31;1m",
-    }
-    text_colors = {
-        logging.DEBUG: "",
-        logging.INFO: "",
-        logging.WARN: "\u001b[33m",
-        logging.ERROR: "\u001b[31m",
-        logging.CRITICAL: "\u001b[31m",
-    }
-    name_color = "\u001b[37;1m"
-    reset = "\u001b[0m"
-    text_spacing = "\t" * 8
+if operating_system == "Linux":     # logger for linux distros
+    class ColorFormatter(logging.Formatter):
+        status_colors = {
+            logging.DEBUG: "",
+            logging.INFO: "\u001b[32;1m",
+            logging.WARN: "\u001b[1m\u001b[33;1m",
+            logging.ERROR: "\u001b[1m\u001b[31;1m",
+            logging.CRITICAL: "\u001b[1m\u001b[31;1m",
+        }
+        text_colors = {
+            logging.DEBUG: "",
+            logging.INFO: "",
+            logging.WARN: "\u001b[33m",
+            logging.ERROR: "\u001b[31m",
+            logging.CRITICAL: "\u001b[31m",
+        }
+        name_color = "\u001b[37;1m"
+        reset = "\u001b[0m"
+        text_spacing = "\t" * 8
 
-    def format(self, record: logging.LogRecord) -> str:
-        f = (
-            f"%(asctime)s | "
-            f"{self.status_colors[record.levelno]}%(levelname)s{self.reset} | "
-            f"{self.name_color}%(name)s{self.reset} "
-            f"\r{self.text_spacing}{self.text_colors[record.levelno]}%(message)s{self.reset}"
-        )
+        def format(self, record: logging.LogRecord) -> str:
+            f = (
+                f"%(asctime)s | "
+                f"{self.status_colors[record.levelno]}%(levelname)s{self.reset} | "
+                f"{self.name_color}%(name)s{self.reset} "
+                f"\r{self.text_spacing}{self.text_colors[record.levelno]}%(message)s{self.reset}"
+            )
 
-        return logging.Formatter(f).format(record)
+            return logging.Formatter(f).format(record)
+
+else:   # logger for windows (pls stop using this proprietary shit)
+    class ColorFormatter(logging.Formatter):
+        status_colors = {
+            logging.DEBUG: "",
+            logging.INFO: "",
+            logging.WARN: "",
+            logging.ERROR: "",
+            logging.CRITICAL: "",
+        }
+        text_colors = {
+            logging.DEBUG: "",
+            logging.INFO: "",
+            logging.WARN: "",
+            logging.ERROR: "",
+            logging.CRITICAL: "",
+        }
+        name_color = ""
+        reset = ""
+        text_spacing = "\t" * 8
+
+        def format(self, record: logging.LogRecord) -> str:
+            f = (
+                f"%(asctime)s | "
+                f"%(levelname)s | "
+                f"%(name)s "
+                f"\r{self.text_spacing}%(message)s"
+            )
+
+            return logging.Formatter(f).format(record)
 
 
 # File/Console Logger
