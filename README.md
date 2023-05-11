@@ -37,9 +37,9 @@ Contributions are always welcome!
   ```bash
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/pbmodular/bot/master/install.sh)"
   ```
-## For windows
+## For windows (run in powershell)
   ```pwsh
-  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/PBModular/bot/master/install.ps1" -OutFile "install.ps1"; ./install.ps1
+  iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/PBModular/bot/master/install.ps1'))
   ```
 ## Manual installation
 
