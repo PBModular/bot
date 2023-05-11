@@ -32,10 +32,14 @@ Contributions are always welcome!
 
 ## Installation
 
-> You can use `install.sh` bash installation script (thanks to @vilander1337) or proceed with manual installation below
-
+> You can use `install.sh/ps1` bash/powershell installation scripts (thanks to @vilander1337) or proceed with manual installation below
+## For linux distros
   ```bash
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/pbmodular/bot/master/install.sh)"
+  ```
+## For windows (run in powershell)
+  ```pwsh
+  iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/PBModular/bot/master/install.ps1'))
   ```
 ## Manual installation
 
