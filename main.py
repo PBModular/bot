@@ -6,29 +6,30 @@ from base.loader import ModuleLoader
 from config import config, CONF_FILE
 import os
 from logging.handlers import RotatingFileHandler
+from colorama import init, Fore, Style
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from db import Base
 
+init()  # initialize colorama
 
-# Logger .-.
 class ColorFormatter(logging.Formatter):
     status_colors = {
         logging.DEBUG: "",
-        logging.INFO: "\u001b[32;1m",
-        logging.WARN: "\u001b[1m\u001b[33;1m",
-        logging.ERROR: "\u001b[1m\u001b[31;1m",
-        logging.CRITICAL: "\u001b[1m\u001b[31;1m",
+        logging.INFO: f"{Fore.GREEN}",
+        logging.WARN: f"{Fore.YELLOW}",
+        logging.ERROR: f"{Fore.RED}",
+        logging.CRITICAL: f"{Fore.RED}",
     }
     text_colors = {
         logging.DEBUG: "",
         logging.INFO: "",
-        logging.WARN: "\u001b[33m",
-        logging.ERROR: "\u001b[31m",
-        logging.CRITICAL: "\u001b[31m",
+        logging.WARN: "",
+        logging.ERROR: "",
+        logging.CRITICAL: "",
     }
-    name_color = "\u001b[37;1m"
-    reset = "\u001b[0m"
+    name_color = f"{Fore.WHITE}"
+    reset = f"{Style.RESET_ALL}"
     text_spacing = "\t" * 8
 
     def format(self, record: logging.LogRecord) -> str:
@@ -121,19 +122,18 @@ def main(update_conf: bool = False):
 
 if __name__ == "__main__":
     print(
-        """
-
-
+        f"""
+        {Fore.CYAN}
         _/_/_/    _/_/_/    _/      _/                  _/            _/                      
        _/    _/  _/    _/  _/_/  _/_/    _/_/      _/_/_/  _/    _/  _/    _/_/_/  _/  _/_/   
       _/_/_/    _/_/_/    _/  _/  _/  _/    _/  _/    _/  _/    _/  _/  _/    _/  _/_/        
      _/        _/    _/  _/      _/  _/    _/  _/    _/  _/    _/  _/  _/    _/  _/           
     _/        _/_/_/    _/      _/    _/_/      _/_/_/    _/_/_/  _/    _/_/_/  _/            
 
-
-
     Version 1.0.0-rc1
     Date: 26.03.2023
+    {Style.RESET_ALL}
     """
     )
     main(update_conf=False)
+ 
