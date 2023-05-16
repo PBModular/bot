@@ -4,8 +4,7 @@
 
 #### A simple modular bot for anything you code.
 
-![](https://img.shields.io/github/languages/code-size/SanyaPilot/PBModular) ![](https://img.shields.io/github/license/SanyaPilot/PBModular) ![](https://img.shields.io/badge/python-%3E%203.9-blue)
-
+![](https://img.shields.io/github/languages/code-size/PBModular/bot) ![](https://img.shields.io/github/license/PBModular/bot) ![](https://img.shields.io/badge/python-%3E%203.9-blue)
 
 ## Features
 
@@ -16,19 +15,6 @@
   > To work on Windows and Android, you must remove the uvloop dependency from the requrements.txt before installing
 
 - Open Source, lol
-
-## Authors
-
-- [@SanyaPilot](https://github.com/SanyaPilot)
-- [@CakesTwix](https://github.com/CakesTwix)
-
-## Contributing
-
-Contributions are always welcome!
-
-## License
-
-[GNU GPLv3](https://github.com/SanyaPilot/PBModular/blob/master/LICENSE)
 
 ## Installation
 
@@ -94,3 +80,16 @@ English wiki is in progress now... Currently the only available language is russ
 
 ## Windows support
 It should be mentioned that Windows support is not gueranteed at all! Something can break randomly just because we are writing for *nix environment.
+
+## Authors
+
+- [@SanyaPilot](https://github.com/SanyaPilot)
+- [@CakesTwix](https://github.com/CakesTwix)
+
+## Contributing
+
+Contributions are always welcome!
+
+## License
+
+[GNU GPLv3](https://github.com/SanyaPilot/PBModular/blob/master/LICENSE)
