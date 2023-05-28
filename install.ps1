@@ -1,50 +1,49 @@
-#!/bin/bash
-clear
-echo "
+Set-ExecutionPolicy Unrestricted
 
+Clear-Host
+
+Write-Output "
         _/_/_/    _/_/_/    _/      _/                  _/            _/                      
        _/    _/  _/    _/  _/_/  _/_/    _/_/      _/_/_/  _/    _/  _/    _/_/_/  _/  _/_/   
       _/_/_/    _/_/_/    _/  _/  _/  _/    _/  _/    _/  _/    _/  _/  _/    _/  _/_/        
      _/        _/    _/  _/      _/  _/    _/  _/    _/  _/    _/  _/  _/    _/  _/           
     _/        _/_/_/    _/      _/    _/_/      _/_/_/    _/_/_/  _/    _/_/_/  _/            
 "
+
 git clone https://github.com/PBModular/bot PBModular
 
 cd PBModular
 
 python -m venv venv
 
-source venv/bin/activate
+.\venv\Scripts\activate.ps1
+
+(Get-Content -Path "requirements.txt") | Where-Object { $_ -notmatch 'uvloop==0.17.0' } | Set-Content -Path "requirements.txt"
 
 pip install -r requirements.txt
 
-cp config.example.yaml config.yaml
+Copy-Item config.example.yaml config.yaml
 
-clear
+Clear-Host
 
-echo "
-
+Write-Output "
         _/_/_/    _/_/_/    _/      _/                  _/            _/                      
        _/    _/  _/    _/  _/_/  _/_/    _/_/      _/_/_/  _/    _/  _/    _/_/_/  _/  _/_/   
       _/_/_/    _/_/_/    _/  _/  _/  _/    _/  _/    _/  _/    _/  _/  _/    _/  _/_/        
      _/        _/    _/  _/      _/  _/    _/  _/    _/  _/    _/  _/  _/    _/  _/           
     _/        _/_/_/    _/      _/    _/_/      _/_/_/    _/_/_/  _/    _/_/_/  _/            
-
 "
 
-read -p "Enter bot token: " bottoken
-read -p "Enter API ID: " api_id
-read -p "Enter API Hash: " api_hash
-read -p "Enter ur telegram username/id: " username
-read -p "Chose your language (ru/en/ua): " language
+$bottoken = Read-Host "Enter bot token: "
+$api_id = Read-Host "Enter api id: "
+$api_hash = Read-Host "Enter api hash: "
+$username = Read-Host "Enter telegram username/id: "
 
-sed -i 's/token: null/token: '"$bottoken"'/' config.yaml
-sed -i 's/api-id: null/api-id: '"$api_id"'/' config.yaml
-sed -i 's/api-hash: null/api-hash: '"$api_hash"'/' config.yaml
-sed -i 's/owner: "sanyapilot"/owner: "'"$username"'"/' config.yaml
-sed -i 's/language: ru/language: '"$language"'/' config.yaml
+(Get-Content -Path "config.yaml") -replace 'token: null', ('token: ' + $bottoken) | Set-Content -Path "config.yaml"
+(Get-Content -Path "config.yaml") -replace 'api-id: null', ('api-id: ' + $api_id) | Set-Content -Path "config.yaml"
+(Get-Content -Path "config.yaml") -replace 'api-hash: null', ('api-hash: ' + $api_hash) | Set-Content -Path "config.yaml"
+(Get-Content -Path "config.yaml") -replace 'owner: "sanyapilot"', ('owner: ' + $username) | Set-Content -Path "config.yaml"
 
-clear
+Clear-Host
 
-python main.py
-
+python main.py 

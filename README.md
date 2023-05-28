@@ -4,8 +4,7 @@
 
 #### A simple modular bot for anything you code.
 
-![](https://img.shields.io/github/languages/code-size/SanyaPilot/PBModular) ![](https://img.shields.io/github/license/SanyaPilot/PBModular) ![](https://img.shields.io/badge/python-%3E%203.9-blue)
-
+![](https://img.shields.io/github/languages/code-size/PBModular/bot) ![](https://img.shields.io/github/license/PBModular/bot) ![](https://img.shields.io/badge/python-%3E%203.9-blue)
 
 ## Features
 
@@ -17,22 +16,18 @@
 
 - Open Source, lol
 
-## Authors
-
-- [@SanyaPilot](https://github.com/SanyaPilot)
-- [@CakesTwix](https://github.com/CakesTwix)
-
-## Contributing
-
-Contributions are always welcome!
-
-## License
-
-[GNU GPLv3](https://github.com/SanyaPilot/PBModular/blob/master/LICENSE)
-
 ## Installation
 
-> You can use `install.sh` bash installation script (thanks to @vilander1337) or proceed with manual installation below
+> You can use `install.sh/ps1` bash/powershell installation scripts (thanks to @vilander1337) or proceed with manual installation below
+## For linux distros
+  ```bash
+  sh -c "$(curl -fsSL https://raw.githubusercontent.com/pbmodular/bot/master/install.sh)"
+  ```
+## For windows (run in powershell)
+  ```pwsh
+  iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/PBModular/bot/master/install.ps1'))
+  ```
+## Manual installation
 
   ```bash
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/pbmodular/bot/master/install.sh)"
@@ -90,3 +85,16 @@ English wiki is in progress now... Currently the only available language is russ
 
 ## Windows support
 It should be mentioned that Windows support is not gueranteed at all! Something can break randomly just because we are writing for *nix environment.
+
+## Authors
+
+- [@SanyaPilot](https://github.com/SanyaPilot)
+- [@CakesTwix](https://github.com/CakesTwix)
+
+## Contributing
+
+Contributions are always welcome!
+
+## License
+
+[GNU GPLv3](https://github.com/SanyaPilot/PBModular/blob/master/LICENSE)
