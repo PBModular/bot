@@ -29,11 +29,6 @@
   ```
 ## Manual installation
 
-  ```bash
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/pbmodular/bot/master/install.sh)"
-  ```
-## Manual installation
-
 1. Clone repository  
    
    ```bash

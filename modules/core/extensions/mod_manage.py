@@ -1,6 +1,7 @@
 from base.mod_ext import ModuleExtension
 from base.module import command, callback_query, allowed_for, Permissions, InfoFile
 from base.loader import ModuleLoader
+from config import config
 
 from pyrogram.types import (
     Message,
@@ -13,6 +14,8 @@ from urllib.parse import urlparse
 import os
 import shutil
 import requirements
+import re
+import requests
 
 
 class ModManageExtension(ModuleExtension):
@@ -34,11 +37,21 @@ class ModManageExtension(ModuleExtension):
 
         msg = await message.reply(self.S["install"]["start"].format(name))
 
-        # Start downloading
-        code, stdout = self.loader.install_from_git(url)
-        if code != 0:
-            await msg.edit_text(self.S["install"]["down_err"].format(name, stdout))
-            return
+        match = re.search(r"(?:https?://)?(?:www\.)?github\.com/.*", url)
+
+        if not match:
+            # Start downloading
+            full_url = f"https://github.com/{config.mods_repos}/" + url
+            code, stdout = self.loader.install_from_git(full_url)
+            if code != 0:
+                await msg.edit_text(self.S["install"]["down_err"].format(name, stdout))
+                return
+        if match:
+            # Start downloading
+            code, stdout = self.loader.install_from_git(url)
+            if code != 0:
+                await msg.edit_text(self.S["install"]["down_err"].format(name, stdout))
+                return
 
         # Parse info file
         info_file = InfoFile.from_yaml_file(f"{os.getcwd()}/modules/{name}/info.yaml")
@@ -75,6 +88,17 @@ class ModManageExtension(ModuleExtension):
             ]
         )
         await msg.edit_text(text, reply_markup=keyboard)
+
+    @allowed_for("owner")
+    @command("mods_list")    
+    async def mod_list_cmd(self, _, message: Message):
+        url = f"https://api.github.com/users/{config.mods_repos}/repos"
+        response = requests.get(url)
+        if response.status_code == 200:
+            repositories = response.json()
+            repository_names = [repo["name"] for repo in repositories]
+            formatted_list = [f"<code>{item}</code>" for item in repository_names]
+            await message.reply(self.S["install"]["mods_list"].format(config.mods_repos, ', '.join(formatted_list)))
 
     @allowed_for("owner")
     @callback_query(filters.regex("install_yes"))

@@ -10,6 +10,8 @@ fallback-language: en
 # Whether to try update module dependencies at every load
 update_deps_at_load: true
 
+mods_repos: "PBModularModules"
+
 ### Database section ###
 enable-db: true
 

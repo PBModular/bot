@@ -51,11 +51,17 @@ install:
 
     Usage:
     <code>/mod_install https://github.com/SanyaPilot/best_module</code>
+    <code>/mod_install best_module</code>
 
   start: |
     🛠 <b>Installing module</b> <code>{0}</code><b>…</b>
 
     Please wait…
+
+  mods_list: |
+    List of modules in <b>{0}</b>:
+
+    {1}
 
   confirm: |
     <b>Are you sure to install module</b> <code>{name}</code><b>?</b>

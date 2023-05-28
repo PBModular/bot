@@ -15,6 +15,7 @@ class Config(YAMLWizard):
     language: str
     fallback_language: str
     update_deps_at_load: bool
+    mods_repos: str
     enable_db: bool
     db_url: str
     db_file_name: str
