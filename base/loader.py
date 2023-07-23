@@ -257,7 +257,7 @@ class ModuleLoader:
         else:
             return mod.module_permissions
 
-    def install_from_git(self, url: str) -> (int, str):
+    def install_from_git(self, url: str) -> tuple[int, str]:
         """
         Module installation method. Clones git repository from the given URL and loads it
         :param url: Git repository URL
@@ -278,7 +278,7 @@ class ModuleLoader:
 
         return p.returncode, p.stdout.decode("utf-8")
 
-    def update_from_git(self, name: str, directory: str) -> (int, str):
+    def update_from_git(self, name: str, directory: str) -> tuple[int, str]:
         """
         Method to update git repository (module or extensions)
         Remembers commit hash for reverting and executes git pull
@@ -372,7 +372,7 @@ class ModuleLoader:
             logger.error(f"Tried to revert module {name} with no pending update!")
             return False
 
-    def install_deps(self, name: str, directory: str) -> (int, Union[str, list[str]]):
+    def install_deps(self, name: str, directory: str) -> tuple[int, Union[str, list[str]]]:
         """
         Method to install Python dependencies from requirements.txt file
         :param name: Name of module or extension

@@ -131,7 +131,7 @@ class BaseModule(ABC):
 
         command_registry.remove_all(self.module_info.name)
 
-    def register_all(self, ext: Optional = None):
+    def register_all(self, ext = None):
         """
         Method that initiates method registering. Must be called only from loader or extension!
         """
