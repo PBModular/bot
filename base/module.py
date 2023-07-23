@@ -22,6 +22,7 @@ import yaml
 from config import config
 from base import command_registry
 from dataclass_wizard import YAMLWizard
+from base.states import StateMachine, State
 
 
 @dataclass
@@ -111,6 +112,9 @@ class BaseModule(ABC):
         # Auto-generated help
         self.__auto_help = None
 
+        # State machines for users
+        self.__state_machines = {}
+
     def stage2(self):
         self.register_all()
         # Load extensions
@@ -153,6 +157,7 @@ class BaseModule(ABC):
                             handler=func,
                             session=self.__bot_db_session,
                         )
+                        final_filter = self.__add_fsm_filter(func, final_filter)
 
                         handler = MessageHandler(func, final_filter)
                         self.bot.add_handler(handler)
@@ -168,18 +173,28 @@ class BaseModule(ABC):
 
             elif hasattr(func, "bot_callback_filter"):
                 # Func with @callback_query decorator
-                final_filter = func.bot_callback_filter & filters.create(
+                final_filter = filters.create(
                     self.__check_role, handler=func, session=self.__bot_db_session
                 )
+                if func.bot_callback_filter is not None:
+                    final_filter = final_filter & func.bot_callback_filter
+
+                final_filter = self.__add_fsm_filter(func, final_filter)
+
                 handler = CallbackQueryHandler(func, final_filter)
                 self.bot.add_handler(handler)
                 self.__handlers.append(handler)
 
             elif hasattr(func, "bot_msg_filter"):
                 # Func with @message decorator
-                final_filter = func.bot_msg_filter & filters.create(
+                final_filter = filters.create(
                     self.__check_role, handler=func, session=self.__bot_db_session
                 )
+                if func.bot_msg_filter is not None:
+                    final_filter = final_filter & func.bot_msg_filter
+
+                final_filter = self.__add_fsm_filter(func, final_filter)
+
                 handler = MessageHandler(func, final_filter)
                 self.bot.add_handler(handler)
                 self.__handlers.append(handler)
@@ -188,6 +203,21 @@ class BaseModule(ABC):
         for handler in ext.custom_handlers if ext else self.custom_handlers:
             self.bot.add_handler(handler)
             self.__handlers.append(handler)
+    
+    def __add_fsm_filter(self, func: Callable, final_filter: Filter) -> Filter:
+        if hasattr(func, "bot_fsm_states"):
+            if self.state_machine is None:
+                self.logger.warning(f"Handler {func.__name__} tries to use FSM, but it wasn't defined!")
+                return
+
+            return final_filter & filters.create(
+                self.__check_fsm_state,
+                handler=func,
+                state_machines=self.__state_machines,
+                state_machine=self.state_machine
+            )
+        else:
+            return final_filter
 
     @staticmethod
     async def __check_role(flt: Filter, client: Client, update) -> bool:
@@ -243,6 +273,19 @@ class BaseModule(ABC):
                     return True
 
             return False
+    
+    @staticmethod
+    async def __check_fsm_state(flt: Filter, client: Client, update) -> bool:
+        machine = flt.state_machines.get(update.from_user.id)
+        if machine is None:
+            machine = flt.state_machine()
+            flt.state_machines[update.from_user.id] = machine
+        
+        for state in flt.handler.bot_fsm_states:
+            if machine.get_state() == state:
+                return True
+        
+        return False
 
     @property
     def module_extensions(self) -> list[Type]:
@@ -270,6 +313,14 @@ class BaseModule(ABC):
         """
         SQLAlchemy MetaData object. Must be set if using database
         :rtype: MetaData
+        """
+        return None
+    
+    @property
+    def state_machine(self):
+        """
+        StateMachine class for usage in handlers. Override if necessary.
+        :rtype: Type[StateMachine]
         """
         return None
 
@@ -311,6 +362,18 @@ class BaseModule(ABC):
         :return: List of loaded modules info
         """
         return self.__loaded_info()
+    
+    def get_sm(self, update) -> Optional[StateMachine]:
+        """
+        Get state machine for current user session
+        :param update: Pyrogram update object (Message, CallbackQuery, etc.)
+        """
+        machine = self.__state_machines.get(update.from_user.id)
+        if machine is None:
+            machine = self.state_machine()
+            self.__state_machines[update.from_user.id] = machine
+        
+        return machine
 
 
 def command(cmds: Union[list[str], str], filters: Optional[Filter] = None):
@@ -362,7 +425,17 @@ def allowed_for(roles: Union[list[str], str]):
     """
 
     def wrapper(func: Callable):
-        func.bot_allowed_for = roles if type(roles) == roles else [roles]
+        func.bot_allowed_for = roles if type(roles) == list else [roles]
         return func
 
+    return wrapper
+
+def on_state(states: Union[State, list[State]]):
+    """
+    Decorator for FSM. Allows you to set some states, at which a handler will be triggered.
+    """
+    def wrapper(func: Callable):
+        func.bot_fsm_states = states if type(states) == list else [states]
+        return func
+    
     return wrapper
