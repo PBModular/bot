@@ -387,11 +387,7 @@ def command(cmds: Union[list[str], str], filters: Optional[Filter] = None, fsm_s
 
     def _command(func: Callable):
         async def inner(self: BaseModule, client, update):
-            params = inspect.signature(func).parameters
-            if self.state_machine is None or len(params) == 3:
-                await func(self, client, update)
-            elif self.state_machine is not None and len(params) == 4:
-                await func(self, client, update, self.get_sm(update))
+            await _launch_handler(func, self, client, update)
         
         inner.bot_cmds = cmds if type(cmds) == list else [cmds]
         inner.bot_msg_filter = filters
@@ -414,11 +410,7 @@ def callback_query(filters: Optional[Filter] = None, fsm_state: Optional[Union[S
 
     def _callback_query(func: Callable):
         async def inner(self: BaseModule, client, update):
-            params = inspect.signature(func).parameters
-            if self.state_machine is None or len(params) == 3:
-                await func(self, client, update)
-            elif self.state_machine is not None and len(params) == 4:
-                await func(self, client, update, self.get_sm(update))
+            await _launch_handler(func, self, client, update)
         
         inner.bot_callback_filter = filters
         
@@ -440,11 +432,7 @@ def message(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, l
 
     def _message(func: Callable):
         async def inner(self: BaseModule, client, update):
-            params = inspect.signature(func).parameters
-            if self.state_machine is None or len(params) == 3:
-                await func(self, client, update)
-            elif self.state_machine is not None and len(params) == 4:
-                await func(self, client, update, self.get_sm(update))
+            await _launch_handler(func, self, client, update)
         
         inner.bot_msg_filter = filters
         
@@ -454,6 +442,21 @@ def message(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, l
         return inner
 
     return _message
+
+
+async def _launch_handler(func: Callable, self: BaseModule, client, update):
+    params = inspect.signature(func).parameters
+    if len(params) == 2:
+        # FSM is not used, client obj is not used
+        await func(self, update)
+    elif self.state_machine is None and len(params) == 3:
+        # FSM is not used, client obj used
+        await func(self, client, update)
+    elif self.state_machine is not None and len(params) == 3:
+        # FSM is used, client obj isn't
+        await func(self, update, self.get_sm(update))
+    elif self.state_machine is not None and len(params) == 4:
+        await func(self, client, update, self.get_sm(update))
 
 
 def allowed_for(roles: Union[list[str], str]):
