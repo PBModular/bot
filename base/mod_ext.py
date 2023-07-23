@@ -17,6 +17,8 @@ class ModuleExtension:
         self.cur_lang = base_mod.cur_lang
         self.loader = base_mod.loader
         self.logger = base_mod.logger
+        self.state_machine = base_mod.state_machine
+        self.get_sm = base_mod.get_sm
 
         # Save base ref
         self.__base_mod = base_mod

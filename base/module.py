@@ -376,46 +376,84 @@ class BaseModule(ABC):
         return machine
 
 
-def command(cmds: Union[list[str], str], filters: Optional[Filter] = None):
+def command(cmds: Union[list[str], str], filters: Optional[Filter] = None, fsm_state: Optional[Union[State, list[State]]] = None):
     """
-    Decorator for registering module command
+    Decorator for registering module command.
+    If FSM is present and the handler func has 4 args, then FSM for current user session is passed as a fourth parameter.
     :param cmds: List of commands w/o prefix. It may be a string if there's only one command
     :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters
+    :param fsm_state: FSM states at which this handler is allowed to run
     """
 
-    def wrapper(func: Callable):
-        func.bot_cmds = cmds if type(cmds) == list else [cmds]
-        func.bot_msg_filter = filters
-        return func
+    def _command(func: Callable):
+        async def inner(self: BaseModule, client, update):
+            params = inspect.signature(func).parameters
+            if self.state_machine is None or len(params) == 3:
+                await func(self, client, update)
+            elif self.state_machine is not None and len(params) == 4:
+                await func(self, client, update, self.get_sm(update))
+        
+        inner.bot_cmds = cmds if type(cmds) == list else [cmds]
+        inner.bot_msg_filter = filters
+        
+        if fsm_state is not None:
+            inner.bot_fsm_states = fsm_state if type(fsm_state) == list else [fsm_state]
+        
+        return inner
 
-    return wrapper
+    return _command
 
 
-def callback_query(filters: Optional[Filter] = None):
+def callback_query(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, list[State]]] = None):
     """
     Decorator for registering callback query handlers
+    If FSM is present and the handler func has 4 args, then FSM for current user session is passed as a fourth parameter.
     :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters
+    :param fsm_state: FSM states at which this handler is allowed to run
     """
 
-    def wrapper(func: Callable):
-        func.bot_callback_filter = filters
-        return func
+    def _callback_query(func: Callable):
+        async def inner(self: BaseModule, client, update):
+            params = inspect.signature(func).parameters
+            if self.state_machine is None or len(params) == 3:
+                await func(self, client, update)
+            elif self.state_machine is not None and len(params) == 4:
+                await func(self, client, update, self.get_sm(update))
+        
+        inner.bot_callback_filter = filters
+        
+        if fsm_state is not None:
+            inner.bot_fsm_states = fsm_state if type(fsm_state) == list else [fsm_state]
+        
+        return inner
 
-    return wrapper
+    return _callback_query
 
 
-def message(filters: Optional[Filter] = None):
+def message(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, list[State]]] = None):
     """
-    Decorator for registering all messages handler
-    :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters.
-    Highly recommended to set this!
+    Decorator for registering all messages handler.
+    If FSM is present and the handler func has 4 args, then FSM for current user session is passed as a fourth parameter.
+    :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters. Highly recommended to set this!
+    :param fsm_state: FSM states at which this handler is allowed to run
     """
 
-    def wrapper(func: Callable):
-        func.bot_msg_filter = filters
-        return func
+    def _message(func: Callable):
+        async def inner(self: BaseModule, client, update):
+            params = inspect.signature(func).parameters
+            if self.state_machine is None or len(params) == 3:
+                await func(self, client, update)
+            elif self.state_machine is not None and len(params) == 4:
+                await func(self, client, update, self.get_sm(update))
+        
+        inner.bot_msg_filter = filters
+        
+        if fsm_state is not None:
+            inner.bot_fsm_states = fsm_state if type(fsm_state) == list else [fsm_state]
+        
+        return inner
 
-    return wrapper
+    return _message
 
 
 def allowed_for(roles: Union[list[str], str]):
@@ -428,14 +466,4 @@ def allowed_for(roles: Union[list[str], str]):
         func.bot_allowed_for = roles if type(roles) == list else [roles]
         return func
 
-    return wrapper
-
-def on_state(states: Union[State, list[State]]):
-    """
-    Decorator for FSM. Allows you to set some states, at which a handler will be triggered.
-    """
-    def wrapper(func: Callable):
-        func.bot_fsm_states = states if type(states) == list else [states]
-        return func
-    
     return wrapper
