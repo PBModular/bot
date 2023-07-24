@@ -1,5 +1,6 @@
 import inspect
 from typing import Optional
+from copy import copy
 
 
 class State:
@@ -46,6 +47,7 @@ class StateMachine:
         for name, member in members:
             if isinstance(member, State):
                 member.__set_owner__(self, name)
+                setattr(self, name, copy(member))
     
     def get_state(self) -> Optional[State]:
         """
