@@ -281,8 +281,8 @@ class BaseModule(ABC):
             machine = flt.state_machine()
             flt.state_machines[update.from_user.id] = machine
         
-        for state in flt.handler.bot_fsm_states:
-            if machine.get_state() == state:
+        for state_info in flt.handler.bot_fsm_states:
+            if machine.cur_state and machine.cur_state.info == state_info:
                 return True
         
         return False
