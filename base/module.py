@@ -122,7 +122,7 @@ class BaseModule(ABC):
         for ext in self.module_extensions:
             self.__extensions.append(ext(self))
 
-    def unregister_all(self):
+    async def unregister_all(self):
         """Unregister handlers"""
         del self.__extensions
 
@@ -133,6 +133,11 @@ class BaseModule(ABC):
         self.__handlers = {}
 
         command_registry.remove_all(self.module_info.name)
+
+        # Close database
+        if self.__db:
+            await self.__db.engine.dispose()
+            self.__db = None
 
     def register_all(self, ext = None):
         """
