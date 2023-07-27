@@ -19,6 +19,7 @@ import subprocess
 from urllib.parse import urlparse
 from typing import Optional, Union
 from packaging import version
+import gc
 
 
 logger = logging.getLogger(__name__)
@@ -203,6 +204,21 @@ class ModuleLoader:
         self.__modules[name].unregister_all()
         self.__modules.pop(name)
         self.__modules_info.pop(name)
+        try:
+            self.__modules_deps.pop(name)
+        except KeyError:
+            pass
+
+        # Get rid of previous imports
+        del_keys = []
+        for key in sys.modules.keys():
+            if name in key:
+                del_keys.append(key)
+        
+        for key in del_keys:
+            del sys.modules[key]
+        
+        gc.collect()
         logger.info(f"Successfully unloaded module {name}!")
 
     def get_module(self, name: str) -> Optional[BaseModule]:

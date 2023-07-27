@@ -128,6 +128,8 @@ class BaseModule(ABC):
         # Unregister handlers
         for handler in self.__handlers:
             self.bot.remove_handler(handler)
+        
+        self.__handlers = {}
 
         command_registry.remove_all(self.module_info.name)
 
