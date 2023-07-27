@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Optional, Union, Callable, Type
 import inspect
 import os
+from functools import wraps
 
 from pyrogram import Client, filters
 from pyrogram.types import Message
@@ -388,6 +389,7 @@ def command(cmds: Union[list[str], str], filters: Optional[Filter] = None, fsm_s
     """
 
     def _command(func: Callable):
+        @wraps(func)
         async def inner(self: BaseModule, client, update):
             await _launch_handler(func, self, client, update)
         
@@ -411,6 +413,7 @@ def callback_query(filters: Optional[Filter] = None, fsm_state: Optional[Union[S
     """
 
     def _callback_query(func: Callable):
+        @wraps(func)
         async def inner(self: BaseModule, client, update):
             await _launch_handler(func, self, client, update)
         
@@ -433,6 +436,7 @@ def message(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, l
     """
 
     def _message(func: Callable):
+        @wraps(func)
         async def inner(self: BaseModule, client, update):
             await _launch_handler(func, self, client, update)
         
