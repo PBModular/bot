@@ -22,25 +22,29 @@ class CoreModule(BaseModule):
     @command("help")
     async def help_cmd(self, _, message: Message):
         """Displays help page"""
+        text = self.S["help"]["header"]
+        for module in self.loaded_modules.values():
+            text += f"<b>{module.name}</b> [{module.version}] - {module.author} \n"
+
+        text += "\n"
+        text += self.S["help"]["footer"]
+        await message.reply(text)
+    
+    @command(["mhelp", "mod_help"])
+    async def mod_help_cmd(self, message: Message):
         if len(message.text.split()) > 1:
             self.loader: ModuleLoader
             name = " ".join(message.text.split()[1:])
             data = self.loader.get_module_help(self.loader.get_int_name(name))
             if data is None:
-                await message.reply(self.S["help"]["module_not_found"].format(name))
+                await message.reply(self.S["mod_help"]["module_not_found"].format(name))
             else:
                 await message.reply(
-                    f"{self.S['help']['module_found'].format(name)}\n\n{data}"
+                    f"{self.S['mod_help']['module_found'].format(name)}\n\n{data}"
                 )
 
         else:
-            text = self.S["help"]["header"]
-            for module in self.loaded_modules.values():
-                text += f"<b>{module.name}</b> [{module.version}] - {module.author} \n"
-
-            text += "\n"
-            text += self.S["help"]["footer"]
-            await message.reply(text)
+            await message.reply(self.S["mod_help"]["args_err"])
 
     @command("ping")
     async def ping_cmd(self, _: Client, message: Message):

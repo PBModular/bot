@@ -5,9 +5,10 @@ abort_btn: Abort ❌
 
 help:
   header: |
-    Hello! Thanks for using PBModular (name is temporary)
+    Hello! Thanks for using PBModular
     You can get help for modules' commands using
-    <code>/help &lt;name&gt;</code>
+    <code>/mod_help &lt;name&gt;</code> or
+    <code>/mhelp &lt;name&gt;</code>
 
     📥 <b>Loaded modules:</b>
 
@@ -15,6 +16,12 @@ help:
     Repository on GitHub: https://github.com/PBModular/bot
     Star it please 😊
 
+mod_help:
+  args_err: |
+    <b>Usage:</b>
+    <code>/mod_help &lt;ModuleName&gt;</code>
+    <code>/mhelp &lt;ModuleName&gt;</code>
+  
   module_found: "\U0001F4C4 <b>Help for module {0}:</b>"
   module_not_found: "There's no help page for <b>{0}</b> module…"
 
