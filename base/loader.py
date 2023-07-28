@@ -1,4 +1,4 @@
-from base.module import BaseModule, ModuleInfo, Permissions
+from base.module import BaseModule, ModuleInfo, Permissions, HelpPage
 from base.base_ext import BaseExtension
 from base.db import Database
 from base.db_migration import DBMigration
@@ -249,7 +249,7 @@ class ModuleLoader:
         else:
             return mod.module_info
 
-    def get_module_help(self, name: str) -> Optional[str]:
+    def get_module_help(self, name: str) -> Optional[Union[HelpPage, str]]:
         """
         Get module help page
         :param name: Name of Python module inside modules dir

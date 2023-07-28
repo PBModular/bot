@@ -9,7 +9,7 @@ from functools import wraps
 import asyncio
 
 from pyrogram import Client, filters
-from pyrogram.types import Message
+from pyrogram.types import Message, InlineKeyboardButton
 from pyrogram.filters import Filter
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.handlers.handler import Handler
@@ -46,6 +46,12 @@ class Permissions(str, Enum):
 class InfoFile(YAMLWizard):
     info: ModuleInfo
     permissions: list[Permissions] = field(default_factory=list)
+
+
+@dataclass
+class HelpPage:
+    text: str
+    buttons: Optional[list[list[InlineKeyboardButton]]] = None
 
 
 class BaseModule(ABC):
@@ -112,7 +118,7 @@ class BaseModule(ABC):
         self.__handlers = []
 
         # Auto-generated help
-        self.__auto_help = None
+        self.__auto_help: Optional[HelpPage] = None
 
         # State machines for users
         self.__state_machines = {}
@@ -176,9 +182,10 @@ class BaseModule(ABC):
                         self.__handlers.append(handler)
 
                         if self.__auto_help is None:
-                            self.__auto_help = "Available commands:\n"
-                        self.__auto_help += (
-                            f"/{cmd}"
+                            self.__auto_help = HelpPage("")
+                        
+                        self.__auto_help.text += (
+                            f"<code>/{cmd}</code>"
                             + (f" - {func.__doc__}" if func.__doc__ else "")
                             + "\n"
                         )
@@ -344,10 +351,11 @@ class BaseModule(ABC):
         """
 
     @property
-    def help_page(self) -> Optional[str]:
+    def help_page(self) -> Optional[Union[HelpPage, str]]:
         """
-        Help string to be displayed in Core module help command. Highly recommended to set this!
+        Help page to be displayed in Core module help command. Highly recommended to set this!
         Defaults to auto-generated command listing, which uses callback func __doc__ for description
+        Can be a string for backward compatibility
         """
         return self.__auto_help
 

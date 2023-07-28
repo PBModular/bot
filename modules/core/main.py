@@ -1,9 +1,9 @@
-from base.module import BaseModule
+from base.module import BaseModule, HelpPage
 from base.module import command
 from base.loader import ModuleLoader
 from base.mod_ext import ModuleExtension
 
-from pyrogram.types import Message
+from pyrogram.types import Message, InlineKeyboardMarkup
 from pyrogram import Client, filters
 from typing import Type
 import time
@@ -32,19 +32,29 @@ class CoreModule(BaseModule):
     
     @command(["mhelp", "mod_help"])
     async def mod_help_cmd(self, message: Message):
-        if len(message.text.split()) > 1:
-            self.loader: ModuleLoader
-            name = " ".join(message.text.split()[1:])
-            data = self.loader.get_module_help(self.loader.get_int_name(name))
-            if data is None:
-                await message.reply(self.S["mod_help"]["module_not_found"].format(name))
-            else:
-                await message.reply(
-                    f"{self.S['mod_help']['module_found'].format(name)}\n\n{data}"
-                )
-
-        else:
+        if len(message.text.split()) != 2:
             await message.reply(self.S["mod_help"]["args_err"])
+            return
+        
+        self.loader: ModuleLoader
+        name = " ".join(message.text.split()[1:])
+        help_page = self.loader.get_module_help(self.loader.get_int_name(name))
+        if help_page is None:
+            await message.reply(self.S["mod_help"]["module_not_found"].format(name))
+            return
+        
+        if isinstance(help_page, HelpPage):
+            await message.reply(
+                f"{self.S['mod_help']['module_found'].format(name)}\n\n{help_page.text}",
+                reply_markup=InlineKeyboardMarkup(help_page.buttons) if help_page.buttons else None
+            )
+        elif type(help_page) == str:
+            # Backward compatibility with str-only help pages
+            await message.reply(
+                f"{self.S['mod_help']['module_found'].format(name)}\n\n{help_page}"
+            )
+        else:
+            self.logger.error(f"Module {name} has invalid help page! Contact developer")
 
     @command("ping")
     async def ping_cmd(self, _: Client, message: Message):
