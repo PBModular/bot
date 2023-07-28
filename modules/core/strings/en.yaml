@@ -242,3 +242,36 @@ perm_settings:
   roles_header: "\U0001F4C4 List of user roles:"
   no_perms: "❌ <b>No custom permissions!</b>"
   no_roles: "❌ <b>Roles aren't set!</b>"
+
+load:
+  args_err: |
+    <b>Usage:</b>
+    <code>/mod_load &lt;ModuleName&gt;</code>
+
+  load_err: |
+    ❌ <b>An error has occured while loading the module</b> <code>{0}</code><b>!</b>
+    Check logs
+  
+  not_found: "❌ <b>Module</b> <code>{0}</code> <b>not found!</b>"
+  already_loaded_err: "❌ <b>Module</b> <code>{0}</code> <b>is loaded already!</b>"
+  ok: "✅ <b>Module</b> <code>{0}</code> <b>loaded!</b>"
+
+unload:
+  args_err: |
+    <b>Usage:</b>
+    <code>/mod_unload &lt;ModuleName&gt;</code>
+  
+  not_loaded_err: "❌ <b>Module</b> <code>{0}</code> <b>is not loaded yet!</b>"
+  unload_core: "❌ <b>You can't unload the</b> <code>Core</code> <b>module!</b>"
+  ok: "✅ <b>Module</b> <code>{0}</code> <b>unloaded!</b>"
+
+reload:
+  args_err: |
+    <b>Usage:</b>
+    <code>/mod_reload &lt;ModuleName&gt;</code>
+  
+  loading: |
+    ⚙️ <b>Module</b> <code>{0}</code> <b>is reloading...</b>
+    Wait a little
+  
+  ok: "✅ <b>Module</b> <code>{0}</code> <b>reloaded!</b>"

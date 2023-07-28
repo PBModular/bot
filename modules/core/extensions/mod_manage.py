@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 import os
 import shutil
 import requirements
+from typing import Optional
 
 
 class ModManageExtension(ModuleExtension):
@@ -354,3 +355,92 @@ class ModManageExtension(ModuleExtension):
         )
 
         await message.reply(text, quote=True)
+    
+    async def mod_load(self, message: Message, name: str, silent = False, edit = False) -> Optional[str]:
+        if edit:
+            reply_func = message.edit_text
+        else:
+            reply_func = message.reply
+        
+        if self.loader.get_module(name):
+            await reply_func(self.S["load"]["already_loaded_err"].format(name))
+            return
+        
+        try:
+            res = self.loader.load_module(name)
+            if res is None:
+                await reply_func(self.S["load"]["load_err"].format(name))
+                return
+        except FileNotFoundError:
+            await reply_func(self.S["load"]["not_found"].format(name))
+            return
+        except:
+            await reply_func(self.S["load"]["load_err"].format(name))
+            return
+        
+        if not silent:
+            await reply_func(self.S["load"]["ok"].format(res))
+        
+        return res
+
+    async def mod_unload(self, message: Message, name: str, silent = False, edit = False) -> Optional[str]:
+        if edit:
+            reply_func = message.edit_text
+        else:
+            reply_func = message.reply
+
+        if name.lower() == "core":
+            await reply_func(self.S["unload"]["unload_core"])
+            return
+        
+        int_name = self.loader.get_int_name(name)
+        if int_name is None:
+            await reply_func(self.S["unload"]["not_loaded_err"].format(name))
+            return
+        
+        self.loader.unload_module(int_name)
+        if not silent:
+            await reply_func(self.S["unload"]["ok"].format(name))
+        
+        return int_name
+
+    @allowed_for("owner")
+    @command("mod_load")
+    async def mod_load_cmd(self, _, message: Message):
+        """Loads module if not loaded. Accepts directory name of a module"""
+        args = message.text.split()
+        if len(args) != 2:
+            await message.reply(self.S["load"]["args_err"])
+            return
+        
+        await self.mod_load(message, args[1])
+
+    @allowed_for("owner")
+    @command("mod_unload")
+    async def mod_unload_cmd(self, _, message: Message):
+        """Unloads module if it is loaded already"""
+        args = message.text.split()
+        if len(args) != 2:
+            await message.reply(self.S["unload"]["args_err"])
+            return False
+        
+        await self.mod_unload(message, args[1])
+    
+    @allowed_for("owner")
+    @command("mod_reload")
+    async def mod_reload_cmd(self, message: Message):
+        args = message.text.split()
+        if len(args) != 2:
+            await message.reply(self.S["reload"]["args_err"])
+            return
+                
+        int_name = await self.mod_unload(message, args[1], True, False)
+        if int_name is None:
+            return
+        
+        msg = await message.reply(self.S["reload"]["loading"].format(args[1]))
+        name = await self.mod_load(msg, int_name, True, True)
+        if name is None:
+            return
+        
+        await msg.edit_text(self.S["reload"]["ok"].format(name))

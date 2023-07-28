@@ -242,3 +242,36 @@ perm_settings:
   roles_header: "\U0001F4C4 Список ролей для пользователей:"
   no_perms: "❌ <b>Нет кастомных разрешений!</b>"
   no_roles: "❌ <b>Роли не присвоены!</b>"
+
+load:
+  args_err: |
+    <b>Пример использования:</b>
+    <code>/mod_load &lt;ИмяМодуля&gt;</code>
+
+  load_err: |
+    ❌ <b>Возникла ошибка при загрузке модуля</b> <code>{0}</code><b>!</b>
+    Проверьте логи
+  
+  not_found: "❌ <b>Модуль</b> <code>{0}</code> <b>не найден!</b>"
+  already_loaded_err: "❌ <b>Модуль</b> <code>{0}</code> <b>уже загружен!</b>"
+  ok: "✅ <b>Модуль</b> <code>{0}</code> <b>загружен!</b>"
+
+unload:
+  args_err: |
+    <b>Пример использования:</b>
+    <code>/mod_unload &lt;ИмяМодуля&gt;</code>
+  
+  not_loaded_err: "❌ <b>Модуль</b> <code>{0}</code> <b>еще не загружен!</b>"
+  unload_core: "❌ <b>Нельзя выгрузить модуль</b> <code>Core</code><b>!</b>"
+  ok: "✅ <b>Модуль</b> <code>{0}</code> <b>выгружен!</b>"
+
+reload:
+  args_err: |
+    <b>Пример использования:</b>
+    <code>/mod_reload &lt;ИмяМодуля&gt;</code>
+  
+  loading: |
+    ⚙️ <b>Модуль</b> <code>{0}</code> <b>перезагружается...</b>
+    Подождите немного
+  
+  ok: "✅ <b>Модуль</b> <code>{0}</code> <b>перезагружен!</b>"
