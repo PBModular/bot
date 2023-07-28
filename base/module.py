@@ -6,6 +6,7 @@ from typing import Optional, Union, Callable, Type
 import inspect
 import os
 from functools import wraps
+import asyncio
 
 from pyrogram import Client, filters
 from pyrogram.types import Message
@@ -122,7 +123,7 @@ class BaseModule(ABC):
         for ext in self.module_extensions:
             self.__extensions.append(ext(self))
 
-    async def unregister_all(self):
+    def unregister_all(self):
         """Unregister handlers"""
         del self.__extensions
 
@@ -135,9 +136,12 @@ class BaseModule(ABC):
         command_registry.remove_all(self.module_info.name)
 
         # Close database
-        if self.__db:
-            await self.__db.engine.dispose()
-            self.__db = None
+        async def _close_db():
+            if self.__db:
+                await self.__db.engine.dispose()
+                self.__db = None
+        
+        asyncio.create_task(_close_db())
 
     def register_all(self, ext = None):
         """
@@ -460,13 +464,13 @@ async def _launch_handler(func: Callable, self: BaseModule, client, update):
     if len(params) == 2:
         # FSM is not used, client obj is not used
         await func(self, update)
-    elif self.state_machine is None and len(params) == 3:
+    elif self.state_machine is None and len(params) >= 3:
         # FSM is not used, client obj used
         await func(self, client, update)
     elif self.state_machine is not None and len(params) == 3:
         # FSM is used, client obj isn't
         await func(self, update, self.get_sm(update))
-    elif self.state_machine is not None and len(params) == 4:
+    elif self.state_machine is not None and len(params) >= 4:
         await func(self, client, update, self.get_sm(update))
 
 

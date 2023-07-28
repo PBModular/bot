@@ -201,28 +201,25 @@ class ModuleLoader:
         Method for unloading modules.
         :param name: Name of Python module inside modules dir
         """
-        async def _unload():
-            await self.__modules[name].unregister_all()
-            self.__modules.pop(name)
-            self.__modules_info.pop(name)
-            try:
-                self.__modules_deps.pop(name)
-            except KeyError:
-                pass
+        self.__modules[name].unregister_all()
+        self.__modules.pop(name)
+        self.__modules_info.pop(name)
+        try:
+            self.__modules_deps.pop(name)
+        except KeyError:
+            pass
 
-            # Get rid of previous imports
-            del_keys = []
-            for key in sys.modules.keys():
-                if name in key:
-                    del_keys.append(key)
-            
-            for key in del_keys:
-                del sys.modules[key]
-            
-            gc.collect()
-            logger.info(f"Successfully unloaded module {name}!")
+        # Get rid of previous imports
+        del_keys = []
+        for key in sys.modules.keys():
+            if name in key:
+                del_keys.append(key)
         
-        asyncio.create_task(_unload())
+        for key in del_keys:
+            del sys.modules[key]
+        
+        gc.collect()
+        logger.info(f"Successfully unloaded module {name}!")
 
     def get_module(self, name: str) -> Optional[BaseModule]:
         """
