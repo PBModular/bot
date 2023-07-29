@@ -7,6 +7,7 @@ import inspect
 import os
 from functools import wraps
 import asyncio
+from copy import deepcopy
 
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton
@@ -54,6 +55,14 @@ class HelpPage:
     buttons: Optional[list[list[InlineKeyboardButton]]] = None
 
 
+def merge_dicts(dict_a: dict, dict_b: dict):
+    for key in dict_b.keys():
+        if key in dict_a and isinstance(dict_a[key], dict) and isinstance(dict_b[key], dict):
+            merge_dicts(dict_a[key], dict_b[key])
+        else:
+            dict_a[key] = dict_b[key]
+
+
 class BaseModule(ABC):
     """
     Bot module superclass
@@ -88,7 +97,16 @@ class BaseModule(ABC):
 
             self.logger.info(f"Available translations: {list(self.rawS.keys())}")
             if config.language in self.rawS.keys():
-                self.S = self.rawS[config.language]
+                if config.fallback_language in self.rawS.keys():
+                    self.S = deepcopy(self.rawS[config.fallback_language])
+
+                    # Merge fallback lang and main, eliminating missing items
+                    merge_dicts(self.S, self.rawS[config.language])
+                else:
+                    self.logger.warning(
+                        f"Fallback language is not found, unable to merge translations!"
+                    )
+                    self.S = self.rawS[config.language]
             elif config.fallback_language in self.rawS.keys():
                 self.logger.warning(
                     f"Language {config.language} not found! Falling back to {config.fallback_language}"
