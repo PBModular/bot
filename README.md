@@ -10,7 +10,7 @@
 
 - Modularity
 
-- Linux, Windows and Android (Termux) support >.<
+- Linux, Windows (read below!) and Android (Termux) support >.<
 
   > To work on Windows and Android, you must remove the uvloop dependency from the requrements.txt before installing
 
@@ -83,8 +83,9 @@ It should be mentioned that Windows support is not gueranteed at all! Something 
 
 ## Authors
 
-- [@SanyaPilot](https://github.com/SanyaPilot)
-- [@CakesTwix](https://github.com/CakesTwix)
+- [@SanyaPilot](https://github.com/SanyaPilot) ([Telegram](https://t.me/sanyapilot)) - Bot core, wiki
+- [@CakesTwix](https://github.com/CakesTwix) ([Telegram](https://t.me/CakesTwix)) - Translations
+- [@vilander1337](https://github.com/vilander1337) ([Telegram](https://t.me/femboysonly)) - Nice wiki on gitbook, scripts
 
 ## Contributing
 
