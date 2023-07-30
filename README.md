@@ -74,9 +74,13 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-## Wiki translation
+## Documentation
 
-English wiki is in progress now... Currently the only available language is russian.
+[Russian docs](https://pbmodular-docs.gitbook.io/ru-docs/)
+
+[English docs](https://pbmodular-docs.gitbook.io/eng-docs/)
+
+If you wanna add docs in your language contact with [@vilander1337](https://github.com/vilander1337) or [@SanyaPilot](https://github.com/SanyaPilot)
 
 ## Windows support
 It should be mentioned that Windows support is not gueranteed at all! Something can break randomly just because we are writing for *nix environment.
