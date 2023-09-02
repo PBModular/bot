@@ -48,6 +48,8 @@ info:
     {description}
 
 install:
+  list: Список модулей в {0}
+  
   perms:
     use_loader: Доступ к загрузчику модулей ⚠️
     use_db: Использование БД

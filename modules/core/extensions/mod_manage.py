@@ -10,6 +10,7 @@ from pyrogram.types import (
 )
 from pyrogram import filters
 from urllib.parse import urlparse
+import requests
 import os
 import shutil
 import requirements
@@ -76,6 +77,24 @@ class ModManageExtension(ModuleExtension):
             ]
         )
         await msg.edit_text(text, reply_markup=keyboard)
+
+    @allowed_for("owner")
+    @command("mods_list")
+    async def mods_list_cmd(self, _, message: Message):
+        """"List all modules in git-org"""
+        acc_name = "PBModularModules"
+        list_str = self.S["install"]["list"].format(acc_name)
+        url = f"https://api.github.com/users/{acc_name}/repos"
+        response = requests.get(url)
+        repositories = []
+    
+        if response.status_code == 200:
+            data = response.json()
+            for repo in data:
+                repositories.append(f'<code>{repo["name"]}</code>')
+        
+        msg = await message.reply(f"{list_str}\n" + ', '.join(repositories))
+
 
     @allowed_for("owner")
     @callback_query(filters.regex("install_yes"))

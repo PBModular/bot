@@ -48,6 +48,8 @@ info:
     {description}
 
 install:
+  list: List modules in {0}
+
   perms:
     use_loader: Access to the module loader ⚠️
     use_db: DB usage
