@@ -15,6 +15,7 @@ import os
 import shutil
 import requirements
 from typing import Optional
+from config import config
 
 
 class ModManageExtension(ModuleExtension):
@@ -82,7 +83,7 @@ class ModManageExtension(ModuleExtension):
     @command("mods_list")
     async def mods_list_cmd(self, _, message: Message):
         """"List all modules in git-org"""
-        acc_name = "PBModularModules"
+        acc_name = config.name_org
         list_str = self.S["install"]["list"].format(acc_name)
         url = f"https://api.github.com/users/{acc_name}/repos"
         response = requests.get(url)
