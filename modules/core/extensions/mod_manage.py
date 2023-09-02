@@ -31,8 +31,13 @@ class ModManageExtension(ModuleExtension):
         if len(message.text.split()) == 1:
             await message.reply(self.S["install"]["args_err"])
             return
-
-        url = message.text.split()[1]
+        
+        arg = message.text.split()[1] 
+        if "http://" in arg or "https://" in arg:
+            url = arg
+        else:
+            url = f"https://github.com/{config.name_org}/{arg}"
+        
         name = urlparse(url).path.split("/")[-1].removesuffix(".git")
 
         msg = await message.reply(self.S["install"]["start"].format(name))
