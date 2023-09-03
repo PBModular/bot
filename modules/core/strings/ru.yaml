@@ -48,7 +48,9 @@ info:
     {description}
 
 install:
-  list: Список модулей в {0}
+  list: 
+    ok: Список модулей в {0}
+    error: "Произошла ошибка! Код HTTP: {0}"
   
   perms:
     use_loader: Доступ к загрузчику модулей ⚠️

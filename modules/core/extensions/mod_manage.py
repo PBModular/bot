@@ -88,8 +88,9 @@ class ModManageExtension(ModuleExtension):
     @command("mods_list")
     async def mods_list_cmd(self, _, message: Message):
         """"List all modules in git-org"""
-        acc_name = config.name_org
-        list_str = self.S["install"]["list"].format(acc_name)
+        acc_name = config.mod_org_name
+        list_str = self.S["install"]["list"]["ok"].format(acc_name)
+        err_list_str = self.S["install"]["list"]["error"]
         url = f"https://api.github.com/users/{acc_name}/repos"
         response = requests.get(url)
         repositories = []
@@ -98,8 +99,10 @@ class ModManageExtension(ModuleExtension):
             data = response.json()
             for repo in data:
                 repositories.append(f'<code>{repo["name"]}</code>')
+            msg = await message.reply(f"{list_str}\n" + ', '.join(repositories))
+        else:
+            await message.reply(err_list_str.format(response.status_code))
         
-        msg = await message.reply(f"{list_str}\n" + ', '.join(repositories))
 
 
     @allowed_for("owner")
