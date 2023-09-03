@@ -23,5 +23,8 @@ db-url: "sqlite+aiosqlite://"
 # SQLite only! Name for database file inside modules directory
 db-file-name: "db.sqlite3"
 
+# Organization name for modules
+mod_org_name: "PBModular"
+
 # Bot owner Telegram ID or username
 owner: "sanyapilot"

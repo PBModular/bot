@@ -10,10 +10,12 @@ from pyrogram.types import (
 )
 from pyrogram import filters
 from urllib.parse import urlparse
+import requests
 import os
 import shutil
 import requirements
 from typing import Optional
+from config import config
 
 
 class ModManageExtension(ModuleExtension):
@@ -29,8 +31,13 @@ class ModManageExtension(ModuleExtension):
         if len(message.text.split()) == 1:
             await message.reply(self.S["install"]["args_err"])
             return
-
-        url = message.text.split()[1]
+        
+        arg = message.text.split()[1] 
+        if "http://" in arg or "https://" in arg:
+            url = arg
+        else:
+            url = f"https://github.com/{config.name_org}/{arg}"
+        
         name = urlparse(url).path.split("/")[-1].removesuffix(".git")
 
         msg = await message.reply(self.S["install"]["start"].format(name))
@@ -76,6 +83,27 @@ class ModManageExtension(ModuleExtension):
             ]
         )
         await msg.edit_text(text, reply_markup=keyboard)
+
+    @allowed_for("owner")
+    @command("mods_list")
+    async def mods_list_cmd(self, _, message: Message):
+        """"List all modules in git-org"""
+        acc_name = config.mod_org_name
+        list_str = self.S["install"]["list"]["ok"].format(acc_name)
+        err_list_str = self.S["install"]["list"]["error"]
+        url = f"https://api.github.com/users/{acc_name}/repos"
+        response = requests.get(url)
+        repositories = []
+    
+        if response.status_code == 200:
+            data = response.json()
+            for repo in data:
+                repositories.append(f'<code>{repo["name"]}</code>')
+            msg = await message.reply(f"{list_str}\n" + ', '.join(repositories))
+        else:
+            await message.reply(err_list_str.format(response.status_code))
+        
+
 
     @allowed_for("owner")
     @callback_query(filters.regex("install_yes"))
