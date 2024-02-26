@@ -136,6 +136,17 @@ class ModuleLoader:
                     perms = instance.module_permissions
                     info = instance.module_info
 
+                    # Version check
+                    if info.python:
+                        parts = tuple(map(int, info.python.split('.')))
+                        current_version = '.'.join(map(str, sys.version_info[:3]))
+                        if sys.version_info[1] != parts[1]:
+                            logger.warning(
+                                f"Module {name} tested and supported by Python version {info.python}, "
+                                f"but current version is {current_version}, "
+                                f"proceed with caution!"
+                            )
+
                     # Don't allow modules with more than 1 word in name
                     if len(info.name.split()) > 1:
                         logger.warning(

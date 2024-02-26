@@ -35,6 +35,7 @@ class ModuleInfo:
     version: str
     description: str
     src_url: Optional[str] = None
+    python: Optional[str] = None
 
 
 class Permissions(str, Enum):
