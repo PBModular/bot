@@ -48,6 +48,10 @@ info:
     {description}
 
 install:
+  list: 
+    ok: List modules in {0}
+    error: "An error has occured! HTTP code: {0}"
+
   perms:
     use_loader: Access to the module loader ⚠️
     use_db: DB usage

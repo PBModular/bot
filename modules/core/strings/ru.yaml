@@ -48,6 +48,10 @@ info:
     {description}
 
 install:
+  list: 
+    ok: Список модулей в {0}
+    error: "Произошла ошибка! Код HTTP: {0}"
+  
   perms:
     use_loader: Доступ к загрузчику модулей ⚠️
     use_db: Использование БД

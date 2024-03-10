@@ -18,6 +18,7 @@ class Config(YAMLWizard):
     enable_db: bool
     db_url: str
     db_file_name: str
+    mod_org_name: str
     owner: Union[int, str]
 
 
