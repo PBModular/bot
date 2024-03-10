@@ -4,7 +4,7 @@
 
 #### A simple modular bot for anything you code.
 
-![](https://img.shields.io/github/languages/code-size/PBModular/bot) ![](https://img.shields.io/github/license/PBModular/bot) ![](https://img.shields.io/badge/python-%3E%203.9-blue)
+![](https://img.shields.io/github/languages/code-size/PBModular/bot) ![](https://img.shields.io/github/license/PBModular/bot) ![](https://img.shields.io/badge/python-%3E%203.11-blue)
 
 ## Features
 
