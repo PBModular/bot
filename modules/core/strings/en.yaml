@@ -282,3 +282,17 @@ reload:
     Wait a little
   
   ok: "✅ <b>Module</b> <code>{0}</code> <b>reloaded!</b>"
+
+modules:
+  list: "<b>Installed modules:</b>"
+
+module_page:
+  name: "<b>Name:</b> {name}"
+  author: "<b>Author:</b> {author}"
+  version: "<b>Version:</b> {version}"
+  src_url: "<b>Repository:</b> {url}"
+  description: |
+    <b>Description:</b>
+    {description}
+  update_btn: Update
+  delete_btn: Delete

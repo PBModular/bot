@@ -22,6 +22,77 @@ class ModManageExtension(ModuleExtension):
         self.update_confirmations = {}
 
     @allowed_for("owner")
+    @command("modules")
+    async def modules_cmd(self, _, message: Message):
+        """Display a list of all modules with options to view and manage them."""
+        self.loader: ModuleLoader
+        modules_info = self.loader.get_modules_info()  # Get all modules info
+        buttons = []
+        
+        for module_name, info in modules_info.items():
+            buttons.append(
+                [InlineKeyboardButton(info.name, callback_data=f"module_{module_name}")]
+            )
+        
+        keyboard = InlineKeyboardMarkup(buttons)
+        
+        await message.reply(self.S["modules"]["list"], reply_markup=keyboard)
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^module_(.*)"))
+    async def module_page(self, _, call: CallbackQuery):
+        """Display the help page and management options for a specific module."""
+        module_name = call.data.split("_")[1]
+        self.loader: ModuleLoader
+        
+        info = self.loader.get_module_info(module_name)
+        
+        text = ""
+        
+        if info.name:
+            text += self.S["module_page"]["name"].format(name=info.name) + "\n"
+        if info.author:
+            text += self.S["module_page"]["author"].format(author=info.author) + "\n"
+        if info.version:
+            text += self.S["module_page"]["version"].format(version=info.version) + "\n"
+        if info.src_url:
+            text += self.S["module_page"]["src_url"].format(url=info.src_url) + "\n"
+        if info.description:
+            text += "\n" + self.S["module_page"]["description"].format(description=info.description)
+        
+        git_repo_path = os.path.join(os.getcwd(), "modules", module_name, ".git")
+        buttons = []
+
+        if os.path.exists(git_repo_path):
+            buttons.append(
+                InlineKeyboardButton(self.S["module_page"]["update_btn"], callback_data=f"update_module_{module_name}")
+            )
+        
+        buttons.append(
+            InlineKeyboardButton(self.S["module_page"]["delete_btn"], callback_data=f"delete_module_{module_name}")
+        )
+        
+        keyboard = InlineKeyboardMarkup([buttons])
+        
+        await call.message.edit_text(text.strip(), reply_markup=keyboard)
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^update_module_(.*)"))
+    async def update_module(self, _, call: CallbackQuery):
+        """Handle the module update process."""
+        name = call.data.split("_")[2]
+        
+        await self.mod_update(_, call.message, name)
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^delete_module_(.*)"))
+    async def delete_module(self, _, call: CallbackQuery):
+        """Handle the module deletion process."""
+        name = call.data.split("_")[2]
+
+        await self.mod_uninstall(_, call.message, name)
+
+    @allowed_for("owner")
     @command("mod_install")
     async def mod_install_cmd(self, _, message: Message):
         """Install new module from git repo"""
@@ -129,13 +200,16 @@ class ModManageExtension(ModuleExtension):
     @allowed_for("owner")
     @command("mod_uninstall")
     async def mod_uninstall_cmd(self, _, message: Message):
-        """Uninstall module"""
-        self.loader: ModuleLoader
         if len(message.text.split()) == 1:
             await message.reply(self.S["uninstall"]["args_err"])
             return
 
         name = " ".join(message.text.split()[1:])
+        await self.mod_uninstall(_, message, name)
+
+    async def mod_uninstall(self, _, message, name):
+        """Uninstall module"""
+        self.loader: ModuleLoader
 
         # Uninstall module
         int_name = self.loader.get_int_name(name)
@@ -153,13 +227,17 @@ class ModManageExtension(ModuleExtension):
     @allowed_for("owner")
     @command("mod_update")
     async def mod_update_cmd(self, _, message: Message):
-        """Update module to the upstream version"""
-        self.loader: ModuleLoader
         if len(message.text.split()) == 1:
             await message.reply(self.S["update"]["args_err"])
             return
 
         name = " ".join(message.text.split()[1:])
+        await self.mod_update(_, message, name)
+
+    async def mod_update(self, _, message, name):
+        """Update module to the upstream version"""
+        self.loader: ModuleLoader
+
         int_name = self.loader.get_int_name(name)
         if int_name is None:
             await message.reply(self.S["uninstall"]["not_found"].format(name))

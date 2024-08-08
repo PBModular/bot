@@ -143,3 +143,17 @@ mod_help:
   module_not_found: Немає сторінки довідки для модуля <b>{0}</b>…
   args_err: "<b>Приклад використання:</b>\n<code>/mod_help &lt;ModuleName&gt;</code>\n
     <code>/mhelp &lt;ModuleName&gt;</code>\n"
+
+modules:
+  list: "<b>Установленные модули:</b>"
+
+module_page:
+  name: "<b>Назва:</b> {name}"
+  author: "<b>Автор:</b> {author}"
+  version: "<b>Версія:</b> {version}"
+  src_url: "<b>Репозиторій:</b> {url}"
+  description: |
+    <b>Опис:</b>
+    {description}
+  update_btn: Обновити
+  delete_btn: Видалити

@@ -282,3 +282,17 @@ reload:
     Подождите немного
   
   ok: "✅ <b>Модуль</b> <code>{0}</code> <b>перезагружен!</b>"
+
+modules:
+  list: "<b>Установленные модули:</b>"
+
+module_page:
+  name: "<b>Название:</b> {name}"
+  author: "<b>Автор:</b> {author}"
+  version: "<b>Версия:</b> {version}"
+  src_url: "<b>Репозиторий:</b> {url}"
+  description: |
+    <b>Описание:</b>
+    {description}
+  update_btn: Обновить
+  delete_btn: Удалить
