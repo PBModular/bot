@@ -1,69 +1,82 @@
-![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows11&logoColor=white)
-
 # PBModular
 
-#### A simple modular bot for anything you code.
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) 
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) 
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows11&logoColor=white)
 
-![](https://img.shields.io/github/languages/code-size/PBModular/bot) ![](https://img.shields.io/github/license/PBModular/bot) ![](https://img.shields.io/badge/python-%3E%203.11-blue)
+![Python Version](https://img.shields.io/badge/python-%3E%203.11-blue)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/PBModular/bot)
+![GitHub](https://img.shields.io/github/license/PBModular/bot)
 
-## Features
+PBModular is a lightweight and flexible bot framework designed for anything you code. Something between a userbot and a standard bot.
 
-- Modularity
+## Key Features
 
-- Linux, Windows (read below!) and Android (Termux) support >.<
+* **Modular Design:** Easily extend and customize your bot features with a plugin-based [modules](https://github.com/PBModular/)
+* **Cross-Platform:** Supports Linux, Windows, and Android (Termux).
+  * **Note for Windows and Android:** Remove the `uvloop` dependency from `requirements.txt` before installation.
+* **Open Source:** Contribute, modify, and adapt the bot to your specific needs.
 
-  > To work on Windows and Android, you must remove the uvloop dependency from the requrements.txt before installing
+## Getting Started
 
-- Open Source, lol
+### Quick Installation (Linux/Windows)
 
-## Installation
+We provide convenient installation scripts for Linux and Windows:
 
-> You can use `install.sh/ps1` bash/powershell installation scripts (thanks to @vilander1337) or proceed with manual installation below
-## For linux distros
-  ```bash
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/pbmodular/bot/master/install.sh)"
-  ```
-## For windows (run in powershell)
-  ```pwsh
-  iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/PBModular/bot/master/install.ps1'))
-  ```
-## Manual installation
+**Linux:**
 
-1. Clone repository  
-   
+```bash
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/pbmodular/bot/master/install.sh)"
+```
+
+**Windows (PowerShell):**
+
+```powershell
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/PBModular/bot/master/install.ps1'))
+```
+
+### Manual Installation
+
+1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/PBModular/bot PBModular
    ```
 
-2. Install Python packages (and setup venv, if you want)
-   
+2. **Install dependencies (using a virtual environment is recommended):**
+
    ```bash
    python -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
    ```
 
-3. Copy `config.example.yaml` to `config.yaml`
+3. **Configure your bot:**
 
-4. Edit `config.yaml`
+   ```bash
+   cp config.example.yaml config.yaml
+   nano config.yaml # Edit the configuration file
+   ```
 
-5. Run it!
-   
+4. **Run the bot:**
+
    ```bash
    python main.py
    ```
 
-To run bot automatically at system boot (if you're using systemd and Linux) you can use this example systemd daemon:
+## Running as a Systemd Service (Linux)
+
+Use this example systemd service file to run your bot automatically at system boot:
 
 ```systemd
 [Unit]
-Description=Any description of daemon here
+Description=PBModular Bot
 After=network.target
 
 [Service]
 WorkingDirectory=/path/to/bot/sources
 Type=simple
-User=cooluser
+User=your_user
 # If you don't use venv, change python path to /usr/bin/python3 in a command below
 ExecStart=/path/to/bot/sources/venv/bin/python3 -u /path/to/bot/sources/main.py
 # Restart bot after fail
@@ -74,27 +87,29 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
+Remember to replace placeholders like `/path/to/bot/sources` and `your_user` with your actual paths and username.
+
 ## Documentation
 
-[Russian docs](https://pbmodular-docs.gitbook.io/ru-docs/)
+* **Russian:** [https://pbmodular-docs.gitbook.io/ru-docs/](https://pbmodular-docs.gitbook.io/ru-docs/)
+* **English:** [https://pbmodular-docs.gitbook.io/eng-docs/](https://pbmodular-docs.gitbook.io/eng-docs/)
 
-[English docs](https://pbmodular-docs.gitbook.io/eng-docs/)
+Want to contribute documentation in your language? Contact [@SanyaPilot](https://github.com/SanyaPilot) or [@Ultra119](https://github.com/Ultra119)
 
-If you wanna add docs in your language contact with [@vilander1337](https://github.com/vilander1337) or [@SanyaPilot](https://github.com/SanyaPilot)
+## Windows Support Notice
 
-## Windows support
-It should be mentioned that Windows support is not gueranteed at all! Something can break randomly just because we are writing for *nix environment.
+While we strive for cross-platform compatibility, Windows support is not fully guaranteed. Minor issues might arise due to the primary development environment being *nix-based.
 
-## Authors
+## Contributors
 
-- [@SanyaPilot](https://github.com/SanyaPilot) ([Telegram](https://t.me/sanyapilot)) - Bot core, wiki
-- [@CakesTwix](https://github.com/CakesTwix) ([Telegram](https://t.me/CakesTwix)) - Translations
-- [@vilander1337](https://github.com/vilander1337) ([Telegram](https://t.me/femboysonly)) - Nice wiki on gitbook, scripts
-
+* **[@SanyaPilot](https://github.com/SanyaPilot)** ([Telegram](https://t.me/sanyapilot)) - Bot core, wiki
+* **[@CakesTwix](https://github.com/CakesTwix)** ([Telegram](https://t.me/CakesTwix)) - Translations
+* **[@vilander1337](https://github.com/vilander1337)** - Gitbook documentation, scripts
+  
 ## Contributing
 
-Contributions are always welcome!
+We welcome contributions! Feel free to open issues, submit pull requests, or join the discussion in our [Telegram Chat](https://t.me/PBModular_chat)
 
 ## License
 
-[GNU GPLv3](https://github.com/SanyaPilot/PBModular/blob/master/LICENSE)
+[GNU GPLv3](https://github.com/SanyaPilot/PBModular/blob/master/LICENSE) 
