@@ -21,21 +21,24 @@ class ModManageExtension(ModuleExtension):
         self.install_confirmations = {}
         self.update_confirmations = {}
 
-    @allowed_for("owner")
-    @command("modules")
-    async def modules_cmd(self, _, message: Message):
-        """Display a list of all modules with options to view and manage them."""
+    def generate_module_buttons(self):
+        """Create a button list of all modules"""
         self.loader: ModuleLoader
-        modules_info = self.loader.get_modules_info()  # Get all modules info
+        modules_info = self.loader.get_modules_info()
         buttons = []
         
         for module_name, info in modules_info.items():
             buttons.append(
                 [InlineKeyboardButton(info.name, callback_data=f"module_{module_name}")]
             )
-        
-        keyboard = InlineKeyboardMarkup(buttons)
-        
+
+        return InlineKeyboardMarkup(buttons)
+
+    @allowed_for("owner")
+    @command("modules")
+    async def modules_cmd(self, _, message: Message):
+        """Display a list of all modules with options to view and manage them."""
+        keyboard = self.generate_module_buttons()
         await message.reply(self.S["modules"]["list"], reply_markup=keyboard)
 
     @allowed_for("owner")
@@ -72,9 +75,20 @@ class ModManageExtension(ModuleExtension):
             InlineKeyboardButton(self.S["module_page"]["delete_btn"], callback_data=f"delete_module_{module_name}")
         )
         
+        buttons.append(
+            InlineKeyboardButton(self.S["module_page"]["back_btn"], callback_data="back_to_modules")
+        )
+
         keyboard = InlineKeyboardMarkup([buttons])
         
         await call.message.edit_text(text.strip(), reply_markup=keyboard)
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^back_to_modules$"))
+    async def back_to_modules(self, _, call: CallbackQuery):
+        keyboard = self.generate_module_buttons()
+        """Returns the user to the list of modules on the front page."""
+        await call.message.edit_text(self.S["modules"]["list"], reply_markup=keyboard)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^update_module_(.*)"))

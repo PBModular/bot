@@ -296,3 +296,4 @@ module_page:
     {description}
   update_btn: Обновить
   delete_btn: Удалить
+  back_btn: Назад
