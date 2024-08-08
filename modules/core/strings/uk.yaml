@@ -146,6 +146,8 @@ mod_help:
 
 modules:
   list: "<b>Установленные модули:</b>"
+  next_btn: Далі
+  prev_btn: Назад
 
 module_page:
   name: "<b>Назва:</b> {name}"

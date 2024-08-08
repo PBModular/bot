@@ -285,6 +285,8 @@ reload:
 
 modules:
   list: "<b>Установленные модули:</b>"
+  next_btn: Далее
+  prev_btn: Назад
 
 module_page:
   name: "<b>Название:</b> {name}"

@@ -21,17 +21,37 @@ class ModManageExtension(ModuleExtension):
         self.install_confirmations = {}
         self.update_confirmations = {}
 
-    def generate_module_buttons(self):
-        """Create a button list of all modules"""
+    def generate_module_buttons(self, page: int = 0, items_per_page: int = 2):
+        """Creates a keyboard with a list of all modules, sorted alphabetically, with pagination."""
         self.loader: ModuleLoader
         modules_info = self.loader.get_modules_info()
-        buttons = []
         
-        for module_name, info in modules_info.items():
+        sorted_modules = sorted(modules_info.items(), key=lambda x: x[1].name.lower())
+        
+        start = page * items_per_page
+        end = start + items_per_page
+        paginated_modules = sorted_modules[start:end]
+
+        total_pages = (len(modules_info) + items_per_page - 1) // items_per_page
+
+        buttons = []
+        for module_name, info in paginated_modules:
             buttons.append(
                 [InlineKeyboardButton(info.name, callback_data=f"module_{module_name}")]
             )
+        
+        navigation_buttons = []
+        if page > 0:
+            navigation_buttons.append(InlineKeyboardButton(self.S["modules"]["prev_btn"], callback_data=f"modules_page_{page-1}"))
 
+        navigation_buttons.append(InlineKeyboardButton(f"{page + 1}/{total_pages}", callback_data="noop"))
+
+        if end < len(modules_info):
+        
+            navigation_buttons.append(InlineKeyboardButton(self.S["modules"]["next_btn"], callback_data=f"modules_page_{page+1}"))
+        if navigation_buttons:
+            buttons.append(navigation_buttons)
+        
         return InlineKeyboardMarkup(buttons)
 
     @allowed_for("owner")
@@ -40,6 +60,14 @@ class ModManageExtension(ModuleExtension):
         """Display a list of all modules with options to view and manage them."""
         keyboard = self.generate_module_buttons()
         await message.reply(self.S["modules"]["list"], reply_markup=keyboard)
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^modules_page_(\d+)$"))
+    async def modules_page(self, _, call: CallbackQuery):
+        """Handles a transition to another page of the module list."""
+        page = int(call.data.split("_")[2])
+        keyboard = self.generate_module_buttons(page=page)
+        await call.message.edit_text(self.S["modules"]["list"], reply_markup=keyboard)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^module_(.*)"))
@@ -86,8 +114,8 @@ class ModManageExtension(ModuleExtension):
     @allowed_for("owner")
     @callback_query(filters.regex(r"^back_to_modules$"))
     async def back_to_modules(self, _, call: CallbackQuery):
-        keyboard = self.generate_module_buttons()
         """Returns the user to the list of modules on the front page."""
+        keyboard = self.generate_module_buttons(page=0)
         await call.message.edit_text(self.S["modules"]["list"], reply_markup=keyboard)
 
     @allowed_for("owner")
@@ -536,3 +564,7 @@ class ModManageExtension(ModuleExtension):
             return
         
         await msg.edit_text(self.S["reload"]["ok"].format(name))
+
+    @callback_query(filters.regex(r"^dummy"))
+    async def dummy_callback(self, _, call: CallbackQuery):
+        await call.answer()
