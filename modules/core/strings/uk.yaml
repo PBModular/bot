@@ -150,6 +150,7 @@ modules:
   prev_btn: Назад
 
 module_page:
+  invalid_module: Модуль некоректний. Будь ласка, перевірте локальні файли Модуля!
   name: "<b>Назва:</b> {name}"
   author: "<b>Автор:</b> {author}"
   version: "<b>Версія:</b> {version}"

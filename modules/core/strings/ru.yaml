@@ -289,6 +289,7 @@ modules:
   prev_btn: Назад
 
 module_page:
+  invalid_module: Модуль неисправен. Пожалуйста, проверьте локальные файлы Модуля!
   name: "<b>Название:</b> {name}"
   author: "<b>Автор:</b> {author}"
   version: "<b>Версия:</b> {version}"

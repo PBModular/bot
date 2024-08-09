@@ -20,8 +20,9 @@ class ModManageExtension(ModuleExtension):
     def on_init(self):
         self.install_confirmations = {}
         self.update_confirmations = {}
+        self.last_page = {}
 
-    def generate_module_buttons(self, page: int = 0, items_per_page: int = 2):
+    def generate_module_buttons(self, page: int = 0, items_per_page: int = 5):
         """Creates a keyboard with a list of all modules, sorted alphabetically, with pagination."""
         self.loader: ModuleLoader
         modules_info = self.loader.get_modules_info()
@@ -37,18 +38,19 @@ class ModManageExtension(ModuleExtension):
         buttons = []
         for module_name, info in paginated_modules:
             buttons.append(
-                [InlineKeyboardButton(info.name, callback_data=f"module_{module_name}")]
+                [InlineKeyboardButton(info.name, callback_data=f"module_{module_name}_{page}")]
             )
         
         navigation_buttons = []
         if page > 0:
             navigation_buttons.append(InlineKeyboardButton(self.S["modules"]["prev_btn"], callback_data=f"modules_page_{page-1}"))
 
-        navigation_buttons.append(InlineKeyboardButton(f"{page + 1}/{total_pages}", callback_data="noop"))
+        if not total_pages == 1:
+            navigation_buttons.append(InlineKeyboardButton(f"{page + 1}/{total_pages}", callback_data="dummy"))
 
         if end < len(modules_info):
-        
             navigation_buttons.append(InlineKeyboardButton(self.S["modules"]["next_btn"], callback_data=f"modules_page_{page+1}"))
+        
         if navigation_buttons:
             buttons.append(navigation_buttons)
         
@@ -70,14 +72,19 @@ class ModManageExtension(ModuleExtension):
         await call.message.edit_text(self.S["modules"]["list"], reply_markup=keyboard)
 
     @allowed_for("owner")
-    @callback_query(filters.regex(r"^module_(.*)"))
+    @callback_query(filters.regex(r"^module_(.*)_(\d+)$"))
     async def module_page(self, _, call: CallbackQuery):
         """Display the help page and management options for a specific module."""
-        module_name = call.data.split("_")[1]
+        try:
+            module_name, page = call.data.split("_")[1], int(call.data.split("_")[2])
+        except ValueError:
+            await call.answer(self.S["module_page"]["invalid_module"])
+            return
+        
         self.loader: ModuleLoader
         
+        self.last_page[call.message.id] = page
         info = self.loader.get_module_info(module_name)
-        
         text = ""
         
         if info.name:
@@ -114,8 +121,9 @@ class ModManageExtension(ModuleExtension):
     @allowed_for("owner")
     @callback_query(filters.regex(r"^back_to_modules$"))
     async def back_to_modules(self, _, call: CallbackQuery):
-        """Returns the user to the list of modules on the front page."""
-        keyboard = self.generate_module_buttons(page=0)
+        """Returns the user to the list of modules on the page they were last on."""
+        page = self.last_page.get(call.message.id, 0)
+        keyboard = self.generate_module_buttons(page=page)
         await call.message.edit_text(self.S["modules"]["list"], reply_markup=keyboard)
 
     @allowed_for("owner")

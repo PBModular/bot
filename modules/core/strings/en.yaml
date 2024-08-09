@@ -289,6 +289,7 @@ modules:
   prev_btn: Previous
 
 module_page:
+  invalid_module: Module is invalid. Please check Module local files!
   name: "<b>Name:</b> {name}"
   author: "<b>Author:</b> {author}"
   version: "<b>Version:</b> {version}"
