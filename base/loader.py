@@ -212,6 +212,8 @@ class ModuleLoader:
         Method for unloading modules.
         :param name: Name of Python module inside modules dir
         """
+        
+        self.__modules[name].on_unload()
         self.__modules[name].unregister_all()
         self.__modules.pop(name)
         self.__modules_info.pop(name)

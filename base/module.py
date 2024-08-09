@@ -394,6 +394,10 @@ class BaseModule(ABC):
         """Called when module's database is fully initialized. Optional"""
         pass
 
+    def on_unload(self):
+        """Called on module unloading. Optional"""
+        pass
+
     @property
     def loaded_modules(self) -> dict[str, ModuleInfo]:
         """
