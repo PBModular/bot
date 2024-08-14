@@ -169,3 +169,4 @@ module_page:
   unload_btn: Вивантажити
   load_btn: Загрузити
   reload_btn: Перезагрузити
+  reload_ok: Module {module_name} reloaded!

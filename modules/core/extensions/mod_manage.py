@@ -175,7 +175,8 @@ class ModManageExtension(ModuleExtension):
         """Handle the module update process."""
         module_name = call.data.split("_")[2]
 
-        await self.mod_update(_, call.message, module_name)
+        if not await self.mod_update(_, call.message, module_name):
+            return
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^delete_module_(.*)$"))
@@ -183,7 +184,8 @@ class ModManageExtension(ModuleExtension):
         """Handle the module deletion process."""
         module_name = call.data.split("_")[2]
 
-        await self.mod_uninstall(_, call.message, module_name)
+        if not await self.mod_uninstall(_, call.message, module_name):
+            return
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^reload_module_(.*)$"))
@@ -191,13 +193,13 @@ class ModManageExtension(ModuleExtension):
         """Handle the module restart process."""
         module_name = call.data.split("_")[2]
         
-        unload_result = await self.mod_unload(call.message, module_name, silent=True, edit=False)
-        if unload_result is None:
+        if not await self.mod_unload(call.message, module_name, silent=True, edit=False):
             return
 
-        load_result = await self.mod_load(call.message, module_name, silent=True, edit=False)
-        if load_result is None:
+        if not await self.mod_load(call.message, module_name, silent=True, edit=False):
             return
+
+        await call.answer(self.S["module_page"]["reload_ok"].format(module_name=module_name), show_alert=True)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^unload_module_(.*)$"))
@@ -205,8 +207,7 @@ class ModManageExtension(ModuleExtension):
         """Handle the module unload process."""
         module_name = call.data.split("_")[2]
         
-        result = await self.mod_unload(call.message, module_name)
-        if result is None:
+        if not await self.mod_unload(call.message, module_name):
             return
 
     @allowed_for("owner")
@@ -215,8 +216,7 @@ class ModManageExtension(ModuleExtension):
         """Handle the module load process."""
         module_name = call.data.split("_")[2]
         
-        result = await self.mod_load(call.message, module_name)
-        if result is None:
+        if not await self.mod_load(call.message, module_name):
             return
 
     @allowed_for("owner")

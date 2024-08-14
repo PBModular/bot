@@ -308,3 +308,4 @@ module_page:
   unload_btn: Unload
   load_btn: Load
   reload_btn: Reload
+  reload_ok: Module {module_name} reloaded!
