@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 import os
 import shutil
 import requirements
+from asyncio import sleep
 from typing import Optional
 
 
@@ -101,20 +102,43 @@ class ModManageExtension(ModuleExtension):
         git_repo_path = os.path.join(os.getcwd(), "modules", module_name, ".git")
         buttons = []
 
-        if os.path.exists(git_repo_path):
-            buttons.append(
-                InlineKeyboardButton(self.S["module_page"]["update_btn"], callback_data=f"update_module_{module_name}")
+        buttons_group_1 = []
+        if self.loader.get_module(module_name):
+            buttons_group_1.append(
+                InlineKeyboardButton(self.S["module_page"]["unload_btn"], callback_data=f"unload_module_{module_name}")
+            )
+        else:
+            buttons_group_1.append(
+                InlineKeyboardButton(self.S["module_page"]["load_btn"], callback_data=f"load_module_{module_name}")
             )
         
-        buttons.append(
+        buttons_group_1.append(
+            InlineKeyboardButton(self.S["module_page"]["reload_btn"], callback_data=f"reload_module_{module_name}")
+        )
+
+        buttons_group_2 = []
+        if os.path.exists(git_repo_path):
+            buttons_group_2.append(
+                InlineKeyboardButton(self.S["module_page"]["update_btn"], callback_data=f"update_module_{module_name}")
+            )
+
+        buttons_group_2.append(
             InlineKeyboardButton(self.S["module_page"]["delete_btn"], callback_data=f"delete_module_{module_name}")
         )
         
-        buttons.append(
+        buttons_group_3 = []
+        buttons_group_3.append(
             InlineKeyboardButton(self.S["module_page"]["back_btn"], callback_data="back_to_modules")
         )
 
-        keyboard = InlineKeyboardMarkup([buttons])
+        buttons.append(buttons_group_1)
+
+        if buttons_group_2:
+            buttons.append(buttons_group_2)
+
+        buttons.append(buttons_group_3)
+
+        keyboard = InlineKeyboardMarkup(buttons)
         
         await call.message.edit_text(text.strip(), reply_markup=keyboard)
 
@@ -141,6 +165,42 @@ class ModManageExtension(ModuleExtension):
         name = call.data.split("_")[2]
 
         await self.mod_uninstall(_, call.message, name)
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^reload_module_(.*)$"))
+    async def reload_module(self, _, call: CallbackQuery):
+        """Handle the module restart process."""
+        module_name = call.data.split("_")[2]
+        
+        unload_result = await self.mod_unload(call.message, module_name, silent=True, edit=False)
+        if unload_result is None:
+            return
+
+        load_result = await self.mod_load(call.message, module_name, silent=True, edit=False)
+        if load_result is None:
+            return
+
+        await call.edit_message_text(self.S["restart"]["ok"].format(module_name))
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^unload_module_(.*)$"))
+    async def unload_module(self, _, call: CallbackQuery):
+        """Handle the module unload process."""
+        module_name = call.data.split("_")[2]
+        
+        result = await self.mod_unload(call.message, module_name)
+        if result is None:
+            return
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^load_module_(.*)$"))
+    async def load_module(self, _, call: CallbackQuery):
+        """Handle the module load process."""
+        module_name = call.data.split("_")[2]
+        
+        result = await self.mod_load(call.message, module_name)
+        if result is None:
+            return
 
     @allowed_for("owner")
     @command("mod_install")

@@ -300,3 +300,6 @@ module_page:
   update_btn: Обновить
   delete_btn: Удалить
   back_btn: Назад
+  unload_btn: Выгрузить
+  load_btn: Загрузить
+  reload_btn: Перезагрузить

@@ -300,3 +300,6 @@ module_page:
   update_btn: Update
   delete_btn: Delete
   back_btn: Back
+  unload_btn: Unload
+  load_btn: Load
+  reload_btn: Reload

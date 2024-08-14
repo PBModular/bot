@@ -161,3 +161,6 @@ module_page:
   update_btn: Обновити
   delete_btn: Видалити
   back_btn: Назад
+  unload_btn: Вигрузити
+  load_btn: Загрузити
+  reload_btn: Перезагрузити
