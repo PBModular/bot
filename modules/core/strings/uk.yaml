@@ -161,6 +161,11 @@ module_page:
   update_btn: Обновити
   delete_btn: Видалити
   back_btn: Назад
-  unload_btn: Вигрузити
+  refresh_page_btn: Обновити сторінку
+  refresh_page_err: |
+    Не вдалося оновити сторінку {module_name}!
+    Або модуль було вивантажено, або сталася непередбачувана помилка
+  no_changes: Змін не знайдено
+  unload_btn: Вивантажити
   load_btn: Загрузити
   reload_btn: Перезагрузити

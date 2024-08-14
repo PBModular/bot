@@ -8,7 +8,7 @@ from pyrogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
-from pyrogram import filters
+from pyrogram import filters, errors
 from urllib.parse import urlparse
 import os
 import shutil
@@ -82,12 +82,17 @@ class ModManageExtension(ModuleExtension):
             await call.answer(self.S["module_page"]["invalid_module"])
             return
         
-        self.loader: ModuleLoader
-        
         self.last_page[call.message.id] = page
+
+        await self.update_module_page(call, module_name)
+
+    async def update_module_page(self, call, module_name, page_text: Optional[str] = None):
+        """Update the module page with the latest information."""
+        self.loader: ModuleLoader
+
         info = self.loader.get_module_info(module_name)
-        text = ""
-        
+        text = page_text or ""
+
         if info.name:
             text += self.S["module_page"]["name"].format(name=info.name) + "\n"
         if info.author:
@@ -100,46 +105,44 @@ class ModManageExtension(ModuleExtension):
             text += "\n" + self.S["module_page"]["description"].format(description=info.description)
         
         git_repo_path = os.path.join(os.getcwd(), "modules", module_name, ".git")
-        buttons = []
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    self.S["module_page"][f"{'un' if self.loader.get_module(module_name) else ''}load_btn"], 
+                    callback_data=f"{'unload' if self.loader.get_module(module_name) else 'load'}_module_{module_name}"
+                ),
+                InlineKeyboardButton(
+                    self.S["module_page"]["reload_btn"], 
+                    callback_data=f"reload_module_{module_name}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    self.S["module_page"]["update_btn"], 
+                    callback_data=f"update_module_{module_name}"
+                ) if os.path.exists(git_repo_path) else None,
+                InlineKeyboardButton(
+                    self.S["module_page"]["delete_btn"], 
+                    callback_data=f"delete_module_{module_name}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    self.S["module_page"]["refresh_page_btn"], 
+                    callback_data=f"refresh_module_page_{module_name}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    self.S["module_page"]["back_btn"], 
+                    callback_data="back_to_modules"
+                )
+            ]
+        ]
 
-        buttons_group_1 = []
-        if self.loader.get_module(module_name):
-            buttons_group_1.append(
-                InlineKeyboardButton(self.S["module_page"]["unload_btn"], callback_data=f"unload_module_{module_name}")
-            )
-        else:
-            buttons_group_1.append(
-                InlineKeyboardButton(self.S["module_page"]["load_btn"], callback_data=f"load_module_{module_name}")
-            )
-        
-        buttons_group_1.append(
-            InlineKeyboardButton(self.S["module_page"]["reload_btn"], callback_data=f"reload_module_{module_name}")
-        )
-
-        buttons_group_2 = []
-        if os.path.exists(git_repo_path):
-            buttons_group_2.append(
-                InlineKeyboardButton(self.S["module_page"]["update_btn"], callback_data=f"update_module_{module_name}")
-            )
-
-        buttons_group_2.append(
-            InlineKeyboardButton(self.S["module_page"]["delete_btn"], callback_data=f"delete_module_{module_name}")
-        )
-        
-        buttons_group_3 = []
-        buttons_group_3.append(
-            InlineKeyboardButton(self.S["module_page"]["back_btn"], callback_data="back_to_modules")
-        )
-
-        buttons.append(buttons_group_1)
-
-        if buttons_group_2:
-            buttons.append(buttons_group_2)
-
-        buttons.append(buttons_group_3)
+        buttons = [list(filter(None, group)) for group in buttons]
 
         keyboard = InlineKeyboardMarkup(buttons)
-        
         await call.message.edit_text(text.strip(), reply_markup=keyboard)
 
     @allowed_for("owner")
@@ -151,20 +154,36 @@ class ModManageExtension(ModuleExtension):
         await call.message.edit_text(self.S["modules"]["list"], reply_markup=keyboard)
 
     @allowed_for("owner")
-    @callback_query(filters.regex(r"^update_module_(.*)"))
-    async def update_module(self, _, call: CallbackQuery):
-        """Handle the module update process."""
-        name = call.data.split("_")[2]
-        
-        await self.mod_update(_, call.message, name)
+    @callback_query(filters.regex(r"^refresh_module_page_(.*)$"))
+    async def refresh_module_page(self, _, call: CallbackQuery):
+        """Handle the refresh page process."""
+        module_name = call.data.split("_")[3]
+        try:
+            await self.update_module_page(call, module_name)
+
+        except errors.MessageNotModified:
+            await call.answer(self.S["module_page"]["no_changes"])
+            pass
+        except Exception as e:
+            await call.edit_message_text(self.S["module_page"]["refresh_page_err"].format(module_name=module_name))
+            self.logger.error(f"Failed to refresh {module_name} page! \n{e}")
+            return
 
     @allowed_for("owner")
-    @callback_query(filters.regex(r"^delete_module_(.*)"))
+    @callback_query(filters.regex(r"^update_module_(.*)$"))
+    async def update_module(self, _, call: CallbackQuery):
+        """Handle the module update process."""
+        module_name = call.data.split("_")[2]
+
+        await self.mod_update(_, call.message, module_name)
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^delete_module_(.*)$"))
     async def delete_module(self, _, call: CallbackQuery):
         """Handle the module deletion process."""
-        name = call.data.split("_")[2]
+        module_name = call.data.split("_")[2]
 
-        await self.mod_uninstall(_, call.message, name)
+        await self.mod_uninstall(_, call.message, module_name)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^reload_module_(.*)$"))
@@ -179,8 +198,6 @@ class ModManageExtension(ModuleExtension):
         load_result = await self.mod_load(call.message, module_name, silent=True, edit=False)
         if load_result is None:
             return
-
-        await call.edit_message_text(self.S["restart"]["ok"].format(module_name))
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^unload_module_(.*)$"))

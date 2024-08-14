@@ -300,6 +300,11 @@ module_page:
   update_btn: Обновить
   delete_btn: Удалить
   back_btn: Назад
+  refresh_page_btn: Обновить страницу
+  refresh_page_err: |
+    Не удалось обновить страницу {module_name}!
+    Либо модуль был выгружен, либо произошла непредвиденная ошибка
+  no_changes: Изменений не обнаружено
   unload_btn: Выгрузить
   load_btn: Загрузить
   reload_btn: Перезагрузить

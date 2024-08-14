@@ -300,6 +300,11 @@ module_page:
   update_btn: Update
   delete_btn: Delete
   back_btn: Back
+  refresh_page_btn: Refresh page
+  refresh_page_err: |
+    Failed to refresh {module_name} page! 
+    Either the module has been unloaded or an unexpected error has occurred
+  no_changes: No changes found
   unload_btn: Unload
   load_btn: Load
   reload_btn: Reload
