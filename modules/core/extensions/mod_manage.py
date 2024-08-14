@@ -29,33 +29,28 @@ class ModManageExtension(ModuleExtension):
         modules_info = self.loader.get_modules_info()
         
         sorted_modules = sorted(modules_info.items(), key=lambda x: x[1].name.lower())
-        
-        start = page * items_per_page
-        end = start + items_per_page
+        start, end = page * items_per_page, (page + 1) * items_per_page
         paginated_modules = sorted_modules[start:end]
-
         total_pages = (len(modules_info) + items_per_page - 1) // items_per_page
 
-        buttons = []
-        for module_name, info in paginated_modules:
-            buttons.append(
-                [InlineKeyboardButton(info.name, callback_data=f"module_{module_name}_{page}")]
-            )
-        
-        navigation_buttons = []
-        if page > 0:
-            navigation_buttons.append(InlineKeyboardButton(self.S["modules"]["prev_btn"], callback_data=f"modules_page_{page-1}"))
+        buttons = [
+            [InlineKeyboardButton(info.name, callback_data=f"module_{module_name}_{page}")]
+            for module_name, info in paginated_modules
+        ]
 
-        if not total_pages == 1:
-            navigation_buttons.append(InlineKeyboardButton(f"{page + 1}/{total_pages}", callback_data="dummy"))
+        navigation_buttons = [
+            InlineKeyboardButton(self.S["modules"]["prev_btn"], callback_data=f"modules_page_{page-1}") if page > 0 else None,
+            InlineKeyboardButton(f"{page + 1}/{total_pages}", callback_data="dummy") if total_pages > 1 else None,
+            InlineKeyboardButton(self.S["modules"]["next_btn"], callback_data=f"modules_page_{page+1}") if end < len(modules_info) else None
+        ]
 
-        if end < len(modules_info):
-            navigation_buttons.append(InlineKeyboardButton(self.S["modules"]["next_btn"], callback_data=f"modules_page_{page+1}"))
-        
+        navigation_buttons = list(filter(None, navigation_buttons))
+
         if navigation_buttons:
             buttons.append(navigation_buttons)
         
-        return InlineKeyboardMarkup(buttons)
+        keyboard = InlineKeyboardMarkup(buttons)
+        return keyboard
 
     @allowed_for("owner")
     @command("modules")
@@ -91,18 +86,11 @@ class ModManageExtension(ModuleExtension):
         self.loader: ModuleLoader
 
         info = self.loader.get_module_info(module_name)
-        text = page_text or ""
-
-        if info.name:
-            text += self.S["module_page"]["name"].format(name=info.name) + "\n"
-        if info.author:
-            text += self.S["module_page"]["author"].format(author=info.author) + "\n"
-        if info.version:
-            text += self.S["module_page"]["version"].format(version=info.version) + "\n"
-        if info.src_url:
-            text += self.S["module_page"]["src_url"].format(url=info.src_url) + "\n"
-        if info.description:
-            text += "\n" + self.S["module_page"]["description"].format(description=info.description)
+        text = f"{self.S['module_page']['name'].format(name=info.name)}\n" if info.name else ""
+        text += f"{self.S['module_page']['author'].format(author=info.author)}\n" if info.author else ""
+        text += f"{self.S['module_page']['version'].format(version=info.version)}\n" if info.version else ""
+        text += f"{self.S['module_page']['src_url'].format(url=info.src_url)}\n" if info.src_url else ""
+        text += f"\n{self.S['module_page']['description'].format(description=info.description)}" if info.description else ""
         
         git_repo_path = os.path.join(os.getcwd(), "modules", module_name, ".git")
         buttons = [
@@ -111,33 +99,16 @@ class ModManageExtension(ModuleExtension):
                     self.S["module_page"][f"{'un' if self.loader.get_module(module_name) else ''}load_btn"], 
                     callback_data=f"{'unload' if self.loader.get_module(module_name) else 'load'}_module_{module_name}"
                 ),
-                InlineKeyboardButton(
-                    self.S["module_page"]["reload_btn"], 
-                    callback_data=f"reload_module_{module_name}"
-                )
+                InlineKeyboardButton(self.S["module_page"]["reload_btn"], callback_data=f"reload_module_{module_name}")
             ],
             [
                 InlineKeyboardButton(
-                    self.S["module_page"]["update_btn"], 
-                    callback_data=f"update_module_{module_name}"
-                ) if os.path.exists(git_repo_path) else None,
-                InlineKeyboardButton(
-                    self.S["module_page"]["delete_btn"], 
-                    callback_data=f"delete_module_{module_name}"
-                )
+                    self.S["module_page"]["update_btn"], callback_data=f"update_module_{module_name}"
+                    ) if os.path.exists(git_repo_path) else None,
+                InlineKeyboardButton(self.S["module_page"]["delete_btn"], callback_data=f"delete_module_{module_name}")
             ],
-            [
-                InlineKeyboardButton(
-                    self.S["module_page"]["refresh_page_btn"], 
-                    callback_data=f"refresh_module_page_{module_name}"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    self.S["module_page"]["back_btn"], 
-                    callback_data="back_to_modules"
-                )
-            ]
+            [InlineKeyboardButton(self.S["module_page"]["refresh_page_btn"], callback_data=f"refresh_module_page_{module_name}")],
+            [InlineKeyboardButton(self.S["module_page"]["back_btn"], callback_data="back_to_modules")]
         ]
 
         buttons = [list(filter(None, group)) for group in buttons]
@@ -163,11 +134,9 @@ class ModManageExtension(ModuleExtension):
 
         except errors.MessageNotModified:
             await call.answer(self.S["module_page"]["no_changes"])
-            pass
         except Exception as e:
             await call.edit_message_text(self.S["module_page"]["refresh_page_err"].format(module_name=module_name))
             self.logger.error(f"Failed to refresh {module_name} page! \n{e}")
-            return
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^update_module_(.*)$"))
