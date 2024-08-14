@@ -66,7 +66,7 @@ class ModManageExtension(ModuleExtension):
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^modules_page_(\d+)$"))
-    async def modules_page(self, _, call: CallbackQuery):
+    async def call_modules_page(self, _, call: CallbackQuery):
         """Handles a transition to another page of the module list."""
         page = int(call.data.split("_")[2])
         keyboard = self.generate_module_buttons(page=page)
@@ -74,7 +74,7 @@ class ModManageExtension(ModuleExtension):
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^module_(.*)_(\d+)$"))
-    async def module_page(self, _, call: CallbackQuery):
+    async def call_module_page(self, _, call: CallbackQuery):
         """Display the help page and management options for a specific module."""
         try:
             module_name, page = call.data.split("_")[1], int(call.data.split("_")[2])
@@ -147,7 +147,7 @@ class ModManageExtension(ModuleExtension):
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^back_to_modules$"))
-    async def back_to_modules(self, _, call: CallbackQuery):
+    async def call_back_to_modules(self, _, call: CallbackQuery):
         """Returns the user to the list of modules on the page they were last on."""
         page = self.last_page.get(call.message.id, 0)
         keyboard = self.generate_module_buttons(page=page)
@@ -155,7 +155,7 @@ class ModManageExtension(ModuleExtension):
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^refresh_module_page_(.*)$"))
-    async def refresh_module_page(self, _, call: CallbackQuery):
+    async def call_refresh_module_page(self, _, call: CallbackQuery):
         """Handle the refresh page process."""
         module_name = call.data.split("_")[3]
         try:
@@ -171,7 +171,7 @@ class ModManageExtension(ModuleExtension):
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^update_module_(.*)$"))
-    async def update_module(self, _, call: CallbackQuery):
+    async def call_update_module(self, _, call: CallbackQuery):
         """Handle the module update process."""
         module_name = call.data.split("_")[2]
 
@@ -180,7 +180,7 @@ class ModManageExtension(ModuleExtension):
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^delete_module_(.*)$"))
-    async def delete_module(self, _, call: CallbackQuery):
+    async def call_delete_module(self, _, call: CallbackQuery):
         """Handle the module deletion process."""
         module_name = call.data.split("_")[2]
 
@@ -189,7 +189,7 @@ class ModManageExtension(ModuleExtension):
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^reload_module_(.*)$"))
-    async def reload_module(self, _, call: CallbackQuery):
+    async def call_reload_module(self, _, call: CallbackQuery):
         """Handle the module restart process."""
         module_name = call.data.split("_")[2]
         
@@ -203,7 +203,7 @@ class ModManageExtension(ModuleExtension):
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^unload_module_(.*)$"))
-    async def unload_module(self, _, call: CallbackQuery):
+    async def call_unload_module(self, _, call: CallbackQuery):
         """Handle the module unload process."""
         module_name = call.data.split("_")[2]
         
@@ -212,7 +212,7 @@ class ModManageExtension(ModuleExtension):
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^load_module_(.*)$"))
-    async def load_module(self, _, call: CallbackQuery):
+    async def call_load_module(self, _, call: CallbackQuery):
         """Handle the module load process."""
         module_name = call.data.split("_")[2]
         
