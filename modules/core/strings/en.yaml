@@ -170,6 +170,7 @@ update:
     <b>Version</b> {old_ver} -> {new_ver}
     <b>Repository URL:</b> {url}
 
+  no_updates_found: <b>No updates found!</b>
   reqs: "<b>Python dependencies for module:</b>"
   abort: "Update aborted!"
 

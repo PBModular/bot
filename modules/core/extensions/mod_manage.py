@@ -349,6 +349,12 @@ class ModManageExtension(ModuleExtension):
 
         msg = await message.reply(self.S["install"]["start"].format(name))
 
+        # Check for updates
+        update_available = self.loader.check_for_updates(int_name, "modules")
+        if not update_available:
+            await msg.edit_text(self.S["update"]["no_updates_found"].format(name=name))
+            return
+
         old_ver = self.loader.get_module_info(int_name).version
         old_reqs = None
 
