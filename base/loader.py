@@ -307,6 +307,52 @@ class ModuleLoader:
 
         return p.returncode, p.stdout.decode("utf-8")
 
+    def check_for_updates(self, name: str, directory: str) -> Optional[bool]:
+        """
+        Check if there are new commits available for the module or extension.
+        
+        :param name: Name of the module or extension
+        :param directory: Directory of modules or extensions
+        :return: True if there are new commits, False if up-to-date, or None on error
+        """
+        try:
+            cmd = f"cd {self.__root_dir}/{directory}/{name} && git fetch"
+            p = subprocess.run(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+            
+            if p.returncode != 0:
+                logger.error(f"Error while fetching updates for {name}!")
+                logger.error(p.stdout.decode("utf-8"))
+                return None
+
+            cmd_check = (
+                f"cd {self.__root_dir}/{directory}/{name} && "
+                "git rev-list --count HEAD..origin"
+            )
+            p_check = subprocess.run(
+                cmd_check, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+
+            if p_check.returncode != 0:
+                logger.error(f"Error while checking for new commits for {name}!")
+                logger.error(p_check.stdout.decode("utf-8"))
+                return None
+
+            output = p_check.stdout.decode("utf-8").strip()
+
+            # Handle empty or invalid output
+            if not output.isdigit():
+                logger.warning(f"Unexpected output when checking for commits: {output}")
+                return False  # Assume no new commits if output is invalid
+
+            new_commits_count = int(output)
+            return new_commits_count > 0
+
+        except Exception as e:
+            logger.error(f"Failed to check for new commits for {name}. Details: {e}")
+            return None
+
     def update_from_git(self, name: str, directory: str) -> tuple[int, str]:
         """
         Method to update git repository (module or extensions)
