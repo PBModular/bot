@@ -294,7 +294,7 @@ class ModuleLoader:
         """
         logger.info(f"Downloading module from git URL {url}!")
         name = urlparse(url).path.split("/")[-1].removesuffix(".git")
-        cmd = f"cd {self.__root_dir}/modules\n" f"git clone {url}"
+        cmd = f"cd {self.__root_dir}/modules && git clone {url}"
         p = subprocess.run(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
@@ -327,8 +327,7 @@ class ModuleLoader:
                 return None
 
             cmd_check = (
-                f"cd {self.__root_dir}/{directory}/{name} && "
-                "git rev-list --count HEAD..origin"
+                f"cd {self.__root_dir}/{directory}/{name} && git rev-list --count HEAD..origin"
             )
             p_check = subprocess.run(
                 cmd_check, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
@@ -370,7 +369,7 @@ class ModuleLoader:
         logger.info(f"Updating {name}!")
 
         # Backup
-        hash_cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" f"git rev-parse HEAD"
+        hash_cmd = f"cd {self.__root_dir}/{directory}/{name}/ && git rev-parse HEAD"
         hash_p = subprocess.run(
             hash_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
@@ -381,7 +380,7 @@ class ModuleLoader:
 
         self.__hash_backups[name] = hash_p.stdout.decode("utf-8")
 
-        cmd = f"cd {self.__root_dir}/{directory}/{name}/\n" f"git pull"
+        cmd = f"cd {self.__root_dir}/{directory}/{name}/ && git pull"
         p = subprocess.run(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
@@ -427,8 +426,7 @@ class ModuleLoader:
         """
         try:
             cmd = (
-                f"cd {self.__root_dir}/{directory}/{name}/\n"
-                f"git reset --hard {self.__hash_backups[name]}"
+                f"cd {self.__root_dir}/{directory}/{name}/ && git reset --hard {self.__hash_backups[name]}"
             )
             p = subprocess.run(
                 cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
