@@ -297,6 +297,8 @@ module_page:
   description: |
     <b>Описание:</b>
     {description}
+  updates_found: <b>Обнаружены новые обновления!</b>
+  no_updates_found: <b>Обновлений не обнаружено!</b>
   update_btn: Обновить
   delete_btn: Удалить
   back_btn: Назад

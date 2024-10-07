@@ -297,6 +297,8 @@ module_page:
   description: |
     <b>Description:</b>
     {description}
+  updates_found: <b>New updates found!</b>
+  no_updates_found: <b>No updates found!</b>
   update_btn: Update
   delete_btn: Delete
   back_btn: Back

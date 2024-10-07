@@ -158,6 +158,8 @@ module_page:
   description: |
     <b>Опис:</b>
     {description}
+  updates_found: <b>Виявлено нові оновлення!</b>
+  no_updates_found: <b>Оновлення не виявлено!</b>
   update_btn: Обновити
   delete_btn: Видалити
   back_btn: Назад

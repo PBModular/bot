@@ -81,8 +81,8 @@ class ModManageExtension(ModuleExtension):
 
         await self.update_module_page(call, module_name)
 
-    async def update_module_page(self, call, module_name, page_text: Optional[str] = None):
-        """Update the module page with the latest information."""
+    async def update_module_page(self, call, module_name):
+        """Update the module page with the latest information, and check for updates."""
         self.loader: ModuleLoader
 
         info = self.loader.get_module_info(module_name)
@@ -93,6 +93,14 @@ class ModManageExtension(ModuleExtension):
         text += f"\n{self.S['module_page']['description'].format(description=info.description)}" if info.description else ""
         
         git_repo_path = os.path.join(os.getcwd(), "modules", module_name, ".git")
+        if os.path.exists(git_repo_path):
+            update_message = self.loader.check_for_updates(module_name, "modules")
+
+        if update_message == True:
+            text += f"\n\n{self.S['module_page']['updates_found']}"
+        elif update_message == False:
+            text += f"\n\n{self.S['module_page']['no_updates_found']}"
+
         buttons = [
             [
                 InlineKeyboardButton(
@@ -104,7 +112,7 @@ class ModManageExtension(ModuleExtension):
             [
                 InlineKeyboardButton(
                     self.S["module_page"]["update_btn"], callback_data=f"update_module_{module_name}"
-                    ) if os.path.exists(git_repo_path) else None,
+                    ) if os.path.exists(git_repo_path) and update_message else None,
                 InlineKeyboardButton(self.S["module_page"]["delete_btn"], callback_data=f"delete_module_{module_name}")
             ],
             [InlineKeyboardButton(self.S["module_page"]["refresh_page_btn"], callback_data=f"refresh_module_page_{module_name}")],
