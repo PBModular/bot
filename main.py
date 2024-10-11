@@ -1,15 +1,16 @@
 from pyrogram import Client, idle
 from pyrogram.enums import ParseMode
 from pyrogram.errors.exceptions.bad_request_400 import BadRequest
-import logging
 from base.loader import ModuleLoader
 from config import config, CONF_FILE
-import os
 from logging.handlers import RotatingFileHandler
 from colorama import init, Fore, Style
-
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from db import Base
+
+import os
+import logging
+import subprocess
 
 init()  # initialize colorama
 
@@ -63,6 +64,17 @@ logger = logging.getLogger(__name__)
 
 # Root path
 ROOT_DIR = os.getcwd()
+
+
+def get_last_commit_info():
+    try:
+        sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
+        date = subprocess.check_output(
+            ["git", "log", "-1", "--format=%cd", "--date=short"]
+        ).strip().decode("utf-8")
+        return sha, date
+    except subprocess.CalledProcessError:
+        return "Unknown", "Unknown"
 
 
 def main(update_conf: bool = False):
@@ -121,6 +133,7 @@ def main(update_conf: bool = False):
 
 
 if __name__ == "__main__":
+    sha, date = get_last_commit_info()
     print(
         f"""
         {Fore.CYAN}
@@ -130,10 +143,9 @@ if __name__ == "__main__":
      _/        _/    _/  _/      _/  _/    _/  _/    _/  _/    _/  _/  _/    _/  _/           
     _/        _/_/_/    _/      _/    _/_/      _/_/_/    _/_/_/  _/    _/_/_/  _/            
 
-    Version 1.0.0-rc1
-    Date: 26.03.2023
+    Commit: {sha[:6]}
+    Date: {date}
     {Style.RESET_ALL}
     """
     )
     main(update_conf=False)
- 
