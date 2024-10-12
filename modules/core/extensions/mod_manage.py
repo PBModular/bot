@@ -91,14 +91,13 @@ class ModManageExtension(ModuleExtension):
         text += f"{self.S['module_page']['version'].format(version=info.version)}\n" if info.version else ""
         text += f"{self.S['module_page']['src_url'].format(url=info.src_url)}\n" if info.src_url else ""
         text += f"\n{self.S['module_page']['description'].format(description=info.description)}" if info.description else ""
-        
-        git_repo_path = os.path.join(os.getcwd(), "modules", module_name, ".git")
-        if os.path.exists(git_repo_path):
-            update_message = self.loader.check_for_updates(module_name, "modules")
 
-        if update_message == True:
+        git_repo = os.path.join(os.getcwd(), "modules", module_name, ".git") if not module_name == "core" else None
+        update_message = self.loader.check_for_updates(module_name, "modules") if git_repo and os.path.exists(git_repo) else None
+
+        if update_message:
             text += f"\n\n{self.S['module_page']['updates_found']}"
-        elif update_message == False:
+        elif not update_message:
             text += f"\n\n{self.S['module_page']['no_updates_found']}"
 
         buttons = [
@@ -112,7 +111,7 @@ class ModManageExtension(ModuleExtension):
             [
                 InlineKeyboardButton(
                     self.S["module_page"]["update_btn"], callback_data=f"update_module_{module_name}"
-                    ) if os.path.exists(git_repo_path) and update_message else None,
+                    ) if git_repo and update_message else None,
                 InlineKeyboardButton(self.S["module_page"]["delete_btn"], callback_data=f"delete_module_{module_name}")
             ],
             [InlineKeyboardButton(self.S["module_page"]["refresh_page_btn"], callback_data=f"refresh_module_page_{module_name}")],
