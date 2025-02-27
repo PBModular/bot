@@ -42,6 +42,7 @@ class ModuleLoader:
         self.__bot = bot
         self.__modules: dict[str, BaseModule] = {}
         self.__modules_info: dict[str, ModuleInfo] = {}
+        self.__all_modules_info: dict[str, ModuleInfo] = {}
         self.__modules_deps: dict[str, list[str]] = {}
         self.__root_dir = root_dir
         self.__hash_backups: dict[str, str] = {}
@@ -212,6 +213,7 @@ class ModuleLoader:
 
                     self.__modules[name] = instance
                     self.__modules_info[name] = info
+                    self.__all_modules_info[name] = info
 
                     # Custom init execution
                     instance.on_init()
@@ -237,7 +239,11 @@ class ModuleLoader:
         Method for unloading modules.
         :param name: Name of Python module inside modules dir
         """
-        
+
+        # Before unloading, store the module info
+        if name in self.__modules_info:
+            self.__all_modules_info[name] = self.__modules_info[name]
+
         self.__modules[name].on_unload()
         self.__modules[name].unregister_all()
         self.__modules.pop(name)
@@ -275,17 +281,25 @@ class ModuleLoader:
         """
         return self.__modules_info
 
+    def get_all_modules_info(self) -> dict[str, ModuleInfo]:
+        """
+        Get info about all modules, including unloaded ones
+        
+        :return: Dictionary with ModuleInfo objects for all modules
+        """
+        return self.__all_modules_info
+
     def get_module_info(self, name: str) -> Optional[ModuleInfo]:
         """
-        Get module info
+        Get module info regardless of load status
         :param name: Name of Python module inside modules dir
         :return: Object with module info
         """
-        mod = self.__modules.get(name)
-        if mod is None:
-            return None
+        mod_info = self.__modules_info.get(name)
+        if mod_info is None:
+            return self.__all_modules_info.get(name)
         else:
-            return mod.module_info
+            return mod_info
 
     def get_module_help(self, name: str) -> Optional[Union[HelpPage, str]]:
         """
