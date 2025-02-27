@@ -89,27 +89,60 @@ class ModuleLoader:
                         os.chdir(self.__root_dir)
 
     def load_everything(self):
-        """Load all modules with auto_load enabled"""
+        """Load all modules with auto_load enabled and gather info for all modules"""
         modules = os.listdir(path="./modules/")
-        # Force core module to load first
         if "core" in modules:
             modules.remove("core")
             modules.insert(0, "core")
 
+        modules_to_load = []
+        all_modules = []
+        
         for module in modules:
-            if os.path.isdir(f"./modules/{module}"):
-                if os.path.exists(f"./modules/{module}/info.yaml"):
-                    try:
+            if not os.path.isdir(f"./modules/{module}"):
+                continue
+                
+            all_modules.append(module)
+            auto_load = True
+                
+            if os.path.exists(f"./modules/{module}/info.yaml"):
+                try:
+                    with open(f"./modules/{module}/info.yaml", "r") as f:
+                        info = yaml.safe_load(f) or {}
+                    auto_load = info.get("auto_load", True)
+                except Exception as e:
+                    logger.error(f"Error reading info.yaml for module {module}: {e}")
+            
+            if auto_load:
+                modules_to_load.append(module)
+            else:
+                logger.info(f"Module {module} has auto_load set to False, skipping loading")
+        
+        for module in modules_to_load:
+            self.load_module(module)
+        
+        for module in all_modules:
+            if module not in self.__modules_info:
+                # Create basic info for non-loaded modules
+                try:
+                    info = {}
+                    if os.path.exists(f"./modules/{module}/info.yaml"):
                         with open(f"./modules/{module}/info.yaml", "r") as f:
-                            info = yaml.safe_load(f)
-                        # Only load if auto_load is True or not specified (default to True)
-                        if info.get("auto_load", True):
-                            self.load_module(module)
-                    except Exception as e:
-                        logger.error(f"Error reading info.yaml for module {module}: {e}")
-                        self.load_module(module)
-                else:
-                    self.load_module(module)
+                            info = yaml.safe_load(f) or {}
+                    
+                    from base.module import ModuleInfo
+                    mod_info = ModuleInfo(
+                        name=info.get("name", module),
+                        author=info.get("author", ""),
+                        version=info.get("version", ""),
+                        description=info.get("description", ""),
+                        src_url=info.get("src_url", ""),
+                        python=info.get("python", ""),
+                    )
+                    mod_info.auto_load = False
+                    self.__all_modules_info[module] = mod_info
+                except Exception as e:
+                    logger.error(f"Error creating info for non-loaded module {module}: {e}")
 
     def load_module(self, name: str) -> Optional[str]:
         """
@@ -239,7 +272,6 @@ class ModuleLoader:
         Method for unloading modules.
         :param name: Name of Python module inside modules dir
         """
-
         # Before unloading, store the module info
         if name in self.__modules_info:
             self.__all_modules_info[name] = self.__modules_info[name]
