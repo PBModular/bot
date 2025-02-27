@@ -26,7 +26,7 @@ class ModManageExtension(ModuleExtension):
     def generate_module_buttons(self, page: int = 0, items_per_page: int = 5):
         """Creates a keyboard with a list of all modules, sorted alphabetically, with pagination."""
         self.loader: ModuleLoader
-        modules_info = self.loader.get_modules_info()
+        modules_info = self.loader.get_all_modules_info()
         
         sorted_modules = sorted(modules_info.items(), key=lambda x: x[1].name.lower())
         start, end = page * items_per_page, (page + 1) * items_per_page
