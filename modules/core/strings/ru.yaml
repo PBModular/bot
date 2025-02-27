@@ -311,4 +311,11 @@ module_page:
   unload_btn: Выгрузить
   load_btn: Загрузить
   reload_btn: Перезагрузить
-  reload_ok: Module {module_name} reloaded!
+  reload_ok: Модуль {module_name} перезагружен!
+  auto_load: "<b>Автозагрузка:</b> {status}"
+  enabled: Включена
+  disabled: Выключена
+  enable_auto_load_btn: Включить автозагрузку
+  disable_auto_load_btn: Выключить автозагрузку
+  auto_load_toggled: Автозагрузка {status}
+  auto_load_toggle_error: Не удалось обновить настройки автозагрузки

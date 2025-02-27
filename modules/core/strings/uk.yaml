@@ -160,7 +160,7 @@ module_page:
     <b>Опис:</b>
     {description}
   updates_found: <b>Виявлено нові оновлення!</b>
-  no_updates_found: <b>Оновлення не виявлено!</b>
+  no_updates_found: <b>Оновлень не виявлено!</b>
   update_btn: Обновити
   delete_btn: Видалити
   back_btn: Назад
@@ -172,4 +172,11 @@ module_page:
   unload_btn: Вивантажити
   load_btn: Загрузити
   reload_btn: Перезагрузити
-  reload_ok: Module {module_name} reloaded!
+  reload_ok: Модуль {module_name} перезавантажений!
+  auto_load: "<b>Автозагрузка:</b> {status}"
+  enabled: Включена
+  disabled: Виключена
+  enable_auto_load_btn: Включити автозагрузку
+  disable_auto_load_btn: Виключити автозагрузку
+  auto_load_toggled: Автозагрузка {status}
+  auto_load_toggle_error: Не вдалося обновити настройки автозагрузки

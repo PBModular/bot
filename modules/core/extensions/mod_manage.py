@@ -86,10 +86,12 @@ class ModManageExtension(ModuleExtension):
         self.loader: ModuleLoader
 
         info = self.loader.get_module_info(module_name)
+        auto_load = getattr(info, "auto_load", True)
         text = f"{self.S['module_page']['name'].format(name=info.name)}\n" if info.name else ""
         text += f"{self.S['module_page']['author'].format(author=info.author)}\n" if info.author else ""
         text += f"{self.S['module_page']['version'].format(version=info.version)}\n" if info.version else ""
         text += f"{self.S['module_page']['src_url'].format(url=info.src_url)}\n" if info.src_url else ""
+        text += f"{self.S['module_page']['auto_load'].format(status=self.S['module_page']['enabled'] if auto_load else self.S['module_page']['disabled'])}"
         text += f"\n{self.S['module_page']['description'].format(description=info.description)}" if info.description else ""
 
         git_repo = os.path.join(os.getcwd(), "modules", module_name, ".git") if not module_name == "core" else None
@@ -113,6 +115,12 @@ class ModManageExtension(ModuleExtension):
                     self.S["module_page"]["update_btn"], callback_data=f"update_module_{module_name}"
                     ) if git_repo and update_message else None,
                 InlineKeyboardButton(self.S["module_page"]["delete_btn"], callback_data=f"delete_module_{module_name}")
+            ],
+            [
+                InlineKeyboardButton(
+                    self.S["module_page"][f"{'disable' if auto_load else 'enable'}_auto_load_btn"], 
+                    callback_data=f"toggle_auto_load_{module_name}"
+                )
             ],
             [InlineKeyboardButton(self.S["module_page"]["refresh_page_btn"], callback_data=f"refresh_module_page_{module_name}")],
             [InlineKeyboardButton(self.S["module_page"]["back_btn"], callback_data="back_to_modules")]
@@ -194,6 +202,28 @@ class ModManageExtension(ModuleExtension):
         
         if not await self.mod_load(call.message, module_name):
             return
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^toggle_auto_load_(.*)$"))
+    async def call_toggle_auto_load(self, _, call: CallbackQuery):
+        """Handle toggling the auto_load setting for a module."""
+        module_name = call.data.split("_")[3]
+        self.loader: ModuleLoader
+
+        info = self.loader.get_module_info(module_name)
+        current_status = getattr(info, "auto_load", True)
+
+        new_status = not current_status
+
+        success = self.loader.set_module_auto_load(module_name, new_status)
+
+        if success:
+            status_text = self.S["module_page"]["enabled"] if new_status else self.S["module_page"]["disabled"]
+            await call.answer(self.S["module_page"]["auto_load_toggled"].format(status=status_text), show_alert=True)
+
+            await self.update_module_page(call, module_name)
+        else:
+            await call.answer(self.S["module_page"]["auto_load_toggle_error"], show_alert=True)
 
     @allowed_for("owner")
     @command("mod_install")

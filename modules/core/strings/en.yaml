@@ -312,3 +312,10 @@ module_page:
   load_btn: Load
   reload_btn: Reload
   reload_ok: Module {module_name} reloaded!
+  auto_load: "<b>Auto-load:</b> {status}"
+  enabled: Enabled
+  disabled: Disabled
+  enable_auto_load_btn: Enable Auto-load
+  disable_auto_load_btn: Disable Auto-load
+  auto_load_toggled: Auto-load {status}
+  auto_load_toggle_error: Failed to update auto-load setting
