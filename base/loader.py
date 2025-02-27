@@ -16,6 +16,7 @@ import os
 import sys
 import shutil
 import subprocess
+import yaml
 from urllib.parse import urlparse
 from typing import Optional, Union
 from packaging import version
@@ -87,7 +88,7 @@ class ModuleLoader:
                         os.chdir(self.__root_dir)
 
     def load_everything(self):
-        """Load all modules"""
+        """Load all modules with auto_load enabled"""
         modules = os.listdir(path="./modules/")
         # Force core module to load first
         if "core" in modules:
@@ -96,7 +97,18 @@ class ModuleLoader:
 
         for module in modules:
             if os.path.isdir(f"./modules/{module}"):
-                self.load_module(module)
+                if os.path.exists(f"./modules/{module}/info.yaml"):
+                    try:
+                        with open(f"./modules/{module}/info.yaml", "r") as f:
+                            info = yaml.safe_load(f)
+                        # Only load if auto_load is True or not specified (default to True)
+                        if info.get("auto_load", True):
+                            self.load_module(module)
+                    except Exception as e:
+                        logger.error(f"Error reading info.yaml for module {module}: {e}")
+                        self.load_module(module)
+                else:
+                    self.load_module(module)
 
     def load_module(self, name: str) -> Optional[str]:
         """
@@ -105,6 +117,16 @@ class ModuleLoader:
         :param name: Name of Python module inside modules dir
         """
         os.chdir(f"./modules/{name}")
+        # Read auto_load setting from info.yaml if available
+        auto_load = True
+        if os.path.exists("info.yaml"):
+            try:
+                with open("info.yaml", "r") as f:
+                    info = yaml.safe_load(f)
+                    auto_load = info.get("auto_load", True)
+            except Exception as e:
+                logger.error(f"Error reading info.yaml for module {name}: {e}")
+
         if "requirements.txt" in os.listdir():
             # Check for dependencies update / install them
             if config.update_deps_at_load:
@@ -193,6 +215,9 @@ class ModuleLoader:
 
                     # Custom init execution
                     instance.on_init()
+
+                    info = instance.module_info
+                    info.auto_load = auto_load
 
                     # Remove hash backup
                     if self.__hash_backups.get(name) is not None:
@@ -285,6 +310,39 @@ class ModuleLoader:
             return []
         else:
             return mod.module_permissions
+
+    def set_module_auto_load(self, name: str, auto_load: bool) -> bool:
+        """
+        Set auto_load preference for a module
+        
+        :param name: Name of Python module inside modules dir
+        :param auto_load: Whether to auto-load the module on startup
+        :return: Success status
+        """
+        try:
+            info_path = f"./modules/{name}/info.yaml"
+            
+            info = {}
+            if os.path.exists(info_path):
+                with open(info_path, "r") as f:
+                    info = yaml.safe_load(f) or {}
+            
+            # Update auto_load setting
+            info["auto_load"] = auto_load
+            
+            with open(info_path, "w") as f:
+                yaml.dump(info, f)
+                
+            # Update module info in memory if the module is loaded
+            mod = self.__modules.get(name)
+            if mod is not None:
+                mod.module_info.auto_load = auto_load
+                self.__modules_info[name].auto_load = auto_load
+                
+            return True
+        except Exception as e:
+            logger.error(f"Error updating auto_load for {name}: {e}")
+            return False
 
     def install_from_git(self, url: str) -> tuple[int, str]:
         """

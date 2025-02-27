@@ -36,7 +36,7 @@ class ModuleInfo:
     description: str
     src_url: Optional[str] = None
     python: Optional[str] = None
-
+    auto_load: bool = True
 
 class Permissions(str, Enum):
     use_db = "use_db"
