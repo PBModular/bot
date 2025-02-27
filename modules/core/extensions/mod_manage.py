@@ -91,15 +91,18 @@ class ModManageExtension(ModuleExtension):
         text += f"{self.S['module_page']['author'].format(author=info.author)}\n" if info.author else ""
         text += f"{self.S['module_page']['version'].format(version=info.version)}\n" if info.version else ""
         text += f"{self.S['module_page']['src_url'].format(url=info.src_url)}\n" if info.src_url else ""
-        text += f"{self.S['module_page']['auto_load'].format(status=self.S['module_page']['enabled'] if auto_load else self.S['module_page']['disabled'])}"
+        
+        if module_name != "core":
+            text += f"{self.S['module_page']['auto_load'].format(status=self.S['module_page']['enabled'] if auto_load else self.S['module_page']['disabled'])}"
+
         text += f"\n{self.S['module_page']['description'].format(description=info.description)}" if info.description else ""
 
-        git_repo = os.path.join(os.getcwd(), "modules", module_name, ".git") if not module_name == "core" else None
+        git_repo = os.path.join(os.getcwd(), "modules", module_name, ".git") if module_name != "core" else None
         update_message = self.loader.check_for_updates(module_name, "modules") if git_repo and os.path.exists(git_repo) else None
 
         if update_message:
             text += f"\n\n{self.S['module_page']['updates_found']}"
-        elif not update_message:
+        else:
             text += f"\n\n{self.S['module_page']['no_updates_found']}"
 
         buttons = [
@@ -113,14 +116,14 @@ class ModManageExtension(ModuleExtension):
             [
                 InlineKeyboardButton(
                     self.S["module_page"]["update_btn"], callback_data=f"update_module_{module_name}"
-                    ) if git_repo and update_message else None,
+                ) if git_repo and update_message else None,
                 InlineKeyboardButton(self.S["module_page"]["delete_btn"], callback_data=f"delete_module_{module_name}")
             ],
             [
                 InlineKeyboardButton(
                     self.S["module_page"][f"{'disable' if auto_load else 'enable'}_auto_load_btn"], 
                     callback_data=f"toggle_auto_load_{module_name}"
-                )
+                ) if module_name != "core" else None
             ],
             [InlineKeyboardButton(self.S["module_page"]["refresh_page_btn"], callback_data=f"refresh_module_page_{module_name}")],
             [InlineKeyboardButton(self.S["module_page"]["back_btn"], callback_data="back_to_modules")]
