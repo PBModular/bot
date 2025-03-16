@@ -91,8 +91,8 @@ Remember to replace placeholders like `/path/to/bot/sources` and `your_user` wit
 
 ## Documentation
 
-* **Russian:** [https://pbmodular-docs.gitbook.io/ru-docs/](https://pbmodular-docs.gitbook.io/ru-docs/)
-* **English:** [https://pbmodular-docs.gitbook.io/eng-docs/](https://pbmodular-docs.gitbook.io/eng-docs/)
+* **Russian:** [https://pbmodular.github.io/wiki/ru/](https://pbmodular.github.io/wiki/ru/)
+* **English:** [https://pbmodular.github.io/wiki/](https://pbmodular.github.io/wiki/)
 
 Want to contribute documentation in your language? Contact [@SanyaPilot](https://github.com/SanyaPilot) or [@Ultra119](https://github.com/Ultra119)
 
