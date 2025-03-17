@@ -79,7 +79,17 @@ class ModManageExtension(ModuleExtension):
         
         self.last_page[call.message.id] = page
 
-        await self.update_module_page(call, module_name)
+        await self._update_module_page(call, module_name)
+
+    async def _update_module_page(self, call, module_name):
+        try:
+            await self.update_module_page(call, module_name)
+
+        except errors.MessageNotModified:
+            await call.answer(self.S["module_page"]["no_changes"])
+        except Exception as e:
+            await call.message.edit_text(self.S["module_page"]["refresh_page_err"].format(module_name=module_name))
+            self.logger.error(f"Failed to refresh {module_name} page! \n{e}")
 
     async def update_module_page(self, call, module_name):
         """Update the module page with the latest information, and check for updates."""
@@ -147,14 +157,7 @@ class ModManageExtension(ModuleExtension):
     async def call_refresh_module_page(self, _, call: CallbackQuery):
         """Handle the refresh page process."""
         module_name = call.data.split("_")[3]
-        try:
-            await self.update_module_page(call, module_name)
-
-        except errors.MessageNotModified:
-            await call.answer(self.S["module_page"]["no_changes"])
-        except Exception as e:
-            await call.edit_message_text(self.S["module_page"]["refresh_page_err"].format(module_name=module_name))
-            self.logger.error(f"Failed to refresh {module_name} page! \n{e}")
+        await self._update_module_page(call, module_name)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^update_module_(.*)$"))
@@ -187,6 +190,7 @@ class ModManageExtension(ModuleExtension):
             return
 
         await call.answer(self.S["module_page"]["reload_ok"].format(module_name=module_name), show_alert=True)
+        await self._update_module_page(call, module_name)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^unload_module_(.*)$"))
@@ -197,6 +201,8 @@ class ModManageExtension(ModuleExtension):
         if not await self.mod_unload(call.message, module_name):
             return
 
+        await self._update_module_page(call, module_name)
+
     @allowed_for("owner")
     @callback_query(filters.regex(r"^load_module_(.*)$"))
     async def call_load_module(self, _, call: CallbackQuery):
@@ -205,6 +211,8 @@ class ModManageExtension(ModuleExtension):
         
         if not await self.mod_load(call.message, module_name):
             return
+
+        await self._update_module_page(call, module_name)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^toggle_auto_load_(.*)$"))
@@ -224,7 +232,7 @@ class ModManageExtension(ModuleExtension):
             status_text = self.S["module_page"]["enabled"] if new_status else self.S["module_page"]["disabled"]
             await call.answer(self.S["module_page"]["auto_load_toggled"].format(status=status_text), show_alert=True)
 
-            await self.update_module_page(call, module_name)
+            await self._update_module_page(call, module_name)
         else:
             await call.answer(self.S["module_page"]["auto_load_toggle_error"], show_alert=True)
 
