@@ -8,3 +8,4 @@ packaging
 aiosqlite==0.21.0
 colorama
 tzdata
+uvloop
