@@ -401,9 +401,12 @@ class ModuleLoader:
         """
         logger.info(f"Downloading module from git URL {url}!")
         name = urlparse(url).path.split("/")[-1].removesuffix(".git")
-        cmd = f"cd {self.__root_dir}/modules && git clone {url}"
+        modules_dir = os.path.join(self.__root_dir, "modules")
         p = subprocess.run(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            ["git", "clone", url, name],
+            cwd=modules_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
         )
 
         if p.returncode != 0:
@@ -423,9 +426,11 @@ class ModuleLoader:
         :return: True if there are new commits, False if up-to-date, or None on error
         """
         try:
-            cmd = f"cd {self.__root_dir}/{directory}/{name} && git fetch"
+            repo_dir = os.path.join(self.__root_dir, directory, name)
             p = subprocess.run(
-                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                ["git", "fetch"], cwd=repo_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
             )
             
             if p.returncode != 0:
@@ -476,10 +481,10 @@ class ModuleLoader:
         logger.info(f"Updating {name}!")
 
         # Backup
-        hash_cmd = f"cd {self.__root_dir}/{directory}/{name}/ && git rev-parse HEAD"
-        hash_p = subprocess.run(
-            hash_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
+        repo_dir = os.path.join(self.__root_dir, directory, name)
+        hash_p = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_dir, 
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
         if hash_p.returncode != 0:
             logger.error(f"Wtf, failed to retrieve HEAD hash... STDOUT below")
             logger.error(hash_p.stdout.decode("utf-8"))
@@ -487,10 +492,9 @@ class ModuleLoader:
 
         self.__hash_backups[name] = hash_p.stdout.decode("utf-8")
 
-        cmd = f"cd {self.__root_dir}/{directory}/{name}/ && git pull"
-        p = subprocess.run(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
+        p = subprocess.run(["git", "pull"], cwd=repo_dir, 
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
 
         if p.returncode != 0:
             logger.error(f"Error while updating module {name}!")
@@ -532,12 +536,10 @@ class ModuleLoader:
         :return: Boolean (success or not)
         """
         try:
-            cmd = (
-                f"cd {self.__root_dir}/{directory}/{name}/ && git reset --hard {self.__hash_backups[name]}"
-            )
-            p = subprocess.run(
-                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-            )
+            repo_dir = os.path.join(self.__root_dir, directory, name)
+            subprocess.run(["git", "reset", "--hard", self.__hash_backups[name]], cwd=repo_dir,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
 
             if p.returncode != 0:
                 logger.error(
