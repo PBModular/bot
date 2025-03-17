@@ -56,6 +56,29 @@ class HelpPage:
     buttons: Optional[list[list[InlineKeyboardButton]]] = None
 
 
+class SafeDict(dict):
+    def __getitem__(self, key):
+        try:
+            value = super().__getitem__(key)
+        except KeyError:
+            return key  # Return the key as the descriptor if missing
+        # Ensure nested dicts are also SafeDict instances
+        if isinstance(value, dict) and not isinstance(value, SafeDict):
+            value = SafeDict(value)
+            self[key] = value
+        return value
+
+    @classmethod
+    def from_dict(cls, data):
+        if isinstance(data, dict):
+            safe_dict = cls()
+            for k, v in data.items():
+                safe_dict[k] = cls.from_dict(v)
+            return safe_dict
+        else:
+            return data
+
+
 def merge_dicts(dict_a: dict, dict_b: dict):
     for key in dict_b.keys():
         if key in dict_a and isinstance(dict_a[key], dict) and isinstance(dict_b[key], dict):
@@ -99,26 +122,27 @@ class BaseModule(ABC):
             self.logger.info(f"Available translations: {list(self.rawS.keys())}")
             if config.language in self.rawS.keys():
                 if config.fallback_language in self.rawS.keys():
-                    self.S = deepcopy(self.rawS[config.fallback_language])
-
-                    # Merge fallback lang and main, eliminating missing items
-                    merge_dicts(self.S, self.rawS[config.language])
+                    # Create copies and merge
+                    fallback_dict = deepcopy(self.rawS[config.fallback_language])
+                    main_dict = self.rawS[config.language]
+                    merge_dicts(fallback_dict, main_dict)
+                    self.S = SafeDict.from_dict(fallback_dict)
                 else:
                     self.logger.warning(
                         f"Fallback language is not found, unable to merge translations!"
                     )
-                    self.S = self.rawS[config.language]
+                    self.S = SafeDict.from_dict(self.rawS[config.language])
             elif config.fallback_language in self.rawS.keys():
                 self.logger.warning(
                     f"Language {config.language} not found! Falling back to {config.fallback_language}"
                 )
                 self.cur_lang = config.fallback_language
-                self.S = self.rawS[config.fallback_language]
+                self.S = SafeDict.from_dict(self.rawS[config.fallback_language])
             else:
                 self.logger.warning(
                     f"Can't select language... Using first in list, you've been warned!"
                 )
-                self.S = list(self.rawS.values())[0]
+                self.S = SafeDict.from_dict(list(self.rawS.values())[0])
         except FileNotFoundError:
             pass
 
