@@ -44,7 +44,7 @@ class ModuleLoader:
         self.bot_db_engine = bot_db_engine
         
         # Initialize the module manager
-        self.module_manager = ModuleManager(root_dir)
+        self.mod_manager = ModuleManager(root_dir)
 
         # Load extensions
         self.__extensions: dict[str, BaseExtension] = {}
@@ -69,7 +69,7 @@ class ModuleLoader:
                             config.update_deps_at_load
                             and "requirements.txt" in os.listdir()
                         ):
-                            self.module_manager.install_deps(ext, "extensions")
+                            self.mod_manager.install_deps(ext, "extensions")
 
                         instance: BaseExtension = obj()
                         name = instance.extension_info.name
@@ -161,7 +161,7 @@ class ModuleLoader:
         if "requirements.txt" in os.listdir():
             # Check for dependencies update / install them
             if config.update_deps_at_load:
-                self.module_manager.install_deps(name, "modules")
+                self.mod_manager.install_deps(name, "modules")
 
             # Load dependencies into dict
             self.__modules_deps[name] = []
@@ -252,7 +252,7 @@ class ModuleLoader:
                     info.auto_load = auto_load
 
                     # Clear hash backup if present
-                    self.module_manager.clear_hash_backup(name)
+                    self.mod_manager.clear_hash_backup(name)
 
                     logger.info(f"Successfully imported module {info.name}!")
                     os.chdir("../../")
@@ -368,45 +368,14 @@ class ModuleLoader:
 
         return None
 
-    def install_from_git(self, url: str):
-        return self.module_manager.install_from_git(url)
-
-    def check_for_updates(self, name: str, directory: str):
-        return self.module_manager.check_for_updates(name, directory)
-
-    def update_from_git(self, name: str, directory: str):
-        # Unload first
+    def prepare_for_module_update(self, name: str) -> Optional[BaseModule]:
+        """
+        Unload module if loaded to prepare for update
+        :param name: Name of Python module inside modules dir
+        :return: The module instance that was unloaded, or None if not loaded
+        """
+        module = None
         if name in self.__modules:
             module = self.__modules[name]
             self.unload_module(name)
-            # Now update with the module data
-            return self.module_manager.update_from_git(name, directory, module)
-        else:
-            return self.module_manager.update_from_git(name, directory)
-
-    def revert_update(self, name: str, directory: str):
-        return self.module_manager.revert_update(name, directory)
-
-    def install_deps(self, name: str, directory: str):
-        return self.module_manager.install_deps(name, directory)
-
-    def uninstall_mod_deps(self, name: str):
-        return self.module_manager.uninstall_mod_deps(name, self.__modules_deps)
-
-    def uninstall_packages(self, pkgs: list[str]):
-        return self.module_manager.uninstall_packages(pkgs, self.__modules_deps)
-
-    def uninstall_module(self, name: str):
-        if name in self.__modules:
-            self.unload_module(name)
-        return self.module_manager.uninstall_module(name, self.__modules_deps)
-
-    def set_module_auto_load(self, name: str, auto_load: bool):
-        result = self.module_manager.set_module_auto_load(name, auto_load)
-        
-        # Update module info in memory if the module is loaded
-        if result and name in self.__modules:
-            self.__modules[name].module_info.auto_load = auto_load
-            self.__modules_info[name].auto_load = auto_load
-            
-        return result
+        return module

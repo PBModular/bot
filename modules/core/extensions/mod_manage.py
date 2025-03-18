@@ -1,6 +1,7 @@
 from base.mod_ext import ModuleExtension
 from base.module import command, callback_query, allowed_for, Permissions, InfoFile
 from base.loader import ModuleLoader
+from base.mod_manager import ModuleManager
 
 from pyrogram.types import (
     Message,
@@ -81,6 +82,7 @@ class ModManageExtension(ModuleExtension):
         await self._update_module_page(call, module_name)
 
     async def _update_module_page(self, call, module_name):
+        """Helper function to update module page with error handling"""
         try:
             await self.update_module_page(call, module_name)
 
@@ -107,7 +109,7 @@ class ModManageExtension(ModuleExtension):
         text += f"\n{self.S['module_page']['description'].format(description=info.description)}" if info.description else ""
 
         git_repo = os.path.join(os.getcwd(), "modules", module_name, ".git") if module_name != "core" else None
-        update_message = self.loader.check_for_updates(module_name, "modules") if git_repo and os.path.exists(git_repo) else None
+        update_message = self.loader.mod_manager.check_for_updates(module_name, "modules") if git_repo and os.path.exists(git_repo) else None
 
         if update_message:
             text += f"\n\n{self.S['module_page']['updates_found']}"
@@ -225,7 +227,7 @@ class ModManageExtension(ModuleExtension):
 
         new_status = not current_status
 
-        success = self.loader.set_module_auto_load(module_name, new_status)
+        success = self.loader.mod_manager.set_module_auto_load(module_name, new_status)
 
         if success:
             status_text = self.S["module_page"]["enabled"] if new_status else self.S["module_page"]["disabled"]
@@ -246,7 +248,7 @@ class ModManageExtension(ModuleExtension):
         if os.path.exists(f"{os.getcwd()}/modules/{name}/requirements.txt"):
             # Install deps
             await msg.edit_text(self.S["install"]["down_reqs_next"].format(name))
-            code, data = self.loader.install_deps(name, "modules")
+            code, data = self.loader.mod_manager.install_deps(name, "modules")
             if code != 0:
                 await msg.edit_text(self.S["install"]["reqs_err"].format(name, data))
                 return
@@ -294,7 +296,7 @@ class ModManageExtension(ModuleExtension):
             await message.reply(self.S["uninstall"]["not_found"].format(name))
             return
 
-        result = self.loader.uninstall_module(int_name)
+        result = self.loader.mod_manager.uninstall_module(int_name)
         await message.reply(
             (
                 self.S["uninstall"]["ok"] if result else self.S["uninstall"]["err"]
@@ -313,7 +315,7 @@ class ModManageExtension(ModuleExtension):
         msg = await message.reply(self.S["install"]["start"].format(name))
 
         # Check for updates
-        update_available = self.loader.check_for_updates(int_name, "modules")
+        update_available = self.loader.mod_manager.check_for_updates(int_name, "modules")
         if update_available is None:
             await msg.edit_text(self.S["update"]["check_err"].format(name=name))
             return
@@ -335,7 +337,7 @@ class ModManageExtension(ModuleExtension):
         if code != 0:
             await msg.edit_text(self.S["update"]["err"].format(name=name, out=stdout))
             await msg.edit_text(self.S["update"]["reverting"].format(name=name))
-            self.loader.revert_update(int_name, "modules")
+            self.loader.mod_manager.revert_update(int_name, "modules")
             await msg.edit_text(self.S["update"]["revert_complete"].format(name=name))
             return
 
@@ -347,7 +349,7 @@ class ModManageExtension(ModuleExtension):
         except FileNotFoundError:
             await msg.edit_text(self.S["update"]["info_file_missing"].format(name=name))
             await msg.edit_text(self.S["update"]["reverting"].format(name=name))
-            self.loader.revert_update(int_name, "modules")
+            self.loader.mod_manager.revert_update(int_name, "modules")
             return
 
         info = info_file.info
@@ -425,7 +427,7 @@ class ModManageExtension(ModuleExtension):
 
             # Install deps
             await msg.edit_text(self.S["install"]["down_reqs_next"].format(name))
-            code, data = self.loader.install_deps(int_name, "modules")
+            code, data = self.loader.mod_manager.install_deps(int_name, "modules")
             if code != 0:
                 await msg.edit_text(
                     self.S["install"]["reqs_err"].format(name, data),
@@ -443,7 +445,7 @@ class ModManageExtension(ModuleExtension):
                 return
 
             # Cleanup
-            self.loader.uninstall_packages(del_reqs)
+            self.loader.mod_manager.uninstall_packages(del_reqs)
 
             info = self.loader.get_module_info(int_name)
             text = (
@@ -459,7 +461,7 @@ class ModManageExtension(ModuleExtension):
                 text += f"- {req}\n"
 
             # Clear the hash backup since the update was successful
-            self.loader.clear_hash_backup(int_name)
+            self.loader.mod_manager.clear_hash_backup(int_name)
 
             await msg.edit_text(text)
         else:
@@ -475,7 +477,7 @@ class ModManageExtension(ModuleExtension):
                 return
 
             # Clear the hash backup since the update was successful
-            self.loader.clear_hash_backup(int_name)
+            self.loader.mod_manager.clear_hash_backup(int_name)
 
             info = self.loader.get_module_info(int_name)
             await msg.edit_text(
@@ -495,7 +497,7 @@ class ModManageExtension(ModuleExtension):
         await call.answer(self.S["update"]["abort"])
         await msg.edit_text(self.S["update"]["reverting"].format(name=name))
 
-        if self.loader.revert_update(int_name, "modules"):
+        if self.loader.mod_manager.revert_update(int_name, "modules"):
             self.loader.load_module(int_name)
             await msg.edit_text(self.S["update"]["revert_complete"].format(name=name))
         else:
