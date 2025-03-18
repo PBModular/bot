@@ -319,3 +319,22 @@ module_page:
   disable_auto_load_btn: Disable Auto-load
   auto_load_toggled: Auto-load {status}
   auto_load_toggle_error: Failed to update auto-load setting
+
+backup:
+  no_backups: "<b>No backups found</b>"
+  no_backups_module: "<b>No backups found for module {name}</b>"
+  list_module: "<b>Available backups for module {name}:</b>"
+  view_backups_btn: "View Backups"
+  restore_btn: "Restore"
+  cleanup_btn: "Cleanup Backups"
+  restore_latest_btn: "Restore Latest"
+  restoring: "Restoring {name} from backup..."
+  restore_success: "<b>Successfully restored {name} from backup</b>\n<code>{backup}</code>"
+  restore_failed: "<b>Failed to restore {name} from backup</b>\n<code>{backup}</code>"
+  restore_load_err: "<b>Restored {name} from backup, but failed to load module</b>\n<code>{backup}</code>"
+  cleanup_select_count: "Choose how many recent backups to keep for {name}:"
+  back_btn: "Back"
+  confirm_restore: "Do you want to restore {name} from backup: {backup}?"
+  all_except_latest: "only latest"
+  cleanup_complete: "Cleaned up {count} old backups for {name}. Keeping {keep} most recent."
+  invalid_backup: "Invalid backup selected"

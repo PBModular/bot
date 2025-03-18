@@ -180,3 +180,22 @@ module_page:
   disable_auto_load_btn: Виключити автозагрузку
   auto_load_toggled: Автозагрузка {status}
   auto_load_toggle_error: Не вдалося обновити настройки автозагрузки
+
+backup:
+  no_backups: "<b>Бекапи не знайдено</b>"
+  no_backups_module: "<b>Для модуля {name} не знайдено Бекапів</b>"
+  list_module: "<b>Доступні Бекапи для модуля {name}:</b>"
+  view_backups_btn: "Перегляд Бекапів"
+  restore_btn: "Відновити"
+  cleanup_btn: "Очистити Бекапи"
+  restore_latest_btn: "Відновити останній"
+  restoring: "Відновлення {name} з Бекапа..."
+  restore_success: "<b>Успішне відновлення {name} з Бекапа</b>\n<code>{backup}</code>"
+  restore_failed: "<b>Не вдалося відновити {name} з Бекапа</b>\n<code>{backup}</code>"
+  restore_load_err: "<b>{name} відновлено з Бекапа, але неможливо завантажити модуль</b>\n<code>{backup}</code>"
+  cleanup_select_count: "Виберіть, скільки останніх Бекапів зберігати для {name}:"
+  back_btn: "Назад"
+  confirm_restore: "Чи хочете ви відновити {name} з бекапа: {backup}?"
+  all_except_latest: "Тільки останній"
+  cleanup_complete: "Очищено {count} старих Бекапів для {name}. Зберігаємо {keep}."
+  invalid_backup: "Вибраний неприпустимий Бекап"

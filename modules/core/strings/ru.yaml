@@ -319,3 +319,22 @@ module_page:
   disable_auto_load_btn: Выключить автозагрузку
   auto_load_toggled: Автозагрузка {status}
   auto_load_toggle_error: Не удалось обновить настройки автозагрузки
+
+backup:
+  no_backups: "<b>Бэкапы не найдены</b>"
+  no_backups_module: "<b>Для модуля {name} не найдено Бэкапов</b>"
+  list_module: "<b>Доступные Бэкапы для модуля {name}:</b>"
+  view_backups_btn: "Просмотр Бэкапов"
+  restore_btn: "Восстановить"
+  cleanup_btn: "Очистить Бэкапы"
+  restore_latest_btn: "Восстановить последний"
+  restoring: "Восстановление {name} из Бэкапа..."
+  restore_success: "<b>Успешное восстановление {name} из Бэкапа</b>\n<code>{backup}</code>"
+  restore_failed: "<b>Не удалось восстановить {name} из Бэкапа</b>\n<code>{backup}</code>"
+  restore_load_err: "<b>{name} восстановлен из Бэкапа, но не возможно загрузить модуль</b>\n<code>{backup}</code>"
+  cleanup_select_count: "Выберите, сколько последних Бэкапов сохранять для {name}:"
+  back_btn: "Назад"
+  confirm_restore: "Хотите ли вы восстановить {name} из Бэкапа: {backup}?"
+  all_except_latest: "Только последний"
+  cleanup_complete: "Очищено {count} старых Бэкапов для {name}. Сохраняем {keep}."
+  invalid_backup: "Выбран недопустимый Бэкап"

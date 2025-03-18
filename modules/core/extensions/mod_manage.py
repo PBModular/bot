@@ -116,6 +116,8 @@ class ModManageExtension(ModuleExtension):
         else:
             text += f"\n\n{self.S['module_page']['no_updates_found']}"
 
+        has_backups = len(self.loader.mod_manager.list_backups(module_name)) > 0
+
         buttons = [
             [
                 InlineKeyboardButton(
@@ -135,6 +137,11 @@ class ModManageExtension(ModuleExtension):
                     self.S["module_page"][f"{'disable' if auto_load else 'enable'}_auto_load_btn"], 
                     callback_data=f"toggle_auto_load_{module_name}"
                 ) if module_name != "core" else None
+            ],
+            [
+                InlineKeyboardButton(
+                    self.S["backup"]["view_backups_btn"], callback_data=f"view_backups_{module_name}"
+                ) if has_backups else None
             ],
             [InlineKeyboardButton(self.S["module_page"]["refresh_page_btn"], callback_data=f"refresh_module_page_{module_name}")],
             [InlineKeyboardButton(self.S["module_page"]["back_btn"], callback_data="back_to_modules")]
@@ -165,18 +172,14 @@ class ModManageExtension(ModuleExtension):
     async def call_update_module(self, _, call: CallbackQuery):
         """Handle the module update process."""
         module_name = call.data.split("_")[2]
-
-        if not await self.mod_update(_, call.message, module_name):
-            return
+        await self.mod_update(_, call.message, module_name)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^delete_module_(.*)$"))
     async def call_delete_module(self, _, call: CallbackQuery):
         """Handle the module deletion process."""
         module_name = call.data.split("_")[2]
-
-        if not await self.mod_uninstall(_, call.message, module_name):
-            return
+        await self.mod_uninstall(_, call.message, module_name)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^reload_module_(.*)$"))
@@ -236,6 +239,257 @@ class ModManageExtension(ModuleExtension):
             await self._update_module_page(call, module_name)
         else:
             await call.answer(self.S["module_page"]["auto_load_toggle_error"], show_alert=True)
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^view_backups_(.+)$"))
+    async def call_view_backups(self, _, call: CallbackQuery):
+        """Show backups for a specific module in a dialog"""
+        module_name = call.data.split("_")[2]
+        self.mod_manager: ModuleManager
+        await call.answer()
+
+        backups = self.loader.mod_manager.list_backups(module_name)
+        if not backups:
+            await call.message.reply(self.S["backup"]["no_backups_module"].format(name=module_name))
+            return
+
+        text = self.S["backup"]["list_module"].format(name=module_name) + "\n\n"
+        for backup in backups:
+            text += f"- {os.path.basename(backup)}\n"
+
+        restore_buttons = []
+        # Show restore buttons for up to 5 most recent backups
+        for i, backup in enumerate(backups[:5]):
+            backup_name = os.path.basename(backup)
+            restore_buttons.append([
+                InlineKeyboardButton(
+                    f"{self.S['backup']['restore_btn']} {backup_name}", 
+                    callback_data=f"restore_specific_{module_name}_{i}"
+                )
+            ])
+
+        restore_buttons.append([
+            InlineKeyboardButton(
+                self.S["backup"]["cleanup_btn"], callback_data=f"module_backup_cleanup_{module_name}"
+            ),
+            InlineKeyboardButton(
+                self.S["backup"]["restore_latest_btn"], callback_data=f"restore_{module_name}"
+            )
+        ])
+
+        restore_buttons.append([
+            InlineKeyboardButton(
+                self.S["backup"]["back_btn"], 
+                callback_data=f"module_{module_name}_{self.last_page.get(call.message.id, 0)}"
+            )
+        ])
+
+        await call.message.edit_text(
+            text, 
+            reply_markup=InlineKeyboardMarkup(restore_buttons)
+        )
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^restore_specific_(.+)_(\d+)$"))
+    async def call_restore_specific(self, _, call: CallbackQuery):
+        """Restore a specific backup by index"""
+        match = re.match(r"restore_specific_(.+)_(\d+)", call.data)
+        if not match:
+            await call.answer(self.S["error"])
+            return
+
+        module_name = match.group(1)
+        backup_index = int(match.group(2))
+
+        await call.answer()
+
+        # Get the specified backup
+        backups = self.loader.mod_manager.list_backups(module_name)
+        if not backups or backup_index >= len(backups):
+            await call.message.reply(self.S["backup"]["invalid_backup"])
+            return
+
+        backup_path = backups[backup_index]
+
+        # Show confirmation dialog
+        confirm_keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    self.S["yes_btn"], 
+                    callback_data=f"confirm_restore_{module_name}_{backup_index}"
+                ),
+                InlineKeyboardButton(
+                    self.S["no_btn"], 
+                    callback_data=f"module_{module_name}_{self.last_page.get(call.message.id, 0)}"
+                )
+            ]
+        ])
+
+        await call.message.edit_text(
+            self.S["backup"]["confirm_restore"].format(
+                name=module_name,
+                backup=os.path.basename(backup_path)
+            ),
+            reply_markup=confirm_keyboard
+        )
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^confirm_restore_(.+)_(\d+)$"))
+    async def call_confirm_restore(self, _, call: CallbackQuery):
+        """Confirm restoration of a specific backup"""
+        match = re.match(r"confirm_restore_(.+)_(\d+)", call.data)
+        if not match:
+            await call.answer(self.S["error"])
+            return
+
+        module_name = match.group(1)
+        backup_index = int(match.group(2))
+        
+        await call.answer()
+
+        # Get the specified backup
+        backups = self.loader.mod_manager.list_backups(module_name)
+        if not backups or backup_index >= len(backups):
+            await call.message.reply(self.S["backup"]["invalid_backup"])
+            return
+
+        backup_path = backups[backup_index]
+
+        # Perform restoration
+        msg = await call.message.edit_text(self.S["backup"]["restoring"].format(name=module_name))
+        success = self.loader.mod_manager.restore_from_backup(backup_path, module_name, "modules")
+        
+        if success:
+            # Reload the module
+            result = self.loader.load_module(module_name)
+            if result is not None:
+                await msg.edit_text(
+                    self.S["backup"]["restore_success"].format(
+                        name=module_name, 
+                        backup=os.path.basename(backup_path)
+                    )
+                )
+                # After delay, go back to module page
+                await sleep(2)
+                await self._update_module_page(call, module_name)
+            else:
+                await msg.edit_text(
+                    self.S["backup"]["restore_load_err"].format(
+                        name=module_name, 
+                        backup=os.path.basename(backup_path)
+                    )
+                )
+        else:
+            await msg.edit_text(
+                self.S["backup"]["restore_failed"].format(
+                    name=module_name, 
+                    backup=os.path.basename(backup_path)
+                )
+            )
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^restore_(.+)$"))
+    async def restore_backup(self, _, call: CallbackQuery):
+        """Restore the latest backup of a module"""
+        # Original restore_backup implementation with modifications to return to module page
+        int_name = call.data.split("_")[1]
+        await call.answer()
+
+        msg = await call.message.reply(self.S["backup"]["restoring"].format(name=int_name))
+
+        # Get the latest backup
+        backups = self.loader.mod_manager.list_backups(int_name)
+        if not backups:
+            await msg.edit_text(self.S["backup"]["no_backups_module"].format(name=int_name))
+            return
+
+        latest_backup = backups[0]
+
+        # Perform restoration
+        success = self.loader.mod_manager.restore_from_backup(latest_backup, int_name, "modules")
+
+        if success:
+            # Reload the module
+            result = self.loader.load_module(int_name)
+            if result is not None:
+                await msg.edit_text(
+                    self.S["backup"]["restore_success"].format(
+                        name=int_name, 
+                        backup=os.path.basename(latest_backup)
+                    )
+                )
+                # After delay, refresh module page
+                await sleep(2)
+                await self._update_module_page(call, int_name)
+            else:
+                await msg.edit_text(
+                    self.S["backup"]["restore_load_err"].format(
+                        name=int_name, 
+                        backup=os.path.basename(latest_backup)
+                    )
+                )
+        else:
+            await msg.edit_text(
+                self.S["backup"]["restore_failed"].format(
+                    name=int_name, 
+                    backup=os.path.basename(latest_backup)
+                )
+            )
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^module_backup_cleanup_(.+)$"))
+    async def call_module_backup_cleanup(self, _, call: CallbackQuery):
+        """Show cleanup options for module backups"""
+        module_name = call.data.split("_")[3]
+        await call.answer()
+
+        # Display cleanup options
+        cleanup_keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    self.S["backup"]["all_except_latest"], 
+                    callback_data=f"do_cleanup_{module_name}_all"
+                ),
+                InlineKeyboardButton(
+                    self.S["backup"]["back_btn"], 
+                    callback_data=f"module_{module_name}_{self.last_page.get(call.message.id, 0)}"
+                )
+            ]
+        ])
+
+        await call.message.edit_text(
+            self.S["backup"]["cleanup_select_count"].format(name=module_name),
+            reply_markup=cleanup_keyboard
+        )
+
+    @allowed_for("owner")
+    @callback_query(filters.regex(r"^do_cleanup_(.+)_(all|\d+)$"))
+    async def call_do_cleanup(self, _, call: CallbackQuery):
+        """Perform backup cleanup with specified keep count"""
+        match = re.match(r"do_cleanup_(.+)_(all|\d+)", call.data)
+        if not match:
+            await call.answer(self.S["error"])
+            return
+            
+        module_name = match.group(1)
+        keep_param = match.group(2)
+        
+        keep_count = 1 if keep_param == 'all' else int(keep_param)
+        
+        await call.answer()
+        deleted = self.loader.mod_manager.cleanup_old_backups(module_name, keep_count)
+        
+        msg = await call.message.edit_text(
+            self.S["backup"]["cleanup_complete"].format(
+                name=module_name, 
+                count=deleted, 
+                keep=keep_count
+            )
+        )
+        
+        # After delay, return to module page
+        await sleep(2)
+        await self._update_module_page(call, module_name)
 
     @allowed_for("owner")
     @callback_query(filters.regex("install_yes"))
