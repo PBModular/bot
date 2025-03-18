@@ -356,6 +356,13 @@ class ModuleLoader:
         else:
             return mod.module_permissions
 
+    def get_modules_deps(self) -> dict[str, list[str]]:
+        """
+        Get module deps
+        :return: __modules_deps object
+        """
+        return self.__modules_deps
+
     def get_int_name(self, name: str) -> Optional[str]:
         """
         Get internal name (name of a directory) of a module from user-friendly name
