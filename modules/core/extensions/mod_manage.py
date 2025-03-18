@@ -549,6 +549,9 @@ class ModManageExtension(ModuleExtension):
         if int_name is None:
             await message.reply(self.S["uninstall"]["not_found"].format(name))
             return
+        if int_name.lower() == "core":
+            await message.reply(self.S["uninstall"]["core_uninstall_error"])
+            return
 
         result = self.loader.mod_manager.uninstall_module(int_name)
         await message.reply(
