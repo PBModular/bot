@@ -14,7 +14,7 @@ import shutil
 import requirements
 from asyncio import sleep
 from typing import Optional
-
+import re
 
 class ModManageExtension(ModuleExtension):
     def on_init(self):
@@ -314,7 +314,10 @@ class ModManageExtension(ModuleExtension):
 
         # Check for updates
         update_available = self.loader.check_for_updates(int_name, "modules")
-        if not update_available:
+        if update_available is None:
+            await msg.edit_text(self.S["update"]["check_err"].format(name=name))
+            return
+        elif not update_available:
             await msg.edit_text(self.S["update"]["no_updates_found"].format(name=name))
             return
 
@@ -325,10 +328,15 @@ class ModManageExtension(ModuleExtension):
         if os.path.exists(reqs_path):
             old_reqs = requirements.parse(open(reqs_path, encoding="utf-8"))
 
-        code, stdout = self.loader.update_from_git(int_name, "modules")
+        # Create backup before updating
+        await msg.edit_text(self.S["update"]["creating_backup"].format(name=name))
+        code, stdout, backup_path = self.loader.update_from_git(int_name, "modules")
+        
         if code != 0:
             await msg.edit_text(self.S["update"]["err"].format(name=name, out=stdout))
+            await msg.edit_text(self.S["update"]["reverting"].format(name=name))
             self.loader.revert_update(int_name, "modules")
+            await msg.edit_text(self.S["update"]["revert_complete"].format(name=name))
             return
 
         # Parse info file
@@ -337,6 +345,9 @@ class ModManageExtension(ModuleExtension):
                 f"{os.getcwd()}/modules/{int_name}/info.yaml"
             )
         except FileNotFoundError:
+            await msg.edit_text(self.S["update"]["info_file_missing"].format(name=name))
+            await msg.edit_text(self.S["update"]["reverting"].format(name=name))
+            self.loader.revert_update(int_name, "modules")
             return
 
         info = info_file.info
@@ -359,6 +370,10 @@ class ModManageExtension(ModuleExtension):
         if Permissions.use_loader in permissions:
             text += self.S["install"]["confirm_warn_perms"]
 
+        # Add backup info to the confirmation message
+        if backup_path:
+            text += self.S["update"]["backup_created"].format(path=os.path.basename(backup_path))
+
         keyboard = InlineKeyboardMarkup(
             [
                 [
@@ -370,13 +385,13 @@ class ModManageExtension(ModuleExtension):
             ]
         )
         await msg.edit_text(text, reply_markup=keyboard)
-        self.update_confirmations[msg.id] = [msg, name, int_name, old_ver, old_reqs]
+        self.update_confirmations[msg.id] = [msg, name, int_name, old_ver, old_reqs, backup_path]
 
     @allowed_for("owner")
     @callback_query(filters.regex("update_yes"))
     async def update_yes(self, _, call: CallbackQuery):
         self.loader: ModuleLoader
-        msg, name, int_name, old_ver, old_reqs = self.update_confirmations[
+        msg, name, int_name, old_ver, old_reqs, backup_path = self.update_confirmations[
             call.message.id
         ]
         await call.answer()
@@ -443,6 +458,9 @@ class ModManageExtension(ModuleExtension):
             for req in data:
                 text += f"- {req}\n"
 
+            # Clear the hash backup since the update was successful
+            self.loader.clear_hash_backup(int_name)
+
             await msg.edit_text(text)
         else:
             await msg.edit_text(self.S["install"]["down_end_next"].format(name))
@@ -456,6 +474,9 @@ class ModManageExtension(ModuleExtension):
                 )
                 return
 
+            # Clear the hash backup since the update was successful
+            self.loader.clear_hash_backup(int_name)
+
             info = self.loader.get_module_info(int_name)
             await msg.edit_text(
                 self.S["update"]["ok"].format(
@@ -468,18 +489,17 @@ class ModManageExtension(ModuleExtension):
     @allowed_for("owner")
     @callback_query(filters.regex("update_no"))
     async def update_no(self, _, call: CallbackQuery):
-        msg, name, int_name, _, _ = self.update_confirmations[call.message.id]
+        msg, name, int_name, _, _, _ = self.update_confirmations[call.message.id]
         self.update_confirmations.pop(call.message.id)
 
-        self.loader.revert_update(int_name, "modules")
-        self.loader.load_module(int_name)
-
         await call.answer(self.S["update"]["abort"])
-        await msg.delete()
+        await msg.edit_text(self.S["update"]["reverting"].format(name=name))
 
-
+        if self.loader.revert_update(int_name, "modules"):
             self.loader.load_module(int_name)
             await msg.edit_text(self.S["update"]["revert_complete"].format(name=name))
+        else:
+            await msg.edit_text(self.S["update"]["revert_failed"].format(name=name))
 
     async def mod_load(self, message: Message, name: str, silent = False, edit = False) -> Optional[str]:
         if edit:
