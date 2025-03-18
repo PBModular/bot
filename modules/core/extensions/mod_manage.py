@@ -9,7 +9,6 @@ from pyrogram.types import (
     InlineKeyboardButton,
 )
 from pyrogram import filters, errors
-from urllib.parse import urlparse
 import os
 import shutil
 import requirements
@@ -237,62 +236,6 @@ class ModManageExtension(ModuleExtension):
             await call.answer(self.S["module_page"]["auto_load_toggle_error"], show_alert=True)
 
     @allowed_for("owner")
-    @command("mod_install")
-    async def mod_install_cmd(self, _, message: Message):
-        """Install new module from git repo"""
-        self.loader: ModuleLoader
-        if len(message.text.split()) == 1:
-            await message.reply(self.S["install"]["args_err"])
-            return
-
-        url = message.text.split()[1]
-        name = urlparse(url).path.split("/")[-1].removesuffix(".git")
-
-        msg = await message.reply(self.S["install"]["start"].format(name))
-
-        # Start downloading
-        code, stdout = self.loader.install_from_git(url)
-        if code != 0:
-            await msg.edit_text(self.S["install"]["down_err"].format(name, stdout))
-            return
-
-        # Parse info file
-        info_file = InfoFile.from_yaml_file(f"{os.getcwd()}/modules/{name}/info.yaml")
-        info = info_file.info
-        permissions = info_file.permissions
-
-        text = (
-            self.S["install"]["confirm"].format(
-                name=name, author=info.author, version=info.version
-            )
-            + "\n"
-        )
-
-        # Check for permissions
-        perm_list = ""
-        for p in permissions:
-            perm_list += f"- {self.S['install']['perms'][p.value]}\n"
-
-        if len(permissions) > 0:
-            text += self.S["install"]["confirm_perms"].format(perms=perm_list)
-        if Permissions.use_loader in permissions:
-            text += self.S["install"]["confirm_warn_perms"]
-
-        self.install_confirmations[msg.id] = [msg, name]
-
-        keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        self.S["yes_btn"], callback_data=f"install_yes"
-                    ),
-                    InlineKeyboardButton(self.S["no_btn"], callback_data=f"install_no"),
-                ]
-            ]
-        )
-        await msg.edit_text(text, reply_markup=keyboard)
-
-    @allowed_for("owner")
     @callback_query(filters.regex("install_yes"))
     async def install_yes(self, _, call: CallbackQuery):
         msg, name = self.install_confirmations[call.message.id]
@@ -341,16 +284,6 @@ class ModManageExtension(ModuleExtension):
         await call.answer(self.S["install"]["aborted"])
         await msg.delete()
 
-    @allowed_for("owner")
-    @command("mod_uninstall")
-    async def mod_uninstall_cmd(self, _, message: Message):
-        if len(message.text.split()) == 1:
-            await message.reply(self.S["uninstall"]["args_err"])
-            return
-
-        name = " ".join(message.text.split()[1:])
-        await self.mod_uninstall(_, message, name)
-
     async def mod_uninstall(self, _, message, name):
         """Uninstall module"""
         self.loader: ModuleLoader
@@ -367,16 +300,6 @@ class ModManageExtension(ModuleExtension):
                 self.S["uninstall"]["ok"] if result else self.S["uninstall"]["err"]
             ).format(name)
         )
-
-    @allowed_for("owner")
-    @command("mod_update")
-    async def mod_update_cmd(self, _, message: Message):
-        if len(message.text.split()) == 1:
-            await message.reply(self.S["update"]["args_err"])
-            return
-
-        name = " ".join(message.text.split()[1:])
-        await self.mod_update(_, message, name)
 
     async def mod_update(self, _, message, name):
         """Update module to the upstream version"""
@@ -554,36 +477,10 @@ class ModManageExtension(ModuleExtension):
         await call.answer(self.S["update"]["abort"])
         await msg.delete()
 
-    @allowed_for("owner")
-    @command("mod_info")
-    async def mod_info_cmd(self, _, message: Message):
-        """Displays full info about module"""
-        self.loader: ModuleLoader
 
-        args = message.text.split()
-        if len(args) != 2:
-            await message.reply(self.S["info"]["args_err"], quote=True)
-            return
+            self.loader.load_module(int_name)
+            await msg.edit_text(self.S["update"]["revert_complete"].format(name=name))
 
-        int_name = self.loader.get_int_name(args[-1])
-        if int_name is None:
-            await message.reply(self.S["info"]["not_found"], quote=True)
-            return
-
-        info = self.loader.get_module_info(int_name)
-        text = self.S["info"]["header"].format(
-            name=info.name, author=info.author, version=info.version
-        )
-
-        if info.src_url:
-            text += self.S["info"]["src_url"].format(url=info.src_url)
-
-        text += "\n" + self.S["info"]["description"].format(
-            description=info.description
-        )
-
-        await message.reply(text, quote=True)
-    
     async def mod_load(self, message: Message, name: str, silent = False, edit = False) -> Optional[str]:
         if edit:
             reply_func = message.edit_text
@@ -631,47 +528,6 @@ class ModManageExtension(ModuleExtension):
             await reply_func(self.S["unload"]["ok"].format(name))
         
         return int_name
-
-    @allowed_for("owner")
-    @command("mod_load")
-    async def mod_load_cmd(self, _, message: Message):
-        """Loads module if not loaded. Accepts directory name of a module"""
-        args = message.text.split()
-        if len(args) != 2:
-            await message.reply(self.S["load"]["args_err"])
-            return
-        
-        await self.mod_load(message, args[1])
-
-    @allowed_for("owner")
-    @command("mod_unload")
-    async def mod_unload_cmd(self, _, message: Message):
-        """Unloads module if it is loaded already"""
-        args = message.text.split()
-        if len(args) != 2:
-            await message.reply(self.S["unload"]["args_err"])
-            return False
-        
-        await self.mod_unload(message, args[1])
-    
-    @allowed_for("owner")
-    @command("mod_reload")
-    async def mod_reload_cmd(self, message: Message):
-        args = message.text.split()
-        if len(args) != 2:
-            await message.reply(self.S["reload"]["args_err"])
-            return
-                
-        int_name = await self.mod_unload(message, args[1], True, False)
-        if int_name is None:
-            return
-        
-        msg = await message.reply(self.S["reload"]["loading"].format(args[1]))
-        name = await self.mod_load(msg, int_name, True, True)
-        if name is None:
-            return
-        
-        await msg.edit_text(self.S["reload"]["ok"].format(name))
 
     @callback_query(filters.regex(r"^dummy"))
     async def dummy_callback(self, _, call: CallbackQuery):
