@@ -657,23 +657,13 @@ class ModManageExtension(ModuleExtension):
     @callback_query(filters.regex("update_yes"))
     async def update_yes(self, _, call: CallbackQuery):
         self.loader: ModuleLoader
-        msg, name, int_name, old_ver, old_reqs, backup_path = self.update_confirmations[
-            call.message.id
-        ]
+        msg, name, int_name, old_ver, old_reqs, backup_path = self.update_confirmations[call.message.id]
         await call.answer()
 
-        try_again_keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        self.S["try_again_btn"], callback_data=f"update_yes"
-                    ),
-                    InlineKeyboardButton(
-                        self.S["abort_btn"], callback_data=f"update_no"
-                    ),
-                ]
-            ]
-        )
+        try_again_keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(self.S["try_again_btn"], callback_data=f"update_yes"),
+            InlineKeyboardButton(self.S["abort_btn"], callback_data=f"update_no")]
+        ])
 
         reqs_path = f"{os.getcwd()}/modules/{int_name}/requirements.txt"
         if os.path.exists(reqs_path):
@@ -685,7 +675,6 @@ class ModManageExtension(ModuleExtension):
                     if req.name.lower() == new_req.name.lower():
                         found = True
                         break
-
                 if not found:
                     del_reqs.append(req.name.lower())
 
@@ -706,53 +695,37 @@ class ModManageExtension(ModuleExtension):
             # Load module
             result = self.loader.load_module(int_name)
             if result is None:
-                await msg.edit_text(
-                    self.S["install"]["load_err"].format(name),
-                    reply_markup=try_again_keyboard,
-                )
+                await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
                 return
 
-            # Cleanup
-            self.loader.mod_manager.uninstall_packages(del_reqs)
+            modules_deps = self.loader.get_modules_deps()
+            self.loader.mod_manager.uninstall_packages(del_reqs, modules_deps)
 
             info = self.loader.get_module_info(int_name)
-            text = (
-                self.S["update"]["ok"].format(
-                    name=result, old_ver=old_ver, new_ver=info.version, url=info.src_url
-                )
-                + "\n"
-                + self.S["update"]["reqs"]
-                + "\n"
-            )
-
+            text = (self.S["update"]["ok"].format(name=result, old_ver=old_ver, new_ver=info.version, url=info.src_url) + "\n" + self.S["update"]["reqs"] + "\n")
             for req in data:
                 text += f"- {req}\n"
 
             # Clear the hash backup since the update was successful
             self.loader.mod_manager.clear_hash_backup(int_name)
-
             await msg.edit_text(text)
         else:
             await msg.edit_text(self.S["install"]["down_end_next"].format(name))
 
+            # Unload module if loaded
+            if self.loader.get_module(int_name):
+                self.loader.unload_module(int_name)
+
             # Load module
             result = self.loader.load_module(int_name)
             if result is None:
-                await msg.edit_text(
-                    self.S["install"]["load_err"].format(name),
-                    reply_markup=try_again_keyboard,
-                )
+                await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
                 return
 
             # Clear the hash backup since the update was successful
             self.loader.mod_manager.clear_hash_backup(int_name)
-
             info = self.loader.get_module_info(int_name)
-            await msg.edit_text(
-                self.S["update"]["ok"].format(
-                    name=result, old_ver=old_ver, new_ver=info.version, url=info.src_url
-                )
-            )
+            await msg.edit_text(self.S["update"]["ok"].format(name=result, old_ver=old_ver, new_ver=info.version, url=info.src_url))
 
         self.update_confirmations.pop(call.message.id)
 
