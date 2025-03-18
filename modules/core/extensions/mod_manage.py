@@ -693,7 +693,7 @@ class ModManageExtension(ModuleExtension):
                 self.loader.unload_module(int_name)
 
             # Load module
-            result = self.loader.load_module(int_name)
+            result = self.loader.load_module(int_name, skip_deps=True)
             if result is None:
                 await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
                 return
@@ -717,7 +717,7 @@ class ModManageExtension(ModuleExtension):
                 self.loader.unload_module(int_name)
 
             # Load module
-            result = self.loader.load_module(int_name)
+            result = self.loader.load_module(int_name, skip_deps=True)
             if result is None:
                 await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
                 return

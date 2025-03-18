@@ -141,7 +141,7 @@ class ModuleLoader:
                 except Exception as e:
                     logger.error(f"Error creating info for non-loaded module {module}: {e}")
 
-    def load_module(self, name: str) -> Optional[str]:
+    def load_module(self, name: str, skip_deps: bool = False) -> Optional[str]:
         """
         Main loading method
 
@@ -159,8 +159,8 @@ class ModuleLoader:
                 logger.error(f"Error reading info.yaml for module {name}: {e}")
 
         if "requirements.txt" in os.listdir():
-            # Check for dependencies update / install them
-            if config.update_deps_at_load:
+            # Check for dependencies update / install them unless skipped
+            if config.update_deps_at_load and not skip_deps:
                 self.mod_manager.install_deps(name, "modules")
 
             # Load dependencies into dict
