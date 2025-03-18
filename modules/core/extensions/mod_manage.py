@@ -360,6 +360,10 @@ class ModManageExtension(ModuleExtension):
         success = self.loader.mod_manager.restore_from_backup(backup_path, module_name, "modules")
         
         if success:
+            # Unload module if loaded
+            if self.loader.get_module(module_name):
+                self.loader.unload_module(module_name)
+
             # Reload the module
             result = self.loader.load_module(module_name)
             if result is not None:
@@ -694,6 +698,10 @@ class ModManageExtension(ModuleExtension):
                     reply_markup=try_again_keyboard,
                 )
                 return
+
+            # Unload module if loaded
+            if self.loader.get_module(int_name):
+                self.loader.unload_module(int_name)
 
             # Load module
             result = self.loader.load_module(int_name)
