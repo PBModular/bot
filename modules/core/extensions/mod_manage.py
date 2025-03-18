@@ -332,7 +332,10 @@ class ModManageExtension(ModuleExtension):
 
         # Create backup before updating
         await msg.edit_text(self.S["update"]["creating_backup"].format(name=name))
-        code, stdout, backup_path = self.loader.update_from_git(int_name, "modules")
+        if not self.loader.prepare_for_module_update(int_name):
+            return
+
+        code, stdout, backup_path = self.loader.mod_manager.update_from_git(int_name, "modules")
         
         if code != 0:
             await msg.edit_text(self.S["update"]["err"].format(name=name, out=stdout))
