@@ -4,12 +4,13 @@ import subprocess
 import sys
 import shutil
 from urllib.parse import urlparse
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, Dict, Any
 from packaging import version
 import importlib
 import inspect
 
 from base.db_migration import DBMigration
+from base.mod_backup import BackupManager
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +18,13 @@ logger = logging.getLogger(__name__)
 class ModuleManager:
     """
     Handles module installation, updates, dependency management, and configuration.
+    Includes backup and restoration capabilities.
     """
 
     def __init__(self, root_dir: str):
         self.__root_dir = root_dir
         self.__hash_backups: dict[str, str] = {}
+        self.__backup_manager = BackupManager(root_dir)
         
     def install_from_git(self, url: str) -> Tuple[int, str]:
         """
@@ -95,15 +98,15 @@ class ModuleManager:
             logger.error(f"Failed to check for new commits for {name}. Details: {e}")
             return None
 
-    def update_from_git(self, name: str, directory: str, module=None) -> Tuple[int, str]:
+    def update_from_git(self, name: str, directory: str, module=None) -> Tuple[int, str, Optional[str]]:
         """
         Method to update git repository (module or extensions)
-        Remembers commit hash for reverting and executes git pull
+        Creates a backup, remembers commit hash for reverting, and executes git pull
         
         :param name: Name of module or extension
         :param directory: Directory of modules or extensions
         :param module: Module object if updating a loaded module (provides access to version, db, etc.)
-        :return: Exit code and output of git pull
+        :return: Tuple with exit code, output of git pull, and backup path (or None if backup failed)
         """
         # Store module data before unloading if provided
         prev_version = None
@@ -116,6 +119,14 @@ class ModuleManager:
             prev_db_meta = module.db_meta
 
         logger.info(f"Updating {name}!")
+        
+        # Create a backup before updating
+        backup_success, backup_result = self.__backup_manager.create_backup(name, directory)
+        backup_path = backup_result if backup_success else None
+        
+        if not backup_success:
+            logger.warning(f"Failed to create backup for {name}: {backup_result}")
+            # Continue with update even if backup fails, but log the warning
 
         # Backup current hash
         repo_dir = os.path.join(self.__root_dir, directory, name)
@@ -129,9 +140,9 @@ class ModuleManager:
         if hash_p.returncode != 0:
             logger.error(f"Failed to retrieve HEAD hash for {name}. STDOUT below")
             logger.error(hash_p.stdout.decode("utf-8"))
-            return hash_p.returncode, hash_p.stdout.decode("utf-8")
+            return hash_p.returncode, hash_p.stdout.decode("utf-8"), backup_path
 
-        self.__hash_backups[name] = hash_p.stdout.decode("utf-8")
+        self.__hash_backups[name] = hash_p.stdout.decode("utf-8").strip()
 
         # Pull updates
         p = subprocess.run(
@@ -145,7 +156,7 @@ class ModuleManager:
             logger.error(f"Error while updating module {name}!")
             logger.error(f"Printing STDOUT and STDERR:")
             logger.error(p.stdout.decode("utf-8"))
-            return p.returncode, p.stdout.decode("utf-8")
+            return p.returncode, p.stdout.decode("utf-8"), backup_path
 
         # Start database migration if module provided and db_migrations directory exists
         if prev_db is not None and os.path.exists(
@@ -171,7 +182,7 @@ class ModuleManager:
                     instance: DBMigration = obj()
                     instance.apply(prev_db.session, prev_db.engine, prev_db_meta)
 
-        return p.returncode, p.stdout.decode("utf-8")
+        return p.returncode, p.stdout.decode("utf-8"), backup_path
 
     def revert_update(self, name: str, directory: str) -> bool:
         """
@@ -206,6 +217,45 @@ class ModuleManager:
         except Exception as e:
             logger.error(f"Error reverting update for {name}: {e}")
             return False
+    
+    def restore_from_backup(self, name: str, directory: str, backup_path: Optional[str] = None) -> bool:
+        """
+        Restore module from a backup file
+        
+        :param name: Name of module or extension
+        :param directory: Directory of modules or extensions
+        :param backup_path: Optional path to specific backup file. If None, uses the latest backup.
+        :return: Boolean (success or not)
+        """
+        try:
+            # If no specific backup path provided, get the latest backup
+            if backup_path is None:
+                backup_path = self.__backup_manager.get_latest_backup(name)
+                
+            if not backup_path:
+                logger.error(f"No backup found for module {name}")
+                return False
+                
+            # Use the backup manager to restore files
+            success = self.__backup_manager.restore_from_backup(backup_path, name, directory)
+            if success:
+                logger.info(f"Successfully restored module {name} from backup {backup_path}")
+            else:
+                logger.error(f"Failed to restore module {name} from backup")
+                
+            return success
+        except Exception as e:
+            logger.error(f"Error restoring module {name} from backup: {e}")
+            return False
+    
+    def list_backups(self, name: Optional[str] = None) -> list:
+        """
+        List available backups for a module or all modules
+        
+        :param name: Optional module name to filter backups
+        :return: List of backup files
+        """
+        return self.__backup_manager.list_backups(name)
 
     def install_deps(self, name: str, directory: str) -> Tuple[int, Union[str, list[str]]]:
         """
@@ -375,3 +425,13 @@ class ModuleManager:
             self.__hash_backups.pop(name)
             return True
         return False
+        
+    def cleanup_old_backups(self, name: str, keep_count: int = 5) -> int:
+        """
+        Clean up old backups for a module, keeping only the most recent ones
+        
+        :param name: Name of the module
+        :param keep_count: Number of recent backups to keep
+        :return: Number of backups deleted
+        """
+        return self.__backup_manager.cleanup_old_backups(name, keep_count)
