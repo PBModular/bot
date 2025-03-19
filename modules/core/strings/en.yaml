@@ -173,6 +173,7 @@ update:
   no_updates_found: <b>No updates found!</b>
   reqs: "<b>Python dependencies for module:</b>"
   abort: "Update aborted!"
+  info_file_missing: "Missing info.yaml, aborting..."
 
 log_file:
   answer_caption_file: 📁 <b>The entire log file as of now</b>
@@ -331,10 +332,14 @@ backup:
   restoring: "Restoring {name} from backup..."
   restore_success: "<b>Successfully restored {name} from backup</b>\n<code>{backup}</code>"
   restore_failed: "<b>Failed to restore {name} from backup</b>\n<code>{backup}</code>"
+  restore_canceled: "<b>Backup restoration canceled for {name}.</b>\nModule may be in an inconsistent state."
   restore_load_err: "<b>Restored {name} from backup, but failed to load module</b>\n<code>{backup}</code>"
   cleanup_select_count: "Choose how many recent backups to keep for {name}:"
   back_btn: "Back"
   confirm_restore: "Do you want to restore {name} from backup: {backup}?"
-  all_except_latest: "only latest"
+  all_except_latest: "Only latest"
   cleanup_complete: "Cleaned up {count} old backups for {name}. Keeping {keep} most recent."
   invalid_backup: "Invalid backup selected"
+  backup_failed: "Backup failed for {name}"
+  creating_backup: "Creating Backup for {name}..."
+  backup_created: "Succesfully created backup.\nPath: {path}"
