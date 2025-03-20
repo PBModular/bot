@@ -224,22 +224,33 @@ class ModManageExtension(ModuleExtension):
 
     async def _restore_backup(self, call: CallbackQuery, module_name: str, backup_path: str) -> bool:
         """Common logic for restoring backups."""
-        msg = await call.message.reply(self.S["backup"]["restoring"].format(name=module_name))
-        success = self.loader.mod_manager.restore_from_backup(backup_path, module_name, "modules")
+        if self.loader.get_module(module_name):
+            await self.loader.unload_module(module_name)
         
-        if success and self.loader.get_module(module_name):
-            self.loader.unload_module(module_name)
-        
-        result = self.loader.load_module(module_name) if success else None
-        status_key = "restore_success" if result else "restore_load_err" if success else "restore_failed"
-        await msg.edit_text(self.S["backup"][status_key].format(
-            name=module_name,
-            backup=os.path.basename(backup_path)
-        ))
+        success, skipped_files = self.loader.mod_manager.restore_from_backup(module_name, "modules", backup_path)
         
         if success:
-            await sleep(2)
-            await self._update_module_page(call, module_name)
+            if skipped_files:
+                # Log all skipped files
+                for file in skipped_files:
+                    self.logger.warning(f"Skipped file during restoration: {file}")
+                
+                # Message with first 5 skipped files
+                if len(skipped_files) > 5:
+                    message = "Skipped files during restoration:\n" + "\n".join(skipped_files[:5]) + "\n...and more (check logs)"
+                else:
+                    message = "Skipped files during restoration:\n" + "\n".join(skipped_files)
+                await call.message.reply(message)
+            
+            result = self.loader.load_module(module_name)
+            status_key = "restore_success" if result else "restore_load_err"
+            await call.message.reply(self.S["backup"][status_key].format(
+                name=module_name,
+                backup=os.path.basename(backup_path)
+            ))
+        else:
+            await call.message.reply(self.S["backup"]["restore_failed"].format(name=module_name))
+        
         return success
 
     @allowed_for("owner")
@@ -266,12 +277,14 @@ class ModManageExtension(ModuleExtension):
             backup_path = backups[index]
             confirm_keyboard = InlineKeyboardMarkup([
                 [InlineKeyboardButton(self.S["yes_btn"], callback_data=f"confirm_restore_{module_name}_{index}"),
-                 InlineKeyboardButton(self.S["no_btn"], callback_data=f"module_{module_name}_{self.last_page.get(call.message.id, 0)}")]
+                InlineKeyboardButton(self.S["no_btn"], callback_data=f"module_{module_name}_{self.last_page.get(call.message.id, 0)}")]
             ])
-            await call.message.edit_text(
+            # Send a new message instead of editing the existing one
+            confirmation_msg = await call.message.reply(
                 self.S["backup"]["confirm_restore"].format(name=module_name, backup=os.path.basename(backup_path)),
                 reply_markup=confirm_keyboard
             )
+            # self.confirmation_messages[confirmation_msg.id] = (module_name, index)
         else:
             await self._restore_backup(call, module_name, backups[0])
 
@@ -411,7 +424,7 @@ class ModManageExtension(ModuleExtension):
         old_reqs = list(requirements.parse(open(reqs_path, encoding="utf-8"))) if os.path.exists(reqs_path) else None
         
         await msg.edit_text(self.S["backup"]["creating_backup"].format(name=name))
-        if not self.loader.prepare_for_module_update(int_name):
+        if not await self.loader.prepare_for_module_update(int_name):
             await msg.edit_text(self.S["backup"]["backup_failed"].format(name=name))
             return
 
@@ -493,7 +506,7 @@ class ModManageExtension(ModuleExtension):
                 return
                 
             if self.loader.get_module(int_name):
-                self.loader.unload_module(int_name)
+                await self.loader.unload_module(int_name)
             result = self.loader.load_module(int_name, skip_deps=True)
             if result is None:
                 await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
@@ -509,7 +522,7 @@ class ModManageExtension(ModuleExtension):
         else:
             await msg.edit_text(self.S["install"]["down_end_next"].format(name))
             if self.loader.get_module(int_name):
-                self.loader.unload_module(int_name)
+                await self.loader.unload_module(int_name)
             result = self.loader.load_module(int_name, skip_deps=True)
             if result is None:
                 await msg.edit_text(self.S["install"]["load_err"].format(name), reply_markup=try_again_keyboard)
@@ -556,7 +569,7 @@ class ModManageExtension(ModuleExtension):
                 await reply_func(self.S["unload"]["not_loaded_err"].format(name))
             return None
             
-        self.loader.unload_module(int_name)
+        await self.loader.unload_module(int_name)
         if not silent:
             await reply_func(self.S["unload"]["ok"].format(name))
         return int_name
