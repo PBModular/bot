@@ -371,6 +371,7 @@ class BaseModule(ABC):
     def db_meta(self):
         """
         SQLAlchemy MetaData object. Must be set if using database
+
         :rtype: MetaData
         """
         return None
@@ -379,6 +380,7 @@ class BaseModule(ABC):
     def state_machine(self):
         """
         StateMachine class for usage in handlers. Override if necessary.
+
         :rtype: Type[StateMachine]
         """
         return None
@@ -387,6 +389,7 @@ class BaseModule(ABC):
         """
         Start command handler, which will be called from main start dispatcher.
         For example: /start BestModule will execute this func in BestModule
+
         :return:
         """
 
@@ -423,6 +426,7 @@ class BaseModule(ABC):
     def loaded_modules(self) -> dict[str, ModuleInfo]:
         """
         Method for querying loaded modules from child instance
+
         :return: List of loaded modules info
         """
         return self.__loaded_info()
@@ -430,6 +434,7 @@ class BaseModule(ABC):
     def get_sm(self, update) -> Optional[StateMachine]:
         """
         Get state machine for current user session
+
         :param update: Pyrogram update object (Message, CallbackQuery, etc.)
         """
         machine = self.__state_machines.get(update.from_user.id)
@@ -444,6 +449,7 @@ def command(cmds: Union[list[str], str], filters: Optional[Filter] = None, fsm_s
     """
     Decorator for registering module command.
     If FSM is present and the handler func has 4 args, then FSM for current user session is passed as a fourth parameter.
+
     :param cmds: List of commands w/o prefix. It may be a string if there's only one command
     :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters
     :param fsm_state: FSM states at which this handler is allowed to run
@@ -469,6 +475,7 @@ def callback_query(filters: Optional[Filter] = None, fsm_state: Optional[Union[S
     """
     Decorator for registering callback query handlers
     If FSM is present and the handler func has 4 args, then FSM for current user session is passed as a fourth parameter.
+
     :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters
     :param fsm_state: FSM states at which this handler is allowed to run
     """
@@ -492,6 +499,7 @@ def message(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, l
     """
     Decorator for registering all messages handler.
     If FSM is present and the handler func has 4 args, then FSM for current user session is passed as a fourth parameter.
+    
     :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters. Highly recommended to set this!
     :param fsm_state: FSM states at which this handler is allowed to run
     """

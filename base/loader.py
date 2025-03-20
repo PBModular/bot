@@ -266,6 +266,7 @@ class ModuleLoader:
     async def unload_module(self, name: str):
         """
         Method for unloading modules.
+
         :param name: Name of Python module inside modules dir
         """
         # Before unloading, store the module info
@@ -295,6 +296,7 @@ class ModuleLoader:
     def get_module(self, name: str) -> Optional[BaseModule]:
         """
         Get module instance object
+
         :param name: Name of Python module inside modules dir
         :return: Module object
         """
@@ -319,6 +321,7 @@ class ModuleLoader:
     def get_module_info(self, name: str) -> Optional[ModuleInfo]:
         """
         Get module info regardless of load status
+
         :param name: Name of Python module inside modules dir
         :return: Object with module info
         """
@@ -331,6 +334,7 @@ class ModuleLoader:
     def get_module_help(self, name: str) -> Optional[Union[HelpPage, str]]:
         """
         Get module help page
+
         :param name: Name of Python module inside modules dir
         :return: Help page as string
         """
@@ -343,6 +347,7 @@ class ModuleLoader:
     def get_module_perms(self, name: str) -> list[Permissions]:
         """
         Get module permissions
+
         :param name: Name of Python module inside modules dir
         :return: Object with permissions
         """
@@ -355,6 +360,7 @@ class ModuleLoader:
     def get_modules_deps(self) -> dict[str, list[str]]:
         """
         Get module deps
+
         :return: __modules_deps object
         """
         return self.__modules_deps
@@ -362,6 +368,7 @@ class ModuleLoader:
     def get_int_name(self, name: str) -> Optional[str]:
         """
         Get internal name (name of a directory) of a module from user-friendly name
+
         :param name: User-friendly name of a module
         :return: Internal name of a module
         """
@@ -374,6 +381,7 @@ class ModuleLoader:
     async def prepare_for_module_update(self, name: str) -> Optional[BaseModule]:
         """
         Unload module if loaded to prepare for update
+
         :param name: Name of Python module inside modules dir
         :return: The module instance that was unloaded, or None if not loaded
         """

@@ -31,7 +31,7 @@ class ModuleManager:
         Module installation method. Clones git repository from the given URL
         
         :param url: Git repository URL
-        :return: Tuple with exit code and read STDOUT
+        :return Tuple: with exit code and read STDOUT
         """
         logger.info(f"Downloading module from git URL {url}!")
         name = urlparse(url).path.split("/")[-1].removesuffix(".git")
@@ -57,7 +57,7 @@ class ModuleManager:
         
         :param name: Name of the module or extension
         :param directory: Directory of modules or extensions
-        :return: True if there are new commits, False if up-to-date, or None on error
+        :return bool: True if there are new commits, False if up-to-date, or None on error
         """
         try:
             repo_dir = os.path.join(self.__root_dir, directory, name)
@@ -106,7 +106,7 @@ class ModuleManager:
         :param name: Name of module or extension
         :param directory: Directory of modules or extensions
         :param module: Module object if updating a loaded module (provides access to version, db, etc.)
-        :return: Tuple with exit code, output of git pull, and backup path (or None if backup failed)
+        :return Tuple: With exit code, output of git pull, and backup path (or None if backup failed)
         """
         # Store module data before unloading if provided
         prev_version = None
@@ -190,7 +190,7 @@ class ModuleManager:
         
         :param name: Name of module or extension
         :param directory: Directory of modules or extensions
-        :return: Boolean (success or not)
+        :return bool: success or not
         """
         try:
             if name not in self.__hash_backups:
@@ -224,8 +224,8 @@ class ModuleManager:
         
         :param name: Name of module or extension
         :param directory: Directory of modules or extensions
-        :param backup_path: Optional path to specific backup file. If None, uses the latest backup.
-        :return: Boolean (success or not)
+        :param Optional[str] backup_path: Optional path to specific backup file. If None, uses the latest backup.
+        :return bool: success or not
         """
         try:
             # If no specific backup path provided, get the latest backup
@@ -246,7 +246,7 @@ class ModuleManager:
         """
         List available backups for a module or all modules
         
-        :param name: Optional module name to filter backups
+        :param Optional[str] name: Optional module name to filter backups
         :return: List of backup files
         """
         return self.__backup_manager.list_backups(name)
@@ -257,7 +257,7 @@ class ModuleManager:
         
         :param name: Name of module or extension
         :param directory: Directory of modules or extensions
-        :return: Tuple with exit code and read STDOUT or list of requirements
+        :return Tuple: With exit code and read STDOUT or list of requirements
         """
         logger.info(f"Upgrading dependencies for {name}!")
         r = subprocess.run(
@@ -295,7 +295,7 @@ class ModuleManager:
         Method to uninstall module dependencies. Removes package only if it isn't required by other module
         
         :param name: Name of module
-        :param modules_deps: Dictionary mapping module names to their dependencies
+        :param dict modules_deps: Dictionary mapping module names to their dependencies
         """
         if name not in modules_deps:
             logger.warning(f"No dependencies found for module {name}")
@@ -322,8 +322,8 @@ class ModuleManager:
         """
         Uninstall specified packages if they are not required by any module
         
-        :param pkgs: List of package names to uninstall
-        :param modules_deps: Dictionary mapping module names to their dependencies
+        :param list pkgs: List of package names to uninstall
+        :param dict modules_deps: Dictionary mapping module names to their dependencies
         """
         for dep in pkgs:
             found = False
@@ -345,8 +345,8 @@ class ModuleManager:
         Module uninstallation method. Removes module directory and its dependencies
         
         :param name: Name of Python module inside modules dir
-        :param modules_deps: Dictionary mapping module names to their dependencies
-        :return: Bool, representing success or not
+        :param dict modules_deps: Dictionary mapping module names to their dependencies
+        :return bool: success or not
         """
         try:
             # Remove deps if they exist in the dependency dictionary
@@ -372,7 +372,7 @@ class ModuleManager:
         Set auto_load preference for a module
         
         :param name: Name of Python module inside modules dir
-        :param auto_load: Whether to auto-load the module on startup
+        :param bool auto_load: Whether to auto-load the module on startup
         :return: Success status
         """
         try:

@@ -93,6 +93,7 @@ class StateMachine:
     def update_data(self, **kwargs):
         r"""
         Update fields in the data dictionary.
+
         :param \**kwargs: Key-value pairs for the dictionary
         """
         for key, value in kwargs.items():
@@ -101,6 +102,7 @@ class StateMachine:
     def get_data(self, key: str):
         """
         Get a value from the data dictionary
+        
         :param key: Key for the dictionary
         """
         return self.__state_data.get(key)

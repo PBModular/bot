@@ -71,7 +71,7 @@ class BackupManager:
 
         :param name: Name of the module to backup
         :param directory: Directory containing the module (e.g., 'modules')
-        :return: Tuple (success, backup_path or error_message)
+        :return Tuple: (success, backup_path or error_message)
         """
         try:
             timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -144,7 +144,7 @@ class BackupManager:
         :param backup_path: Path to the backup zip file
         :param name: Name of the module to restore
         :param directory: Directory containing the module (e.g., 'modules')
-        :return: Tuple (success, list of skipped files)
+        :return Tuple: (success, list of skipped files)
         """
         try:
             module_dir = os.path.join(self.__root_dir, directory, name)
@@ -210,7 +210,7 @@ class BackupManager:
         List available backups, optionally filtered by module name
         
         :param name: Optional name of the module to filter backups
-        :return: List of backup files (full paths)
+        :return list: backup files (full paths)
         """
         try:
             all_backups = []

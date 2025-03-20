@@ -23,6 +23,7 @@ class BaseExtension(ABC):
     def extension_info(self) -> ExtensionInfo:
         """
         Extension info. Must be set
+        
         :return: ExtensionInfo dataclass object
         """
 
@@ -30,5 +31,6 @@ class BaseExtension(ABC):
     def on_module(self, obj):
         """
         Main method where extension must edit module object
+
         :param obj: BaseModule object
         """
