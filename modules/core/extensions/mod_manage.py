@@ -491,10 +491,19 @@ class ModManageExtension(ModuleExtension):
         if action == "no":
             await call.answer(self.S["update"]["abort"])
             await msg.edit_text(self.S["backup"]["restoring"].format(name=name))
-            success = self.loader.mod_manager.revert_update(int_name, "modules")
+            # Unload the module if loaded
+            if self.loader.get_module(int_name):
+                await self.loader.unload_module(int_name)
+            # Restore from the backup created before the update
+            success, skipped_files = self.loader.mod_manager.restore_from_backup(int_name, "modules", backup_path)
             if success:
-                self.loader.load_module(int_name)
-            await msg.edit_text(self.S["backup"]["restore_success" if success else "restore_failed"].format(name=name))
+                result = self.loader.load_module(int_name)
+                if result is None:
+                    await msg.edit_text(self.S["backup"]["restore_load_err"].format(name=name))
+                else:
+                    await msg.edit_text(self.S["backup"]["restore_success"].format(name=name))
+            else:
+                await msg.edit_text(self.S["backup"]["restore_failed"].format(name=name))
             return
 
         reqs_path = f"{os.getcwd()}/modules/{int_name}/requirements.txt"
