@@ -237,13 +237,7 @@ class ModuleManager:
                 return False
                 
             # Use the backup manager to restore files
-            success = self.__backup_manager.restore_from_backup(backup_path, name, directory)
-            if success:
-                logger.info(f"Successfully restored module {name} from backup {backup_path}")
-            else:
-                logger.error(f"Failed to restore module {name} from backup")
-                
-            return success
+            return self.__backup_manager.restore_from_backup(backup_path, name, directory)
         except Exception as e:
             logger.error(f"Error restoring module {name} from backup: {e}")
             return False
