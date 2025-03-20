@@ -267,7 +267,7 @@ class BackupManager:
         try:
             backups = self.list_backups(name)
             if len(backups) <= keep_count:
-                return a0
+                return 0
             
             # Delete older backups
             deleted_count = 0
