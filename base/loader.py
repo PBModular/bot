@@ -263,7 +263,7 @@ class ModuleLoader:
                     os.chdir(self.__root_dir)
                     return None
 
-    def unload_module(self, name: str):
+    async def unload_module(self, name: str):
         """
         Method for unloading modules.
         :param name: Name of Python module inside modules dir
@@ -276,7 +276,7 @@ class ModuleLoader:
             module._BaseModule__state_machines.clear()
 
         self.__modules[name].on_unload()
-        self.__modules[name].unregister_all()
+        await self.__modules[name].unregister_all()
         self.__modules.pop(name)
         self.__modules_info.pop(name)
         try:
@@ -284,12 +284,8 @@ class ModuleLoader:
         except KeyError:
             pass
 
-        # Get rid of previous imports
-        del_keys = []
-        for key in sys.modules.keys():
-            if name in key:
-                del_keys.append(key)
-        
+        # Clear imports
+        del_keys = [key for key in sys.modules.keys() if name in key]
         for key in del_keys:
             del sys.modules[key]
         
@@ -375,7 +371,7 @@ class ModuleLoader:
 
         return None
 
-    def prepare_for_module_update(self, name: str) -> Optional[BaseModule]:
+    async def prepare_for_module_update(self, name: str) -> Optional[BaseModule]:
         """
         Unload module if loaded to prepare for update
         :param name: Name of Python module inside modules dir
@@ -384,5 +380,5 @@ class ModuleLoader:
         module = None
         if name in self.__modules:
             module = self.__modules[name]
-            self.unload_module(name)
+            await self.unload_module(name)
         return module
