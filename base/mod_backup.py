@@ -175,15 +175,27 @@ class BackupManager:
                         logger.error(f"Failed to reset repository for {name}: {reset_p.stdout.decode('utf-8')}")
                         return False, []
 
-                    # Restore untracked files
-                    untracked_files = metadata.get("untracked_files", [])
+                    # Remove all files except .git
                     skipped_files = []
-                    for file in untracked_files:
-                        try:
-                            zipf.extract(file, module_dir)
-                        except Exception as e:
-                            logger.warning(f"Failed to extract {file}: {e}")
-                            skipped_files.append(os.path.join(module_dir, file))
+                    for item in os.listdir(module_dir):
+                        item_path = os.path.join(module_dir, item)
+                        if item != ".git":
+                            try:
+                                if os.path.isfile(item_path):
+                                    os.remove(item_path)
+                                elif os.path.isdir(item_path):
+                                    shutil.rmtree(item_path)
+                            except Exception as e:
+                                logger.warning(f"Failed to remove {item_path}: {e}")
+                                skipped_files.append(item_path)
+
+                    # Extract all files from the zip
+                    try:
+                        zipf.extractall(module_dir)
+                    except Exception as e:
+                        logger.error(f"Failed to extract backup for {name}: {e}")
+                        skipped_files.append(module_dir)
+
                     logger.info(f"Restored git module {name} from backup {backup_path}")
                     return True, skipped_files
                 else:
