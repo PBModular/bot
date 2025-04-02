@@ -80,16 +80,16 @@ class ModuleManager:
             )
 
             if p_check.returncode != 0:
-                logger.error(f"Error while checking for new commits for {name}!")
-                logger.error(p_check.stdout.decode("utf-8"))
+                logger.error(f"Error while checking for new commits for {name}! Return code: {p_check.returncode}")
+                logger.error(f"Git output: {p_check.stdout.decode('utf-8')}")
                 return None
 
             output = p_check.stdout.decode("utf-8").strip()
 
             # Handle empty or invalid output
             if not output.isdigit():
-                logger.warning(f"Unexpected output when checking for commits: {output}")
-                return False  # Assume no new commits if output is invalid
+                logger.error(f"Invalid commit count output for {name}: '{output}'")
+                return None
 
             new_commits_count = int(output)
             return new_commits_count > 0
