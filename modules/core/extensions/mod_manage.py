@@ -197,7 +197,7 @@ class ModManageExtension(ModuleExtension):
         ]
         buttons.append([
             InlineKeyboardButton(self.S["backup"]["cleanup_btn"], callback_data=f"module_backup_cleanup_{module_name}"),
-            InlineKeyboardButton(self.S["backup"]["restore_latest_btn"], callback_data=f"restore_{module_name}")
+            InlineKeyboardButton(self.S["backup"]["restore_latest_btn"], callback_data=f"restore_specific_{module_name}_0")
         ])
         buttons.append([InlineKeyboardButton(
             self.S["backup"]["back_btn"],
