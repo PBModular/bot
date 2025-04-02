@@ -282,12 +282,9 @@ class ModuleManager:
         else:
             logger.info(f"Dependencies upgraded successfully!")
             with open(f"{self.__root_dir}/{directory}/{name}/requirements.txt") as f:
-                reqs = [dep.removesuffix("\n") for dep in f]
+                reqs = [line.strip() for line in f if line.strip()]
                 if not reqs:
-                    logger.warning(f"{name} requirements.txt is empty")
-                elif reqs[-1] == "":
-                    reqs.pop(-1)
-
+                    logger.warning(f"{name} requirements.txt is empty or contains only whitespace")
                 return r.returncode, reqs
 
     def uninstall_mod_deps(self, name: str, modules_deps: dict[str, list[str]]):
