@@ -45,6 +45,12 @@ class Permissions(str, Enum):
 
 
 @dataclass
+class ModuleConfig(YAMLWizard):
+    info: ModuleInfo
+    permissions: list[Permissions] = field(default_factory=list)
+    config: dict = field(default_factory=dict)
+
+@dataclass
 class InfoFile(YAMLWizard):
     info: ModuleInfo
     permissions: list[Permissions] = field(default_factory=list)
@@ -102,12 +108,32 @@ class BaseModule(ABC):
         self.bot = bot
         self.__loaded_info = loaded_info_func
 
-        # Parse info and extensions
-        info_file = InfoFile.from_yaml_file("./info.yaml")
-        self.module_info = info_file.info
-        self.module_permissions = info_file.permissions
-
-        self.logger = logging.getLogger(self.module_info.name)
+        # Attempt to load config.yaml first
+        try:
+            config_file = ModuleConfig.from_yaml_file("./config.yaml")
+            self.module_info = config_file.info
+            self.module_permissions = config_file.permissions
+            self.module_config = config_file.config
+            self.logger = logging.getLogger(self.module_info.name)
+        except FileNotFoundError:
+            # Fall back to info.yaml for backward compatibility
+            try:
+                info_file = InfoFile.from_yaml_file("./info.yaml")
+                self.module_info = ModuleInfo(
+                    name=info_file.info.name,
+                    author=info_file.info.author,
+                    version=info_file.info.version,
+                    description=info_file.info.description,
+                    src_url=info_file.info.src_url,
+                    python=info_file.info.python,
+                    auto_load=True
+                )
+                self.module_permissions = info_file.permissions
+                self.module_config = {}
+                self.logger = logging.getLogger(self.module_info.name)
+                self.logger.warning("Using deprecated info.yaml. Please migrate to config.yaml.")
+            except FileNotFoundError:
+                raise FileNotFoundError("Neither config.yaml nor info.yaml found in the module directory.")  
 
         # Load translations if available
         self.cur_lang = config.language

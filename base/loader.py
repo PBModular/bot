@@ -86,7 +86,6 @@ class ModuleLoader:
                         os.chdir(self.__root_dir)
 
     def load_everything(self):
-        """Load all modules with auto_load enabled and gather info for all modules"""
         modules = os.listdir(path="./modules/")
         if "core" in modules:
             modules.remove("core")
@@ -101,12 +100,22 @@ class ModuleLoader:
                 
             all_modules.append(module)
             auto_load = True
-                
-            if os.path.exists(f"./modules/{module}/info.yaml"):
+            
+            config_path = f"./modules/{module}/config.yaml"
+            info_path = f"./modules/{module}/info.yaml"
+            
+            if os.path.exists(config_path):
                 try:
-                    with open(f"./modules/{module}/info.yaml", "r") as f:
-                        info = yaml.safe_load(f) or {}
-                    auto_load = info.get("auto_load", True)
+                    with open(config_path, "r") as f:
+                        config_data = yaml.safe_load(f) or {}
+                    auto_load = config_data.get("info", {}).get("auto_load", True)
+                except Exception as e:
+                    logger.error(f"Error reading config.yaml for module {module}: {e}")
+            elif os.path.exists(info_path):
+                try:
+                    with open(info_path, "r") as f:
+                        info_data = yaml.safe_load(f) or {}
+                    auto_load = info_data.get("auto_load", True)
                 except Exception as e:
                     logger.error(f"Error reading info.yaml for module {module}: {e}")
             
@@ -118,25 +127,35 @@ class ModuleLoader:
         for module in modules_to_load:
             self.load_module(module)
         
+        # Populate info for all modules (loaded or not)
         for module in all_modules:
             if module not in self.__modules_info:
                 # Create basic info for non-loaded modules
                 try:
-                    info = {}
-                    if os.path.exists(f"./modules/{module}/info.yaml"):
-                        with open(f"./modules/{module}/info.yaml", "r") as f:
-                            info = yaml.safe_load(f) or {}
+                    config_path = f"./modules/{module}/config.yaml"
+                    info_path = f"./modules/{module}/info.yaml"
+                    if os.path.exists(config_path):
+                        with open(config_path, "r") as f:
+                            config_data = yaml.safe_load(f) or {}
+                        info_data = config_data.get("info", {})
+                        auto_load = info_data.get("auto_load", True)
+                    elif os.path.exists(info_path):
+                        with open(info_path, "r") as f:
+                            info_data = yaml.safe_load(f) or {}
+                        auto_load = info_data.get("auto_load", True)
+                    else:
+                        info_data = {}
+                        auto_load = True
                     
-                    from base.module import ModuleInfo
                     mod_info = ModuleInfo(
-                        name=info.get("name", module),
-                        author=info.get("author", ""),
-                        version=info.get("version", ""),
-                        description=info.get("description", ""),
-                        src_url=info.get("src_url", ""),
-                        python=info.get("python", ""),
+                        name=info_data.get("name", module),
+                        author=info_data.get("author", ""),
+                        version=info_data.get("version", ""),
+                        description=info_data.get("description", ""),
+                        src_url=info_data.get("src_url", ""),
+                        python=info_data.get("python", ""),
+                        auto_load=auto_load
                     )
-                    mod_info.auto_load = False
                     self.__all_modules_info[module] = mod_info
                 except Exception as e:
                     logger.error(f"Error creating info for non-loaded module {module}: {e}")
