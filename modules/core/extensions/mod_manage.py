@@ -97,7 +97,7 @@ class ModManageExtension(ModuleExtension):
             ]
             buttons = [list(filter(None, row)) for row in buttons if any(row)]
 
-            await call.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+            await call.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
         except errors.MessageNotModified:
             await call.answer(self.S["module_page"]["no_changes"])
         except Exception as e:
