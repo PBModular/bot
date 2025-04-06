@@ -10,7 +10,6 @@ import time
 
 # Extensions
 from .extensions.mod_manage import ModManageExtension
-from .extensions.mod_manage_legacy import ModManageLegacyExtension
 from .extensions.logs import LogsExtension
 from .extensions.permissions import PermissionsExtension
 
@@ -18,7 +17,7 @@ from .extensions.permissions import PermissionsExtension
 class CoreModule(BaseModule):
     @property
     def module_extensions(self) -> list[Type[ModuleExtension]]:
-        return [ModManageExtension, ModManageLegacyExtension, LogsExtension, PermissionsExtension]
+        return [ModManageExtension, LogsExtension, PermissionsExtension]
 
     @command("help")
     async def help_cmd(self, _, message: Message):

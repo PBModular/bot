@@ -3,6 +3,7 @@ from base.module import command, callback_query, allowed_for, Permissions, InfoF
 from base.loader import ModuleLoader
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram import filters, errors
+from urllib.parse import urlparse
 import os
 import shutil
 import requirements
@@ -352,6 +353,49 @@ class ModManageExtension(ModuleExtension):
         )
         await sleep(2)
         await self._update_module_page(call, module_name)
+
+    @allowed_for("owner")
+    @command("mod_install")
+    async def mod_install_cmd(self, _, message: Message):
+        """Install a new module from a Git repository URL."""
+        if len(message.text.split()) != 2:
+            await message.reply(self.S["install"]["args_err"])
+            return
+
+        url = message.text.split()[1]
+        name = urlparse(url).path.split("/")[-1].removesuffix(".git")
+        msg = await message.reply(self.S["install"]["start"].format(name))
+
+        # Download the module
+        code, stdout = self.loader.mod_manager.install_from_git(url)
+        if code != 0:
+            await msg.edit_text(self.S["install"]["down_err"].format(name, stdout))
+            return
+
+        # Parse module info
+        info_file = InfoFile.from_yaml_file(f"{os.getcwd()}/modules/{name}/info.yaml")
+        info = info_file.info
+        permissions = info_file.permissions
+
+        # Prepare confirmation message
+        text = self.S["install"]["confirm"].format(
+            name=info.name, author=info.author, version=info.version
+        )
+        if permissions:
+            perm_list = "\n".join(f"- {self.S['install']['perms'][p.value]}" for p in permissions)
+            text += self.S["install"]["confirm_perms"].format(perms=perm_list)
+            if Permissions.use_loader in permissions:
+                text += self.S["install"]["confirm_warn_perms"]
+
+        # Send confirmation with buttons
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(self.S["yes_btn"], callback_data="install_yes"),
+                InlineKeyboardButton(self.S["no_btn"], callback_data="install_no")
+            ]
+        ])
+        await msg.edit_text(text, reply_markup=keyboard)
+        self.confirmations["install"][msg.id] = [msg, name]
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^install_(yes|no)$"))
