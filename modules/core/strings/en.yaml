@@ -1,46 +1,46 @@
 yes_btn: Yes ✅
 no_btn: No ❌
-try_again_btn: Try again 🔄
+try_again_btn: Try Again 🔄
 abort_btn: Abort ❌
 
 help:
   header: |
-    Hello! Thanks for using PBModular
-    You can get help for modules' commands using
-    <code>/mod_help &lt;name&gt;</code> or
-    <code>/mhelp &lt;name&gt;</code>
+    Welcome to PBModular! Thank you for using it.
+    Get help for commands within specific modules using:
+    <code>/mod_help <ModuleName></code> or
+    <code>/mhelp <ModuleName></code>
 
     📥 <b>Loaded modules:</b>
 
   footer: |
-    Repository on GitHub: https://github.com/PBModular/bot
-    Star it please 😊
+    Found it useful? Consider starring us on GitHub 😊
+    https://github.com/PBModular/bot
 
 mod_help:
   args_err: |
-    <b>Usage:</b>
-    <code>/mod_help &lt;ModuleName&gt;</code>
-    <code>/mhelp &lt;ModuleName&gt;</code>
-  
-  module_found: "\U0001F4C4 <b>Help for module {0}:</b>"
-  module_not_found: "There's no help page for <b>{0}</b> module…"
+    <b>Usage Example:</b>
+    <code>/mod_help <ModuleName></code>
+    <code>/mhelp <ModuleName></code>
+
+  module_found: "\U0001F4C4 <b>Help for module <code>{0}</code>:</b>"
+  module_not_found: "❌ Help information for the <b>{0}</b> module is not available."
 
 info:
   args_err: |
-    <b>Empty module name!</b>
+    <b>Error: Module name not specified!</b>
 
-    Usage:
+    Usage Example:
     <code>/mod_info BestModule</code>
 
-  not_found: Hmm… I can't find this module!
+  not_found: "❌ Error: The requested module could not be found."
 
   header: |
-    📄 <b>Module</b> <code>{name}</code> <b>info</b>:
+    📄 <b>Module Information: <code>{name}</code></b>
     <b>Author:</b> {author}
     <b>Version:</b> {version}
 
   src_url: |
-    <b>Sources link:</b>
+    <b>Source code link:</b>
     {url}
 
   description: |
@@ -49,23 +49,23 @@ info:
 
 install:
   perms:
-    use_loader: Access to the module loader ⚠️
-    use_db: DB usage
-    require_db: DB usage
+    use_loader: Access to module loader ⚠️
+    use_db: Database usage
+    require_db: Requires database access
 
   args_err: |
-    <b>Empty module URL!</b>
+    <b>Error: Module URL not provided!</b>
 
-    Usage:
+    Usage Example:
     <code>/mod_install https://github.com/SanyaPilot/best_module</code>
 
   start: |
-    🛠 <b>Installing module</b> <code>{0}</code><b>…</b>
+    🛠 <b>Installing module <code>{0}</code>...</b>
 
-    Please wait…
+    Please wait...
 
   confirm: |
-    <b>Are you sure to install module</b> <code>{name}</code><b>?</b>
+    <b>Are you sure you want to install the module <code>{name}</code>?</b>
     <b>Author:</b> {author}
     <b>Version:</b> {version}
 
@@ -73,225 +73,218 @@ install:
     Requested permissions:
     {perms}
 
-  confirm_warn_perms: "<b>Warning!</b> This module requests dangerous permissions\
-    \ (With ⚠ sign)!"
+  confirm_warn_perms: "<b>Warning!</b> This module requests potentially dangerous permissions (marked with ⚠)."
 
   down_reqs_next: |
-    🛠 <b>Module</b> <code>{0}</code> <b>downloaded!</b>
-
-    Installing dependencies…
+    🛠 Module <code>{0}</code> downloaded!
+    Installing dependencies...
 
   down_end_next: |
-    🛠 <b>Module</b> <code>{0}</code> <b>downloaded!</b>
-
-    Loading module…
+    🛠 Module <code>{0}</code> downloaded!
+    Loading module...
 
   reqs_ok: |
-    🛠 <b>Dependencies for module</b> <code>{0}</code> <b>installed!</b>
-
-    Loading module…
+    🛠 Dependencies for module <code>{0}</code> installed!
+    Loading module...
 
   end_reqs: |
-    ✅ <b>Module</b> <code>{0}</code> <b>installed!</b>
+    ✅ Module <code>{0}</code> installed successfully!
 
-    <b>Python dependencies for module:</b>
+    <b>Required Python dependencies were installed:</b>
     {1}
-    Usage help:
+
+    See usage with:
     <code>/help {0}</code>
 
   end: |
-    ✅ <b>Module</b> <code>{0}</code> <b>installed!</b>
+    ✅ Module <code>{0}</code> installed successfully!
 
-    Usage help:
+    See usage with:
     <code>/help {0}</code>
 
-  aborted: "Installation aborted!"
+  aborted: "❌ Installation aborted."
 
   down_err: |
-    ❌ <b>Module download error</b> <code>{0}</code><b>!</b>
+    ❌ <b>Failed to download module <code>{0}</code>!</b>
 
-    git clone command output:
+    Output from `git clone`:
     <code>{1}</code>
 
   reqs_err: |
-    ❌ <b>Dependencies for module</b> <code>{0}</code> <b>failed to install!</b>
+    ❌ <b>Failed to install dependencies for module <code>{0}</code>!</b>
 
-    Output of pip install command:
+    Output from `pip install`:
     <code>{1}</code>
 
-    If error is not related to your setup, contact developer and supply this info:
-    - Python version
+    If this error seems unrelated to your setup, please contact the developer with:
+    - Your Python version
     - Bot version
-    - Output above
+    - The output above
 
   load_err: |
-    ❌ <b>Module load error</b> <code>{0}</code><b>!</b>
+    ❌ <b>Failed to load module <code>{0}</code>!</b>
 
-    Check error in bot log. Contact developer and supply this info:
-    - Python version
+    Check the bot logs for detailed error information. If needed, contact the developer with:
+    - Your Python version
     - Bot version
-    - Error from log
-    
+    - The relevant error log
+
 ping:
-  response: "Pong! It took {time} to process"
+  response: "Pong! Request processed in {time}."
 
 uninstall:
   args_err: |
-    <b>Empty module name!</b>
+    <b>Error: Module name not specified!</b>
 
-    Usage:
+    Usage Example:
     <code>/mod_uninstall BestModule</code>
 
-  not_found: ❌ <b>Module</b> <code>{0}</code> <b>not found!</b>
-  ok: ✅ <b>Module</b> <code>{0}</code> <b>deleted!</b>
-  err: ❌ <b>Module deletion error</b> <code>{0}</code><b>!</b>
+  not_found: "❌ Module <code>{0}</code> not found!"
+  ok: "✅ Module <code>{0}</code> uninstalled successfully!"
+  err: "❌ Error uninstalling module <code>{0}</code>!"
 
 update:
   args_err: |
-    <b>Empty module name!</b>
+    <b>Error: Module name not specified!</b>
 
-    Usage:
+    Usage Example:
     <code>/mod_update BestModule</code>
 
   confirm: |
-    <b>Are you sure to update module</b> <code>{name}</code><b>?</b>
+    <b>Are you sure you want to update the module <code>{name}</code>?</b>
     <b>Author:</b> {author}
-    <b>Version:</b> {version}
+    <b>Current Version:</b> {version}
 
   err: |
-    ❌ <b>Error while updating module</b> <code>{name}</code><b>!</b>
+    ❌ <b>Failed to update module <code>{name}</code>!</b>
 
-    <code>git pull</code> output:
+    Output from <code>git pull</code>:
     {out}
 
   ok: |
-    ✅ <b>Module</b> <code>{name}</code> <b>updated!</b>
+    ✅ Module <code>{name}</code> updated successfully!
 
-    <b>Version</b> {old_ver} -> {new_ver}
+    <b>Version:</b> {old_ver} → {new_ver}
     <b>Repository URL:</b> {url}
 
-  no_updates_found: <b>No updates found!</b>
-  reqs: "<b>Python dependencies for module:</b>"
-  abort: "Update aborted!"
-  info_file_missing: "Missing info.yaml, aborting..."
+  no_updates_found: "✅ Module is already up-to-date."
+  reqs: "<b>Required Python dependencies for the updated module:</b>"
+  abort: "❌ Update aborted."
+  info_file_missing: "❌ Error: Missing info.yaml file. Aborting update..."
 
 log_file:
-  answer_caption_file: 📁 <b>The entire log file as of now</b>
-  answer_log_cleared: ♻️ <b>Log file cleared</b>
+  answer_caption_file: 📁 <b>Here is the current log file</b>
+  answer_log_cleared: ♻️ <b>Log file cleared successfully.</b>
 
 allow_cmd:
   args_err: |
-    <b>Command or role isn't specified!</b>
+    <b>Error: Command or role not specified!</b>
 
-    Usage:
-    <code>/allow_cmd best_command &lt;role&gt;</code>
+    Usage Example:
+    <code>/allow_cmd best_command <role></code>
 
-    Where &lt;role&gt; is one of
+    Where <role> is one of:
     <code>chat_owner</code> - Chat owner
-    <code>chat_admins</code> - Chat admins
-    <code>owner</code> - Bot instance owner
+    <code>chat_admins</code> - Chat administrators
+    <code>owner</code> - Bot owner
     <code>all</code> - All users
-    Or any other role name, or username with @
+    Or another custom role name / @username.
 
-  command_not_found: "<b>Such command is not found!</b>"
+  command_not_found: "❌ Error: The specified command was not found."
   ok: |
-    <b>Okay!</b>
-    The following permissions were set for the command <code>{command}</code>:
-    <code>{roles}</code>
+    ✅ Permissions updated for command <code>{command}</code>.
+    Allowed roles: <code>{roles}</code>
 
 reset_perms:
   args_err: |
-    <b>Command is not specified!</b>
+    <b>Error: Command not specified!</b>
 
-    Usage:
+    Usage Example:
     <code>/reset_perms best_command</code>
 
-  command_not_found: "<b>Such command is not found!</b>"
-  settings_not_found: "<b>Settings not found!</b>"
+  command_not_found: "❌ Error: The specified command was not found."
+  settings_not_found: "ℹ️ No custom permission settings found for this command."
   ok: |
-    <b>Okay!</b>
-    Permissions were reset for the command <code>{command}</code>!
+    ✅ Permissions reset successfully for command <code>{command}</code>!
 
 set_role:
   args_err: |
-    <b>User or role is not specified!</b>
+    <b>Error: User or role not specified!</b>
 
-    Usage:
-    <code>/set_role @best_user &lt;role&gt;</code>
+    Usage Example:
+    <code>/set_role @username <role_name></code>
 
-    Where &lt;role&gt; - role name
+    Where <role_name> is the desired role.
 
-  reserved_role: "<b>This role is reserved!</b>"
-  user_not_found: "<b>Such user is not found!</b>"
+  reserved_role: "❌ Error: This role name is reserved and cannot be assigned."
+  user_not_found: "❌ Error: The specified user was not found."
   ok: |
-    <b>Okay!</b>
-    The following role was set for the user <code>{user}</code>:
-    <code>{role}</code>
+    ✅ Role updated for user <code>{user}</code>.
+    New role: <code>{role}</code>
 
 reset_role:
   args_err: |
-    <b>User is not specified!</b>
+    <b>Error: User not specified!</b>
 
-    Usage:
-    <code>/reset_role @best_user</code>
+    Usage Example:
+    <code>/reset_role @username</code>
 
-  user_not_found: "<b>Such user is not found!</b>"
-  settings_not_found: "<b>Settings not found!</b>"
+  user_not_found: "❌ Error: The specified user was not found."
+  settings_not_found: "ℹ️ No custom role found for this user."
   ok: |
-    <b>Okay!</b>
-    The role was reset for the user <code>{user}</code>!
+    ✅ Role reset successfully for user <code>{user}</code>!
 
 perm_settings:
   args_err: |
     <b>Usage:</b>
-    <code>/perms roles</code>
-    <code>/perms commands</code>
+    <code>/perms roles</code> (Show user roles)
+    <code>/perms commands</code> (Show command permissions)
 
-  perms_header: "\U0001F4C4 List of custom permissions for commands:"
-  roles_header: "\U0001F4C4 List of user roles:"
-  no_perms: "❌ <b>No custom permissions!</b>"
-  no_roles: "❌ <b>Roles aren't set!</b>"
+  perms_header: "\U0001F4C4 Custom Command Permissions:"
+  roles_header: "\U0001F4C4 Custom User Roles:"
+  no_perms: "ℹ️ No custom command permissions have been set."
+  no_roles: "ℹ️ No custom user roles have been assigned."
 
 load:
   args_err: |
-    <b>Usage:</b>
-    <code>/mod_load &lt;ModuleName&gt;</code>
+    <b>Usage Example:</b>
+    <code>/mod_load <ModuleName></code>
 
   load_err: |
-    ❌ <b>An error has occured while loading the module</b> <code>{0}</code><b>!</b>
-    Check logs
-  
-  not_found: "❌ <b>Module</b> <code>{0}</code> <b>not found!</b>"
-  already_loaded_err: "❌ <b>Module</b> <code>{0}</code> <b>is loaded already!</b>"
-  ok: "✅ <b>Module</b> <code>{0}</code> <b>loaded!</b>"
+    ❌ <b>Error loading module <code>{0}</code>!</b>
+    Please check the logs for details.
+
+  not_found: "❌ Module <code>{0}</code> not found!"
+  already_loaded_err: "⚠️ Module <code>{0}</code> is already loaded."
+  ok: "✅ Module <code>{0}</code> loaded successfully!"
 
 unload:
   args_err: |
-    <b>Usage:</b>
-    <code>/mod_unload &lt;ModuleName&gt;</code>
-  
-  not_loaded_err: "❌ <b>Module</b> <code>{0}</code> <b>is not loaded yet!</b>"
-  unload_core: "❌ <b>You can't unload the</b> <code>Core</code> <b>module!</b>"
-  ok: "✅ <b>Module</b> <code>{0}</code> <b>unloaded!</b>"
+    <b>Usage Example:</b>
+    <code>/mod_unload <ModuleName></code>
+
+  not_loaded_err: "⚠️ Module <code>{0}</code> is not currently loaded."
+  unload_core: "❌ Error: The <code>Core</code> module cannot be unloaded!"
+  ok: "✅ Module <code>{0}</code> unloaded successfully!"
 
 reload:
   args_err: |
-    <b>Usage:</b>
-    <code>/mod_reload &lt;ModuleName&gt;</code>
-  
+    <b>Usage Example:</b>
+    <code>/mod_reload <ModuleName></code>
+
   loading: |
-    ⚙️ <b>Module</b> <code>{0}</code> <b>is reloading...</b>
-    Wait a little
-  
-  ok: "✅ <b>Module</b> <code>{0}</code> <b>reloaded!</b>"
+    ⚙️ Reloading module <code>{0}</code>...
+    Please wait.
+
+  ok: "✅ Module <code>{0}</code> reloaded successfully!"
 
 modules:
   list: "<b>Installed modules:</b>"
-  next_btn: Next
-  prev_btn: Previous
+  next_btn: Next →
+  prev_btn: ← Previous
 
 module_page:
-  invalid_module: Module is invalid. Please check Module local files!
+  invalid_module: ⚠️ Module is invalid. Please check its local files!
   name: "<b>Name:</b> {name}"
   author: "<b>Author:</b> {author}"
   version: "<b>Version:</b> {version}"
@@ -299,47 +292,53 @@ module_page:
   description: |
     <b>Description:</b>
     {description}
-  updates_found: <b>New updates found!</b>
-  no_updates_found: <b>No updates found!</b>
-  update_btn: Update
-  delete_btn: Delete
-  back_btn: Back
-  refresh_page_btn: Refresh page
+  updates_found: "🚀 Update available!"
+  no_updates_found: "✅ Module is up-to-date."
+  update_btn: Update 🚀
+  delete_btn: Uninstall 🗑️
+  back_btn: ← Back
+  refresh_page_btn: Refresh 🔄
   refresh_page_err: |
-    Failed to refresh {module_name} page! 
-    Either the module has been unloaded or an unexpected error has occurred
-  no_changes: No changes found
-  unload_btn: Unload
-  load_btn: Load
-  reload_btn: Reload
-  reload_ok: Module {module_name} reloaded!
+    ❌ Failed to refresh page for {module_name}!
+    The module might have been unloaded, or an unexpected error occurred.
+  no_changes: No changes detected.
+  unload_btn: Unload 🔌
+  load_btn: Load 🔌
+  reload_btn: Reload 🔄
+  reload_ok: ✅ Module {module_name} reloaded successfully!
   auto_load: "<b>Auto-load:</b> {status}"
   enabled: Enabled
   disabled: Disabled
   enable_auto_load_btn: Enable Auto-load
   disable_auto_load_btn: Disable Auto-load
-  auto_load_toggled: Auto-load {status}
-  auto_load_toggle_error: Failed to update auto-load setting
+  auto_load_toggled: ✅ Auto-load {status}.
+  auto_load_toggle_error: ❌ Failed to update auto-load setting.
 
 backup:
-  no_backups: "<b>No backups found</b>"
-  no_backups_module: "<b>No backups found for module {name}</b>"
-  list_module: "<b>Available backups for module {name}:</b>"
-  view_backups_btn: "View Backups"
-  restore_btn: "Restore"
-  cleanup_btn: "Cleanup Backups"
-  restore_latest_btn: "Restore Latest"
-  restoring: "Restoring {name} from backup..."
-  restore_success: "<b>Successfully restored {name} from backup</b>"
-  restore_failed: "<b>Failed to restore {name} from backup</b>"
-  restore_canceled: "<b>Backup restoration canceled for {name}.</b>\nModule may be in an inconsistent state."
-  restore_load_err: "<b>Restored {name} from backup, but failed to load module</b>\n<code>{backup}</code>"
-  cleanup_select_count: "Choose how many recent backups to keep for {name}:"
-  back_btn: "Back"
-  confirm_restore: "Do you want to restore {name} from backup: {backup}?"
-  all_except_latest: "Only latest"
-  cleanup_complete: "Cleaned up {count} old backups for {name}. Keeping {keep} most recent."
-  invalid_backup: "Invalid backup selected"
-  backup_failed: "Backup failed for {name}"
-  creating_backup: "Creating Backup for {name}..."
-  backup_created: "Succesfully created backup.\nPath: {path}"
+  no_backups: "ℹ️ No backups found."
+  no_backups_module: "ℹ️ No backups found for module <code>{name}</code>."
+  list_module: "<b>Available backups for module <code>{name}</code>:</b>"
+  view_backups_btn: View Backups 📂
+  restore_btn: Restore 💾
+  cleanup_btn: Cleanup Backups 🧹
+  restore_latest_btn: Restore Latest 💾
+  restoring: "⚙️ Restoring module <code>{name}</code> from selected backup..."
+  restore_success: "✅ Module <code>{name}</code> successfully restored from backup."
+  restore_failed: "❌ Failed to restore module <code>{name}</code> from backup."
+  restore_canceled: |
+    ⚠️ Backup restoration canceled for <code>{name}</code>.
+    The module may be in an inconsistent state.
+  restore_load_err: |
+    ⚠️ Module <code>{name}</code> restored from backup, but failed to load afterwards.
+    Error: <code>{backup}</code>
+  cleanup_select_count: "Choose how many recent backups to keep for <code>{name}</code>:"
+  back_btn: ← Back
+  confirm_restore: "Are you sure you want to restore module <code>{name}</code> from backup <code>{backup}</code>?"
+  all_except_latest: Keep only the latest
+  cleanup_complete: "✅ Cleaned up {count} old backups for module <code>{name}</code>. Kept the {keep} most recent."
+  invalid_backup: "❌ Error: Invalid backup selected."
+  backup_failed: "❌ Backup failed for module <code>{name}</code>."
+  creating_backup: "⚙️ Creating backup for module <code>{name}</code>..."
+  backup_created: |
+    ✅ Backup created successfully.
+    Path: <code>{path}</code>
