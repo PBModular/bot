@@ -12,54 +12,59 @@ import os
 import logging
 import subprocess
 
-init()  # initialize colorama
+init(autoreset=True)
+
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class ColorFormatter(logging.Formatter):
     status_colors = {
-        logging.DEBUG: "",
-        logging.INFO: f"{Fore.GREEN}",
-        logging.WARN: f"{Fore.YELLOW}",
-        logging.ERROR: f"{Fore.RED}",
-        logging.CRITICAL: f"{Fore.RED}",
+        logging.DEBUG: Fore.CYAN,
+        logging.INFO: Fore.WHITE,
+        logging.WARN: Fore.YELLOW,
+        logging.ERROR: Fore.RED,
+        logging.CRITICAL: Fore.RED + Style.DIM,
     }
-    text_colors = {
-        logging.DEBUG: "",
-        logging.INFO: "",
-        logging.WARN: "",
-        logging.ERROR: "",
-        logging.CRITICAL: "",
-    }
-    name_color = f"{Fore.WHITE}"
-    reset = f"{Style.RESET_ALL}"
-    text_spacing = "\t" * 8
+    name_color = Fore.CYAN + Style.BRIGHT
+    reset = Style.RESET_ALL
+    time_color = Fore.LIGHTBLACK_EX
+    separator_color = Fore.LIGHTBLACK_EX
 
     def format(self, record: logging.LogRecord) -> str:
+        log_level = record.levelno
+        level_color = self.status_colors.get(log_level, Fore.WHITE)
+
         f = (
-            f"%(asctime)s | "
-            f"{self.status_colors[record.levelno]}%(levelname)s{self.reset} | "
-            f"{self.name_color}%(name)s{self.reset} "
-            f"\r{self.text_spacing}{self.text_colors[record.levelno]}%(message)s{self.reset}"
+            f"{self.time_color}%(asctime)s{self.reset}"
+            f"{self.separator_color} | {self.reset}"
+            f"{level_color}%(levelname)-8s{self.reset}"
+            f"{self.separator_color} | {self.reset}"
+            f"{self.name_color}%(name)s{self.reset}"
+            f"{self.separator_color} » {self.reset}"
+            f"{level_color}%(message)s{self.reset}"
         )
 
-        return logging.Formatter(f).format(record)
-
+        formatter = logging.Formatter(f, datefmt=DATE_FORMAT)
+        return formatter.format(record)
 
 # File/Console Logger
+file_formatter = logging.Formatter(
+    "%(asctime)s | %(levelname)-8s | %(name)s:%(module)s:%(funcName)s:%(lineno)d | %(message)s",
+    datefmt=DATE_FORMAT
+)
 file_handler = RotatingFileHandler(
-    filename="bot.log", maxBytes=128 * 1024
-)  # 128 MB limit
+    filename="bot.log", maxBytes=128 * 1024, encoding='utf-8'
+)
+file_handler.setFormatter(file_formatter)
+file_handler.setLevel(logging.INFO) # Change to DEBUG if you need
 
 stdout_handler = logging.StreamHandler()
-stdout_handler.setLevel(logging.DEBUG)
+stdout_handler.setLevel(logging.INFO)
 stdout_handler.setFormatter(ColorFormatter())
 
-handlers = [file_handler, stdout_handler]
+logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().addHandler(file_handler)
+logging.getLogger().addHandler(stdout_handler)
 
-logging.basicConfig(
-    format="%(asctime)s | %(levelname)s | %(name)s %(message)s",
-    level="INFO",
-    handlers=handlers,
-)
 logger = logging.getLogger(__name__)
 
 # Root path
@@ -68,9 +73,9 @@ ROOT_DIR = os.getcwd()
 
 def get_last_commit_info():
     try:
-        sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
+        sha = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL).strip().decode("utf-8")
         date = subprocess.check_output(
-            ["git", "log", "-1", "--format=%cd", "--date=short"]
+            ["git", "log", "-1", "--format=%cd", "--date=short"], stderr=subprocess.DEVNULL
         ).strip().decode("utf-8")
         return sha, date
     except subprocess.CalledProcessError:
@@ -104,13 +109,28 @@ def main(update_conf: bool = False):
 
         async def start():
             # Init database
-            engine = create_async_engine("sqlite+aiosqlite:///bot_db.sqlite3")
-            session_maker = async_sessionmaker(engine, expire_on_commit=False)
+            try:
+                # Use the URL from config if DB is enabled
+                db_uri = config.db_url if config.enable_db else f"sqlite+aiosqlite:///{config.db_file_name}"
+                if config.enable_db:
+                    logger.info(f"Database enabled. Connecting to: {db_uri.split('@')[-1]}")
+                else:
+                    logger.info(f"Database disabled. Using file: {config.db_file_name}")
 
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
+                engine = create_async_engine(db_uri)
+                session_maker = async_sessionmaker(engine, expire_on_commit=False)
+
+                async with engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
+                logger.info("Database initialized and tables created/checked.")
+            except Exception as e:
+                logger.critical(f"Database initialization failed: {e}")
+                session_maker = None
+                engine = None
+                return
 
             # Load modules
+            logger.info("Initializing Module Loader...")
             loader = ModuleLoader(
                 bot,
                 root_dir=ROOT_DIR,
@@ -118,18 +138,54 @@ def main(update_conf: bool = False):
                 bot_db_engine=engine,
             )
             loader.load_everything()
+            logger.info("Module loading complete.")
 
             # Launch bot
-            await bot.start()
-            await idle()
-            await bot.stop()
+            try:
+                await bot.start()
+                user = await bot.get_me()
+                logger.info(f"Bot started as @{user.username} (ID: {user.id})")
+                await idle()
+            except Exception as e:
+                logger.exception("An error occurred during bot runtime.")
+            finally:
+                logger.warning("Stopping bot...")
+                await bot.stop()
+                if engine:
+                    await engine.dispose()
+                logger.info("Bot stopped.")
 
-        bot.run(start())
+
+        # Run the async start function
+        try:
+            bot.run(start())
+        except KeyboardInterrupt:
+            logger.info("Shutdown requested by user (KeyboardInterrupt).")
+        except Exception as e:
+            logger.exception("Critical error in main loop.")
+
     else:
-        config.token = input("Input token: ")
-        config.api_id = int(input("Input api_id: "))
-        config.api_hash = input("Input api_hash: ")
-        main(update_conf=True)
+        logger.warning("Credentials not found in config. Requesting input.")
+        try:
+            token_in = input(f"{Fore.YELLOW}Input Bot Token: {Style.RESET_ALL}")
+            api_id_in = input(f"{Fore.YELLOW}Input API ID: {Style.RESET_ALL}")
+            api_hash_in = input(f"{Fore.YELLOW}Input API Hash: {Style.RESET_ALL}")
+
+            # Basic validation
+            if not token_in or not api_id_in.isdigit() or not api_hash_in:
+                logger.error("Invalid input. Token and API Hash cannot be empty, API ID must be a number.")
+                return
+
+            config.token = token_in
+            config.api_id = int(api_id_in)
+            config.api_hash = api_hash_in
+            main(update_conf=True)
+        except EOFError:
+            logger.critical("Input stream closed unexpectedly. Exiting.")
+        except ValueError:
+            logger.error("Invalid API ID provided. It must be an integer.")
+        except Exception as e:
+            logger.exception(f"An error occurred during credential input: {e}")
 
 
 if __name__ == "__main__":
@@ -137,15 +193,22 @@ if __name__ == "__main__":
     print(
         f"""
         {Fore.CYAN}
-        _/_/_/    _/_/_/    _/      _/                  _/            _/                      
-       _/    _/  _/    _/  _/_/  _/_/    _/_/      _/_/_/  _/    _/  _/    _/_/_/  _/  _/_/   
-      _/_/_/    _/_/_/    _/  _/  _/  _/    _/  _/    _/  _/    _/  _/  _/    _/  _/_/        
-     _/        _/    _/  _/      _/  _/    _/  _/    _/  _/    _/  _/  _/    _/  _/           
-    _/        _/_/_/    _/      _/    _/_/      _/_/_/    _/_/_/  _/    _/_/_/  _/            
-
-    Commit: {sha[:6]}
-    Date: {date}
+██████╗ ██████╗ ███╗   ███╗ ██████╗ ██████╗ ██╗   ██╗██╗      █████╗ ██████╗ 
+██╔══██╗██╔══██╗████╗ ████║██╔═══██╗██╔══██╗██║   ██║██║     ██╔══██╗██╔══██╗
+██████╔╝██████╔╝██╔████╔██║██║   ██║██║  ██║██║   ██║██║     ███████║██████╔╝
+██╔═══╝ ██╔══██╗██║╚██╔╝██║██║   ██║██║  ██║██║   ██║██║     ██╔══██║██╔══██╗
+██║     ██████╔╝██║ ╚═╝ ██║╚██████╔╝██████╔╝╚██████╔╝███████╗██║  ██║██║  ██║
+╚═╝     ╚═════╝ ╚═╝     ╚═╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝
     {Style.RESET_ALL}
+        {Fore.LIGHTBLACK_EX}------------------------------------------------------------{Style.RESET_ALL}
+         {Fore.CYAN}Commit:{Style.RESET_ALL} {Fore.YELLOW}{sha[:7]}{Style.RESET_ALL}
+         {Fore.CYAN}Date:{Style.RESET_ALL}   {date}
+        {Fore.LIGHTBLACK_EX}------------------------------------------------------------{Style.RESET_ALL}
     """
     )
-    main(update_conf=False)
+    try:
+        main(update_conf=False)
+    except Exception as e:
+        logging.getLogger(__name__).exception("An uncaught exception occurred at the top level.")
+    finally:
+        print(f"{Fore.LIGHTBLACK_EX}Execution finished.{Style.RESET_ALL}")
