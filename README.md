@@ -105,7 +105,8 @@ While we strive for cross-platform compatibility, Windows support is not fully g
 * **[@SanyaPilot](https://github.com/SanyaPilot)** ([Telegram](https://t.me/sanyapilot)) - Bot core, wiki
 * **[@CakesTwix](https://github.com/CakesTwix)** ([Telegram](https://t.me/CakesTwix)) - Translations
 * **[@vilander1337](https://github.com/vilander1337)** - Gitbook documentation, scripts
-  
+* **[@Ultra119](https://github.com/Ultra119)** ([Telegram](https://t.me/Ultra119)) - New features, wiki site
+
 ## Contributing
 
 We welcome contributions! Feel free to open issues, submit pull requests, or join the discussion in our [Telegram Chat](https://t.me/PBModular_chat)
