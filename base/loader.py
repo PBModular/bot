@@ -86,6 +86,7 @@ class ModuleLoader:
                         os.chdir(self.__root_dir)
 
     def load_everything(self):
+        """Load all modules with auto_load enabled and gather info for all modules"""
         modules = os.listdir(path="./modules/")
         if "core" in modules:
             modules.remove("core")
