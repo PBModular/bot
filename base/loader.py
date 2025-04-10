@@ -392,7 +392,7 @@ class ModuleLoader:
         :param name: User-friendly name of a module
         :return: Internal name of a module
         """
-        for n, info in self.__modules_info.items():
+        for n, info in self.__all_modules_info.items():
             if info.name.lower() == name.lower():
                 return n
 
