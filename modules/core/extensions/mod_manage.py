@@ -448,6 +448,14 @@ class ModManageExtension(ModuleExtension):
             await message.reply(self.S["uninstall"]["uninstall_core"])
             return
 
+        if self.loader.get_module(int_name):
+            try:
+                await self.loader.unload_module(int_name)
+                await sleep(0.5)
+            except Exception as e:
+                await message.reply(self.S["uninstall"]["unload_err_before_delete"].format(name=name))
+                return
+
         current_deps = self.loader.get_modules_deps()
         result = self.loader.mod_manager.uninstall_module(int_name, current_deps)
 

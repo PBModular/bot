@@ -142,6 +142,7 @@ uninstall:
   not_found: "❌ Module <code>{0}</code> not found!"
   ok: "✅ Module <code>{0}</code> uninstalled successfully!"
   err: "❌ Error uninstalling module <code>{0}</code>!"
+  unload_err_before_delete: "❌ Failed to unload module {name} before deletion. Uninstall aborted to prevent issues."
 
 update:
   args_err: |
