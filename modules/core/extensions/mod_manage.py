@@ -1,5 +1,5 @@
 from base.mod_ext import ModuleExtension
-from base.module import command, callback_query, allowed_for, Permissions, InfoFile
+from base.module import command, callback_query, allowed_for, Permissions, ModuleConfig
 from base.loader import ModuleLoader
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram import filters, errors
@@ -19,7 +19,7 @@ class ModManageExtension(ModuleExtension):
         }
         self.last_page: Dict[int, int] = {}
 
-    def _generate_paginated_buttons(self, items: List[Tuple[str, InfoFile]],
+    def _generate_paginated_buttons(self, items: List[Tuple[str, ModuleConfig]],
                                     page: int, items_per_page: int = 5) -> InlineKeyboardMarkup:
         start, end = page * items_per_page, (page + 1) * items_per_page
         paginated_items = items[start:end]
@@ -373,7 +373,7 @@ class ModManageExtension(ModuleExtension):
             return
 
         # Parse module info
-        info_file = InfoFile.from_yaml_file(f"{os.getcwd()}/modules/{name}/info.yaml")
+        info_file = ModuleConfig.from_yaml_file(f"{os.getcwd()}/modules/{name}/info.yaml")
         info = info_file.info
         permissions = info_file.permissions
 
@@ -507,7 +507,7 @@ class ModManageExtension(ModuleExtension):
             return
 
         try:
-            info_file = InfoFile.from_yaml_file(f"{os.getcwd()}/modules/{int_name}/info.yaml")
+            info_file = ModuleConfig.from_yaml_file(f"{os.getcwd()}/modules/{int_name}/info.yaml")
         except FileNotFoundError:
             latest_backup = self.loader.mod_manager.list_backups(name)[0]
             keyboard = InlineKeyboardMarkup([
