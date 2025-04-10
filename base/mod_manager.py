@@ -352,13 +352,33 @@ class ModuleManager:
                 modules_deps.pop(name)
                 
             # Remove module directory
-            if os.path.exists(f"./modules/{name}"):
-                shutil.rmtree(f"./modules/{name}")
-                logger.info(f"Successfully removed module {name}!")
-                return True
+            module_path = os.path.join(self.__root_dir, "modules", name)
+            if os.path.exists(module_path):
+                logger.info(f"Attempting to remove module directory: {module_path}")
+                skipped_files = self.__backup_manager.safe_remove_tree(module_path)
+
+                if skipped_files:
+                    logger.warning(f"Could not remove some files/directories during uninstall of {name}:")
+                    for item in skipped_files:
+                        logger.warning(f" - {item}")
+                    logger.info(f"Partially removed module {name} (some items skipped).")
+                    try:
+                        if os.path.exists(module_path) and not os.listdir(module_path):
+                            os.rmdir(module_path)
+                            logger.info(f"Removed empty top-level directory: {module_path}")
+                    except Exception as e:
+                        logger.warning(f"Could not remove potentially empty top-level directory {module_path}: {e}")
+                    return True
+                else:
+                    if not os.path.exists(module_path):
+                        logger.info(f"Successfully removed module {name}!")
+                        return True
+                    else:
+                        logger.error(f"safe_remove_tree completed for {name} but directory {module_path} still exists.")
+                        return False
             else:
-                logger.warning(f"Module directory for {name} not found.")
-                return False
+                logger.warning(f"Module directory for {name} not found ({module_path}).")
+                return True
         except Exception as e:
             logger.error(f"Error while removing module {name}! Printing traceback...")
             logger.exception(e)
