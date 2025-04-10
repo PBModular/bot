@@ -438,13 +438,25 @@ class ModManageExtension(ModuleExtension):
 
     async def mod_uninstall(self, message: Message, name: str) -> None:
         """Uninstall a module."""
-        int_name = self.loader.get_int_name(name)
-        if not int_name or int_name.lower() == "core":
+        try:
+            int_name = self.loader.get_int_name(name)
+        except:
             await message.reply(self.S["uninstall"]["not_found"].format(name))
             return
-            
-        result = self.loader.mod_manager.uninstall_module(int_name)
-        await message.reply(self.S["uninstall"]["ok" if result else "err"].format(name))
+
+        if int_name.lower() == "core":
+            await message.reply(self.S["uninstall"]["uninstall_core"])
+            return
+
+        current_deps = self.loader.get_modules_deps()
+        result = self.loader.mod_manager.uninstall_module(int_name, current_deps)
+
+        if result:
+            if int_name in self.loader.get_all_modules_info():
+                del self.loader.get_all_modules_info()[int_name]
+            await message.reply(self.S["uninstall"]["ok"].format(name))
+        else:
+            await message.reply(self.S["uninstall"]["err"].format(name))
 
     async def mod_update(self, message: Message, name: str) -> None:
         """Update module to upstream version."""
