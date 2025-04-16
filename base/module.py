@@ -2,7 +2,7 @@ import logging
 from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Union, Callable, Type
+from typing import Optional, Union, Callable, Type, Tuple
 import inspect
 import os
 from functools import wraps
@@ -203,9 +203,9 @@ class BaseModule(ABC):
         del self.__extensions
 
         # Unregister handlers
-        for handler in self.__handlers:
-            self.bot.remove_handler(handler)
-        
+        for handler, group in self.__handlers:
+            self.bot.remove_handler(handler, group)
+
         self.__handlers.clear()
 
         command_registry.remove_all(self.module_info.name)
@@ -244,8 +244,9 @@ class BaseModule(ABC):
                         final_filter = self.__add_fsm_filter(func, final_filter)
 
                         handler = MessageHandler(func, final_filter)
-                        self.bot.add_handler(handler)
-                        self.__handlers.append(handler)
+                        group = 0
+                        self.bot.add_handler(handler, group=group)
+                        self.__handlers.append((handler, group))
 
                         if self.__auto_help is None:
                             self.__auto_help = HelpPage("")
@@ -267,8 +268,9 @@ class BaseModule(ABC):
                 final_filter = self.__add_fsm_filter(func, final_filter)
 
                 handler = CallbackQueryHandler(func, final_filter)
-                self.bot.add_handler(handler)
-                self.__handlers.append(handler)
+                group = 0
+                self.bot.add_handler(handler, group=group)
+                self.__handlers.append((handler, group))
 
             elif hasattr(func, "bot_msg_filter"):
                 # Func with @message decorator
@@ -281,13 +283,32 @@ class BaseModule(ABC):
                 final_filter = self.__add_fsm_filter(func, final_filter)
 
                 handler = MessageHandler(func, final_filter)
-                self.bot.add_handler(handler)
-                self.__handlers.append(handler)
+                group = 0
+                self.bot.add_handler(handler, group=group)
+                self.__handlers.append((handler, group))
 
-        # Custom handlers
-        for handler in ext.custom_handlers if ext else self.custom_handlers:
-            self.bot.add_handler(handler)
-            self.__handlers.append(handler)
+        # Custom handlers registration
+        custom_handlers_list = ext.custom_handlers if ext else self.custom_handlers
+        for item in custom_handlers_list:
+            handler_instance: Optional[Handler] = None
+            group: int = 0
+
+            if isinstance(item, Handler):
+                # If it's just a Handler, use default group 0
+                handler_instance = item
+            elif isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], Handler) and isinstance(item[1], int):
+                # If it's a tuple (Handler, group_number)
+                handler_instance = item[0]
+                group = item[1]
+            else:
+                self.logger.warning(
+                    f"Invalid item type in custom_handlers list for module {self.module_info.name}. "
+                    f"Expected Handler or (Handler, int), got {type(item)}. Skipping."
+                )
+                continue
+
+            self.bot.add_handler(handler_instance, group=group)
+            self.__handlers.append((handler_instance, group))
     
     def __add_fsm_filter(self, func: Callable, final_filter: Filter) -> Filter:
         if hasattr(func, "bot_fsm_states"):
@@ -429,10 +450,18 @@ class BaseModule(ABC):
         return self.__auto_help
 
     @property
-    def custom_handlers(self) -> list[Handler]:
+    def custom_handlers(self) -> list[Union[Handler, Tuple[Handler, int]]]:
         """
-        Custom handlers for something that exceeds message / callback query validation (raw messages, etc.)
-        Override if necessary
+        Custom handlers for specialized use cases (e.g., raw updates, specific message types).
+        Override if necessary.
+
+        Each item in the list should be either:
+        1. A Pyrogram Handler instance (e.g., MessageHandler, CallbackQueryHandler, RawUpdateHandler).
+           These handlers will be added to the default group (0).
+        2. A tuple containing (Handler, int), where the integer specifies the Pyrogram handler group.
+
+        Handlers are processed by group number, lowest first. Within a group, order is determined by PyroTGFork.
+        See: https://telegramplayground.github.io/pyrogram/topics/more-on-updates.html#handler-groups
         """
         return []
 
