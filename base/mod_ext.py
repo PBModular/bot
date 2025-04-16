@@ -1,5 +1,6 @@
 import logging
 from base.module import BaseModule, Handler
+from typing import Union, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +39,17 @@ class ModuleExtension:
         return self.__base_mod.db
 
     @property
-    def custom_handlers(self) -> list[Handler]:
+    def custom_handlers(self) -> list[Union[Handler, Tuple[Handler, int]]]:
         """
-        Custom handlers for something that exceeds message / callback query validation (raw messages, etc.)
-        Override if necessary
+        Custom handlers for specialized use cases (e.g., raw updates, specific message types).
+        Override if necessary.
+
+        Each item in the list should be either:
+        1. A Pyrogram Handler instance (e.g., MessageHandler, CallbackQueryHandler, RawUpdateHandler).
+           These handlers will be added to the default group (0).
+        2. A tuple containing (Handler, int), where the integer specifies the Pyrogram handler group.
+
+        Handlers are processed by group number, lowest first. Within a group, order is determined by PyroTGFork.
+        See: https://telegramplayground.github.io/pyrogram/topics/more-on-updates.html#handler-groups
         """
         return []
