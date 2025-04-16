@@ -206,7 +206,7 @@ class BaseModule(ABC):
         for handler in self.__handlers:
             self.bot.remove_handler(handler)
         
-        self.__handlers = {}
+        self.__handlers.clear()
 
         command_registry.remove_all(self.module_info.name)
 
