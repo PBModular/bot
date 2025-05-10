@@ -12,13 +12,14 @@ class Database:
         try:
             self.engine = create_async_engine(self.decide_url(modname))
             self.session_maker = async_sessionmaker(self.engine, expire_on_commit=False)
-        except:
-            logger.error("Failed to initialize database! Disabling for runtime!")
+        except Exception as e:
+            logger.error("Failed to initialize database! Disabling for runtime! Error: %s", e)
             traceback.print_exc()
+            self.engine = None
+            self.session_maker = None
 
     @staticmethod
     def decide_url(modname: str) -> str:
         if "sqlite" in config.db_url:
             return config.db_url + f"/modules/{modname}/{config.db_file_name}"
-        else:
-            return config.db_url + f"/{modname}"
+        return config.db_url + f"/{modname}"
