@@ -496,7 +496,7 @@ class ModManageExtension(ModuleExtension):
         try:
             int_name = self.loader.get_int_name(name)
         except:
-            await message.reply(self.S["uninstall"]["not_found"].format(name))
+            await message.reply(self.S["uninstall"]["not_found"].format(name=name))
             return
 
         if int_name.lower() == "core":
@@ -517,9 +517,9 @@ class ModManageExtension(ModuleExtension):
         if result:
             if int_name in self.loader.get_all_modules_info():
                 del self.loader.get_all_modules_info()[int_name]
-            await message.reply(self.S["uninstall"]["ok"].format(name))
+            await message.reply(self.S["uninstall"]["ok"].format(name=name))
         else:
-            await message.reply(self.S["uninstall"]["err"].format(name))
+            await message.reply(self.S["uninstall"]["err"].format(name=name))
 
     async def mod_update(self, message: Message, name: str) -> None:
         """Update module to upstream version."""
@@ -825,21 +825,21 @@ class ModManageExtension(ModuleExtension):
         reply_func = message.edit_text if edit else message.reply
         if self.loader.get_module(name):
             if not silent:
-                await reply_func(self.S["load"]["already_loaded_err"].format(name))
+                await reply_func(self.S["load"]["already_loaded_err"].format(name=name))
             return None
             
         try:
             result = self.loader.load_module(name)
             if result is None:
-                await reply_func(self.S["load"]["load_err"].format(name))
+                await reply_func(self.S["load"]["load_err"].format(name=name))
                 return None
             if not silent:
                 await reply_func(self.S["load"]["ok"].format(result))
             return result
         except FileNotFoundError:
-            await reply_func(self.S["load"]["not_found"].format(name))
+            await reply_func(self.S["load"]["not_found"].format(name=name))
         except Exception:
-            await reply_func(self.S["load"]["load_err"].format(name))
+            await reply_func(self.S["load"]["load_err"].format(name=name))
         return None
 
     async def mod_unload(self, message: Message, name: str, silent: bool = False, edit: bool = False) -> Optional[str]:
@@ -853,12 +853,12 @@ class ModManageExtension(ModuleExtension):
         int_name = self.loader.get_int_name(name)
         if not int_name:
             if not silent:
-                await reply_func(self.S["unload"]["not_loaded_err"].format(name))
+                await reply_func(self.S["unload"]["not_loaded_err"].format(name=name))
             return None
             
         await self.loader.unload_module(int_name)
         if not silent:
-            await reply_func(self.S["unload"]["ok"].format(name))
+            await reply_func(self.S["unload"]["ok"].format(name=name))
         return int_name
 
     @callback_query(filters.regex(r"^dummy$"))
