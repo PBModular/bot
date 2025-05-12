@@ -1,5 +1,5 @@
 from base.mod_ext import ModuleExtension
-from base.module import command, callback_query, allowed_for, Permissions, ModuleConfig, InfoFile
+from base.module import command, callback_query, allowed_for, Permissions, ModuleConfig
 from base.loader import ModuleLoader
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram import filters, errors
@@ -13,7 +13,7 @@ import re
 
 class ModManageExtension(ModuleExtension):
     def on_init(self):
-        self.confirmations: Dict[str, Dict[int, Tuple[Message, str]]] = {
+        self.confirmations: Dict[str, Dict[int, Tuple[Message, str, ModuleConfig]]] = {
             'install': {},
             'update': {}
         }
@@ -394,8 +394,7 @@ class ModManageExtension(ModuleExtension):
             return
 
         config_path = os.path.join(module_dir, "config.yaml")
-        info_path = os.path.join(module_dir, "info.yaml")
-        info = None
+        info: Optional[ModuleConfig] = None
         permissions = []
 
         try:
@@ -403,21 +402,17 @@ class ModManageExtension(ModuleExtension):
                 config_file = ModuleConfig.from_yaml_file(config_path)
                 info = config_file.info
                 permissions = config_file.permissions
-            elif os.path.exists(info_path):
-                info_file = InfoFile.from_yaml_file(info_path)
-                info = info_file.info
-                permissions = info_file.permissions
             else:
                 if os.path.exists(module_dir):
                     shutil.rmtree(module_dir)
-                await msg.edit_text(self.S["install"]["no_info_err"].format(name=name))
+                await msg.edit_text(self.S["install"]["no_config_yaml_err"].format(name=name))
                 return
 
         except Exception as e:
             if os.path.exists(module_dir):
                 shutil.rmtree(module_dir)
-            await msg.edit_text(self.S["install"]["info_parse_err"].format(name=name, error=e))
-            self.logger.error(f"Failed to parse info/config file for {name}: {e}", exc_info=True)
+            await msg.edit_text(self.S["install"]["config_parse_err"].format(name=name, error=e))
+            self.logger.error(f"Failed to parse config.yaml for {name}: {e}", exc_info=True)
             return
 
         # Prepare confirmation message
@@ -465,34 +460,34 @@ class ModManageExtension(ModuleExtension):
             await msg.delete()
             return
 
-        await msg.edit_text(self.S["install"]["processing"].format(name=name))
+        await msg.edit_text(self.S["install"]["processing"].format(name=info_obj.name))
         try:
             if os.path.exists(reqs_path):
-                await msg.edit_text(self.S["install"]["down_reqs_next"].format(name=name))
+                await msg.edit_text(self.S["install"]["down_reqs_next"].format(name=info_obj.name))
                 code, data = self.loader.mod_manager.install_deps(name, "modules")
                 if code != 0:
-                    await msg.edit_text(self.S["install"]["reqs_err"].format(name=name, out=data))
+                    await msg.edit_text(self.S["install"]["reqs_err"].format(name=info_obj.name, out=data))
                     return
 
-                await msg.edit_text(self.S["install"]["loading"].format(name=name))
+                await msg.edit_text(self.S["install"]["loading"].format(name=info_obj.name))
                 result = self.loader.load_module(name)
                 if result is None:
-                    await msg.edit_text(self.S["install"]["load_err"].format(name=name))
+                    await msg.edit_text(self.S["install"]["load_err"].format(name=info_obj.name))
                     return
 
                 req_list_str = "\n".join(f"- {req}" for req in data) if isinstance(data, list) else str(data)
                 await msg.edit_text(self.S["install"]["end_reqs"].format(name=result, reqs=req_list_str))
             else:
-                await msg.edit_text(self.S["install"]["down_end_next"].format(name=name))
-                await msg.edit_text(self.S["install"]["loading"].format(name=name))
+                await msg.edit_text(self.S["install"]["down_end_next"].format(name=info_obj.name))
+                await msg.edit_text(self.S["install"]["loading"].format(name=info_obj.name))
                 result = self.loader.load_module(name)
                 if result is None:
-                    await msg.edit_text(self.S["install"]["load_err"].format(name=name))
+                    await msg.edit_text(self.S["install"]["load_err"].format(name=info_obj.name))
                     return
 
                 await msg.edit_text(self.S["install"]["end"].format(name=result))
         except Exception as e:
-            await msg.edit_text(self.S["install"]["unexpected_err"].format(name=name, error=e))
+            await msg.edit_text(self.S["install"]["unexpected_err"].format(name=info_obj.name, error=e))
             self.logger.error(f"Unexpected error during final install steps for {name}: {e}", exc_info=True)
 
     async def mod_uninstall(self, message: Message, name: str) -> None:
@@ -589,25 +584,23 @@ class ModManageExtension(ModuleExtension):
         if code != 0:
             await msg.edit_text(self.S["update"]["err"].format(name=current_info.name, out=stdout))
             if backup_path:
-                latest_backup = backup_path
                 keyboard = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"confirm_restore_{int_name}_{latest_backup}"), # Pass backup path directly
-                    InlineKeyboardButton(self.S["no_btn"], callback_data=f"cancel_update_restore_{int_name}")] # Cancel means keep broken state
+                    [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"confirm_restore_{int_name}_{backup_path}"),
+                    InlineKeyboardButton(self.S["no_btn"], callback_data=f"cancel_update_restore_{int_name}")]
                 ])
                 await msg.edit_text(
-                    msg.text + "\n" + self.S["backup"]["offer_restore"].format(name=int_name, backup=os.path.basename(latest_backup)),
+                    msg.text + "\n" + self.S["backup"]["offer_restore"].format(name=int_name, backup=os.path.basename(backup_path)),
                     reply_markup=keyboard
                 )
             else:
                 await msg.reply(self.S["update"]["err_no_backup"].format(name=current_info.name))
-                self.loader.load_module(int_name)
+            self.loader.load_module(int_name)
             return
 
         # Read Module Info
         await msg.edit_text(self.S["update"]["checking_info"].format(name=current_info.name))
         config_path = os.path.join(module_dir, "config.yaml")
-        info_path = os.path.join(module_dir, "info.yaml")
-        new_info = None
+        new_info: Optional[ModuleConfig] = None
         new_permissions = []
 
         try:
@@ -616,37 +609,30 @@ class ModManageExtension(ModuleExtension):
                 new_info = config_file.info
                 new_permissions = config_file.permissions
                 self.logger.info(f"Loaded updated metadata for {int_name} from config.yaml")
-            elif os.path.exists(info_path):
-                info_file = InfoFile.from_yaml_file(info_path)
-                new_info = info_file.info
-                new_permissions = info_file.permissions
-                self.logger.warning(f"Loaded updated metadata for {int_name} from deprecated info.yaml")
             else:
-                await msg.edit_text(self.S["update"]["info_file_missing"].format(name=current_info.name))
+                await msg.edit_text(self.S["update"]["config_yaml_missing_after_update"].format(name=current_info.name))
                 if backup_path:
-                    latest_backup = backup_path
                     keyboard = InlineKeyboardMarkup([
-                        [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"confirm_restore_{int_name}_{latest_backup}"),
+                        [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"confirm_restore_{int_name}_{backup_path}"),
                         InlineKeyboardButton(self.S["no_btn"], callback_data=f"cancel_update_restore_{int_name}")]
                     ])
                     await msg.edit_text(
-                        msg.text + "\n" + self.S["backup"]["offer_restore"].format(name=int_name, backup=os.path.basename(latest_backup)),
+                        msg.text + "\n" + self.S["backup"]["offer_restore"].format(name=int_name, backup=os.path.basename(backup_path)),
                         reply_markup=keyboard
                     )
                 else:
                     await msg.reply(self.S["update"]["err_no_backup"].format(name=current_info.name))
                 return
         except Exception as e:
-            await msg.edit_text(self.S["update"]["info_parse_err"].format(name=current_info.name, error=e))
-            self.logger.error(f"Failed to parse updated info/config file for {int_name}: {e}", exc_info=True)
+            await msg.edit_text(self.S["update"]["config_parse_err_after_update"].format(name=current_info.name, error=e))
+            self.logger.error(f"Failed to parse updated config.yaml for {int_name}: {e}", exc_info=True)
             if backup_path:
-                latest_backup = backup_path
                 keyboard = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"confirm_restore_{int_name}_{latest_backup}"),
+                    [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"confirm_restore_{int_name}_{backup_path}"),
                     InlineKeyboardButton(self.S["no_btn"], callback_data=f"cancel_update_restore_{int_name}")]
                 ])
                 await msg.edit_text(
-                    msg.text + "\n" + self.S["backup"]["offer_restore"].format(name=int_name, backup=os.path.basename(latest_backup)),
+                    msg.text + "\n" + self.S["backup"]["offer_restore"].format(name=int_name, backup=os.path.basename(backup_path)),
                     reply_markup=keyboard
                 )
             else:
@@ -686,8 +672,8 @@ class ModManageExtension(ModuleExtension):
             await call.answer(self.S["update"]["confirmation_expired"])
             return
 
-        msg, int_name, old_ver, old_reqs, backup_path, new_info = confirmation_data
-        display_name = new_info.name
+        msg, int_name, old_ver, old_reqs, backup_path, new_info_obj = confirmation_data
+        display_name = new_info_obj.name
 
         try_again_keyboard = InlineKeyboardMarkup([
             [
@@ -730,32 +716,37 @@ class ModManageExtension(ModuleExtension):
                 code, data = self.loader.mod_manager.install_deps(int_name, "modules")
                 if code != 0:
                     await msg.edit_text(self.S["install"]["reqs_err"].format(name=display_name, out=data), reply_markup=try_again_keyboard)
-                    self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info)
+                    self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info_obj)
                     return
 
                 await msg.edit_text(self.S["update"]["loading"].format(name=display_name))
                 result = self.loader.load_module(int_name, skip_deps=False)
                 if result is None:
                     await msg.edit_text(self.S["install"]["load_err"].format(name=display_name), reply_markup=try_again_keyboard)
-                    self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info)
+                    self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info_obj)
                     return
 
-                new_reqs = []
                 if isinstance(data, list):
-                    new_reqs_objs = list(requirements.parse(open(reqs_path, encoding="utf-8"))) if os.path.exists(reqs_path) else []
+                    new_reqs_objs = []
+                    if os.path.exists(reqs_path):
+                         with open(reqs_path, "r", encoding="utf-8") as f_reqs:
+                            new_reqs_objs = list(requirements.parse(f_reqs))
+
                     del_reqs = [req.name.lower() for req in (old_reqs or []) if not any(req.name.lower() == new_req.name.lower() for new_req in new_reqs_objs)]
                     if del_reqs:
                         self.logger.info(f"Attempting to uninstall old dependencies for {int_name}: {del_reqs}")
                         current_deps = self.loader.get_modules_deps()
-                        self.loader.mod_manager.uninstall_packages(del_reqs, current_deps)
+                        temp_deps = current_deps.copy()
+                        if int_name in temp_deps: del temp_deps[int_name]
+                        self.loader.mod_manager.uninstall_packages(del_reqs, temp_deps)
 
                 # Construct final message
                 req_list_str = "\n".join(f"- {req}" for req in data) if isinstance(data, list) else str(data)
                 final_text = self.S["update"]["ok"].format(
                     name=result,
                     old_ver=old_ver,
-                    new_ver=new_info.version,
-                    url=new_info.src_url or ""
+                    new_ver=new_info_obj.version,
+                    url=new_info_obj.src_url or ""
                 ) + "\n" + \
                     self.S["update"]["reqs"] + "\n" + req_list_str
             else:
@@ -763,7 +754,7 @@ class ModManageExtension(ModuleExtension):
                 result = self.loader.load_module(int_name, skip_deps=False)
                 if result is None:
                     await msg.edit_text(self.S["install"]["load_err"].format(name=display_name), reply_markup=try_again_keyboard)
-                    self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info)
+                    self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info_obj)
                     return
 
                 if old_reqs:
@@ -771,14 +762,16 @@ class ModManageExtension(ModuleExtension):
                     if del_reqs:
                         self.logger.info(f"Attempting to uninstall old dependencies for {int_name}: {del_reqs}")
                         current_deps = self.loader.get_modules_deps()
-                        self.loader.mod_manager.uninstall_packages(del_reqs, current_deps)
+                        temp_deps = current_deps.copy()
+                        if int_name in temp_deps: del temp_deps[int_name]
+                        self.loader.mod_manager.uninstall_packages(del_reqs, temp_deps)
 
                 # Construct final message
                 final_text = self.S["update"]["ok"].format(
                     name=result,
                     old_ver=old_ver,
-                    new_ver=new_info.version,
-                    url=new_info.src_url or ""
+                    new_ver=new_info_obj.version,
+                    url=new_info_obj.src_url or ""
                 )
 
             self.loader.mod_manager.clear_hash_backup(int_name)
@@ -787,7 +780,7 @@ class ModManageExtension(ModuleExtension):
         except Exception as e:
             await msg.edit_text(self.S["update"]["unexpected_err"].format(name=display_name, error=e), reply_markup=try_again_keyboard)
             self.logger.error(f"Unexpected error during final update steps for {int_name}: {e}", exc_info=True)
-            self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info)
+            self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info_obj)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^confirm_restore_(.+)_([^_].+)$"))
