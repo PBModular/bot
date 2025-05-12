@@ -556,30 +556,20 @@ class ModManageExtension(ModuleExtension):
                 self.logger.warning(f"Could not parse old requirements for {int_name}: {e}")
 
         # Prepare for update
-        await msg.edit_text(self.S["backup"]["creating_backup"].format(name=current_info.name))
-        backup_path = None
         try:
             if self.loader.get_module(int_name):
                 await self.loader.unload_module(int_name)
                 await sleep(0.5)
-
-            backup_success, backup_result = self.loader.mod_manager.create_backup(int_name, "modules")
-            if backup_success:
-                backup_path = backup_result
-                self.logger.info(f"Backup created for {int_name} at {backup_path}")
-            else:
-                self.logger.warning(f"Failed to create backup for {int_name}: {backup_result}")
-                await msg.edit_text(self.S["backup"]["backup_failed_proceeding"].format(name=current_info.name))
-                await sleep(2)
         except Exception as e:
             await msg.edit_text(self.S["update"]["prepare_err"].format(name=current_info.name, error=e))
-            self.logger.error(f"Error preparing for update (unload/backup) for {int_name}: {e}", exc_info=True)
-            if not self.loader.get_module(int_name): self.loader.load_module(int_name)
+            self.logger.error(f"Error unloading module {int_name} before update: {e}", exc_info=True)
+            if not self.loader.get_module(int_name):
+                self.loader.load_module(int_name)
             return
 
         # Git Pull
         await msg.edit_text(self.S["update"]["pulling"].format(name=current_info.name))
-        code, stdout, _ = self.loader.mod_manager.update_from_git(int_name, "modules") 
+        code, stdout, backup_path = self.loader.mod_manager.update_from_git(int_name, "modules") 
 
         if code != 0:
             await msg.edit_text(self.S["update"]["err"].format(name=current_info.name, out=stdout))
@@ -597,16 +587,19 @@ class ModManageExtension(ModuleExtension):
             self.loader.load_module(int_name)
             return
 
+        if not backup_path:
+            self.logger.warning(f"Update for {int_name} proceeded but backup creation failed (path is None).")
+
         # Read Module Info
         await msg.edit_text(self.S["update"]["checking_info"].format(name=current_info.name))
         config_path = os.path.join(module_dir, "config.yaml")
-        new_info: Optional[ModuleConfig] = None
+        new_info_obj: Optional[ModuleConfig.info] = None # Correctly ModuleInfo
         new_permissions = []
 
         try:
             if os.path.exists(config_path):
                 config_file = ModuleConfig.from_yaml_file(config_path)
-                new_info = config_file.info
+                new_info_obj = config_file.info
                 new_permissions = config_file.permissions
                 self.logger.info(f"Loaded updated metadata for {int_name} from config.yaml")
             else:
@@ -641,10 +634,10 @@ class ModManageExtension(ModuleExtension):
 
         # Prepare confirmation text
         text = self.S["update"]["confirm"].format(
-            name=new_info.name,
-            author=new_info.author,
+            name=new_info_obj.name,
+            author=new_info_obj.author,
             old_ver=old_ver,
-            new_ver=new_info.version
+            new_ver=new_info_obj.version
         ) + "\n"
         if new_permissions:
             perm_list = "\n".join(f"- {self.S['install']['perms'].get(p.value, p.value)}" for p in new_permissions)
@@ -653,13 +646,15 @@ class ModManageExtension(ModuleExtension):
                 text += self.S["install"]["confirm_warn_perms"]
         if backup_path:
             text += "\n" + self.S["backup"]["backup_created"].format(path=os.path.basename(backup_path))
+        else:
+            text += "\n" + self.S["backup"]["backup_failed_during_update"]
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton(self.S["yes_btn"], callback_data="update_yes"),
              InlineKeyboardButton(self.S["no_btn"], callback_data="update_no")]
         ])
         await msg.edit_text(text, reply_markup=keyboard, disable_web_page_preview=True)
-        self.confirmations["update"][msg.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info)
+        self.confirmations["update"][msg.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info_obj)
 
     @allowed_for("owner")
     @callback_query(filters.regex(r"^update_(yes|no)$"))
