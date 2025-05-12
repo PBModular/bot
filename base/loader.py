@@ -103,7 +103,6 @@ class ModuleLoader:
             auto_load = True
             
             config_path = f"./modules/{module}/config.yaml"
-            info_path = f"./modules/{module}/info.yaml"
             
             if os.path.exists(config_path):
                 try:
@@ -112,14 +111,7 @@ class ModuleLoader:
                     auto_load = config_data.get("info", {}).get("auto_load", True)
                 except Exception as e:
                     logger.error(f"Error reading config.yaml for module {module}: {e}")
-            elif os.path.exists(info_path):
-                try:
-                    with open(info_path, "r") as f:
-                        info_data = yaml.safe_load(f) or {}
-                    auto_load = info_data.get("auto_load", True)
-                except Exception as e:
-                    logger.error(f"Error reading info.yaml for module {module}: {e}")
-            
+
             if auto_load:
                 modules_to_load.append(module)
             else:
@@ -134,29 +126,29 @@ class ModuleLoader:
                 # Create basic info for non-loaded modules
                 try:
                     config_path = f"./modules/{module}/config.yaml"
-                    info_path = f"./modules/{module}/info.yaml"
                     if os.path.exists(config_path):
                         with open(config_path, "r") as f:
                             config_data = yaml.safe_load(f) or {}
-                        info_data = config_data.get("info", {})
-                        auto_load = info_data.get("auto_load", True)
-                    elif os.path.exists(info_path):
-                        with open(info_path, "r") as f:
-                            info_data = yaml.safe_load(f) or {}
-                        auto_load = info_data.get("auto_load", True)
+                        info_block = config_data.get("info", {})
+                        mod_info = ModuleInfo(
+                            name=info_block.get("name", module),
+                            author=info_block.get("author", ""),
+                            version=info_block.get("version", ""),
+                            description=info_block.get("description", ""),
+                            src_url=info_block.get("src_url", ""),
+                            python=info_block.get("python", ""),
+                            auto_load=info_block.get("auto_load", True)
+                        )
                     else:
-                        info_data = {}
-                        auto_load = True
-                    
-                    mod_info = ModuleInfo(
-                        name=info_data.get("name", module),
-                        author=info_data.get("author", ""),
-                        version=info_data.get("version", ""),
-                        description=info_data.get("description", ""),
-                        src_url=info_data.get("src_url", ""),
-                        python=info_data.get("python", ""),
-                        auto_load=auto_load
-                    )
+                        mod_info = ModuleInfo(
+                            name=module,
+                            author="",
+                            version="0.0.0",
+                            description="config.yaml not found.",
+                            src_url="",
+                            python="",
+                            auto_load=True
+                        )
                     self.__all_modules_info[module] = mod_info
                 except Exception as e:
                     logger.error(f"Error creating info for non-loaded module {module}: {e}")
@@ -174,15 +166,6 @@ class ModuleLoader:
         
         try:
             os.chdir(module_path)
-            # Read auto_load setting from info.yaml if available
-            auto_load = True
-            if os.path.exists("info.yaml"):
-                try:
-                    with open("info.yaml", "r") as f:
-                        info = yaml.safe_load(f)
-                        auto_load = info.get("auto_load", True)
-                except Exception as e:
-                    logger.error(f"Error reading info.yaml for module {name}: {e}")
 
             if "requirements.txt" in os.listdir():
                 if config.update_deps_at_load and not skip_deps:
@@ -261,9 +244,6 @@ class ModuleLoader:
 
                         # Custom init execution
                         instance.on_init()
-
-                        info = instance.module_info
-                        info.auto_load = auto_load
 
                         # Clear hash backup if present
                         self.mod_manager.clear_hash_backup(name)

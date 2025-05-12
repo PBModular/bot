@@ -50,11 +50,6 @@ class ModuleConfig(YAMLWizard):
     permissions: list[Permissions] = field(default_factory=list)
     config: dict = field(default_factory=dict)
 
-@dataclass
-class InfoFile(YAMLWizard):
-    info: ModuleInfo
-    permissions: list[Permissions] = field(default_factory=list)
-
 
 @dataclass
 class HelpPage:
@@ -108,7 +103,7 @@ class BaseModule(ABC):
         self.bot = bot
         self.__loaded_info = loaded_info_func
 
-        # Attempt to load config.yaml first
+        # Attempt to load config.yaml
         try:
             config_file = ModuleConfig.from_yaml_file("./config.yaml")
             self.module_info = config_file.info
@@ -116,24 +111,9 @@ class BaseModule(ABC):
             self.module_config = config_file.config
             self.logger = logging.getLogger(self.module_info.name)
         except FileNotFoundError:
-            # Fall back to info.yaml for backward compatibility
-            try:
-                info_file = InfoFile.from_yaml_file("./info.yaml")
-                self.module_info = ModuleInfo(
-                    name=info_file.info.name,
-                    author=info_file.info.author,
-                    version=info_file.info.version,
-                    description=info_file.info.description,
-                    src_url=info_file.info.src_url,
-                    python=info_file.info.python,
-                    auto_load=True
-                )
-                self.module_permissions = info_file.permissions
-                self.module_config = {}
-                self.logger = logging.getLogger(self.module_info.name)
-                self.logger.warning("Using deprecated info.yaml. Please migrate to config.yaml.")
-            except FileNotFoundError:
-                raise FileNotFoundError("Neither config.yaml nor info.yaml found in the module directory.")  
+            raise FileNotFoundError("config.yaml not found in the module directory. This file is mandatory.")
+        except Exception as e:
+            raise RuntimeError(f"Error loading or parsing config.yaml: {e}") from e 
 
         # Load translations if available
         self.cur_lang = config.language

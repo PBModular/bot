@@ -394,35 +394,22 @@ class ModuleManager:
         """
         module_dir = os.path.join(self.__root_dir, "modules", name)
         config_path = os.path.join(module_dir, "config.yaml")
-        info_path = os.path.join(module_dir, "info.yaml")
 
         if not os.path.isdir(module_dir):
             return False
 
-        target_path = None
+        target_path = config_path
         data = None
 
         try:
-            # Try config.yaml first
-            if os.path.exists(config_path):
-                target_path = config_path
+            if os.path.exists(target_path):
                 with open(target_path, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f) or {}
                 if 'info' not in data:
                     data['info'] = {}
                 data['info']['auto_load'] = auto_load
-
-            # Fallback to info.yaml
-            elif os.path.exists(info_path):
-                target_path = info_path
-                with open(target_path, "r", encoding="utf-8") as f:
-                    data = yaml.safe_load(f) or {}
-                if 'info' not in data:
-                    data['info'] = {}
-                data['info']['auto_load'] = auto_load
-
             else:
-                logger.warning(f"Neither config.yaml nor info.yaml found for module {name}. Cannot set auto_load.")
+                logger.error(f"config.yaml not found for module {name} at {target_path}. Cannot set auto_load.")
                 return False
 
             # Write the updated data back
