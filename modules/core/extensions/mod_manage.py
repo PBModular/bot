@@ -182,6 +182,7 @@ class ModManageExtension(ModuleExtension):
         new_status = not current_status
         
         if self.loader.mod_manager.set_module_auto_load(module_name, new_status):
+            info.auto_load = new_status
             status_text = self.S["module_page"]["enabled"] if new_status else self.S["module_page"]["disabled"]
             await call.answer(self.S["module_page"]["auto_load_toggled"].format(status=status_text), show_alert=True)
             await self._update_module_page(call, module_name)
