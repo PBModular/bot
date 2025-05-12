@@ -683,7 +683,7 @@ class ModManageExtension(ModuleExtension):
             await call.answer(self.S["update"]["abort"])
             if backup_path:
                 await msg.edit_text(self.S["backup"]["restoring"].format(name=display_name))
-                success, skipped_files = self.loader.mod_manager.restore_from_backup(backup_path, int_name, "modules")
+                success, skipped_files = self.loader.mod_manager.restore_from_backup(int_name, "modules", backup_path)
                 if success:
                     if skipped_files:
                         await msg.reply(self.S["backup"]["restore_skipped_files"].format(count=len(skipped_files)))
@@ -795,7 +795,7 @@ class ModManageExtension(ModuleExtension):
             return
 
         await call.message.edit_text(self.S["backup"]["restoring"].format(name=module_name))
-        success, skipped = self.loader.mod_manager.restore_from_backup(backup_path, module_name, "modules")
+        success, skipped = self.loader.mod_manager.restore_from_backup(module_name, "modules", backup_path)
 
         if success:
             if skipped:
