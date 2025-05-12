@@ -2,12 +2,12 @@ import logging
 import os
 import subprocess
 import sys
-import shutil
 from urllib.parse import urlparse
-from typing import Optional, Union, Tuple, Dict, Any
+from typing import Optional, Union, Tuple
 from packaging import version
 import importlib
 import inspect
+import yaml
 
 from base.db_migration import DBMigration
 from base.mod_backup import BackupManager
@@ -392,29 +392,54 @@ class ModuleManager:
         :param bool auto_load: Whether to auto-load the module on startup
         :return: Success status
         """
+        module_dir = os.path.join(self.__root_dir, "modules", name)
+        config_path = os.path.join(module_dir, "config.yaml")
+        info_path = os.path.join(module_dir, "info.yaml")
+
+        if not os.path.isdir(module_dir):
+            return False
+
+        target_path = None
+        data = None
+
         try:
-            info_path = f"./modules/{name}/info.yaml"
-            
-            # Ensure directory exists
-            if not os.path.exists(f"./modules/{name}"):
-                logger.error(f"Module directory for {name} not found.")
+            # Try config.yaml first
+            if os.path.exists(config_path):
+                target_path = config_path
+                with open(target_path, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f) or {}
+                if 'info' not in data:
+                    data['info'] = {}
+                data['info']['auto_load'] = auto_load
+
+            # Fallback to info.yaml
+            elif os.path.exists(info_path):
+                target_path = info_path
+                with open(target_path, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f) or {}
+                if 'info' not in data:
+                    data['info'] = {}
+                data['info']['auto_load'] = auto_load
+
+            else:
+                logger.warning(f"Neither config.yaml nor info.yaml found for module {name}. Cannot set auto_load.")
                 return False
-            
-            import yaml
-            info = {}
-            if os.path.exists(info_path):
-                with open(info_path, "r") as f:
-                    info = yaml.safe_load(f) or {}
-            
-            # Update auto_load setting
-            info["auto_load"] = auto_load
-            
-            with open(info_path, "w") as f:
-                yaml.dump(info, f)
-                
+
+            # Write the updated data back
+            with open(target_path, "w", encoding="utf-8") as f:
+                yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
+
+            logger.info(f"Set auto_load={auto_load} for module {name} in {os.path.basename(target_path)}")
             return True
+
+        except yaml.YAMLError as e:
+            logger.error(f"Error parsing YAML file {target_path} for module {name}: {e}")
+            return False
+        except IOError as e:
+            logger.error(f"Error reading/writing file {target_path} for module {name}: {e}")
+            return False
         except Exception as e:
-            logger.error(f"Error updating auto_load for {name}: {e}")
+            logger.error(f"Unexpected error updating auto_load for {name}: {e}", exc_info=True)
             return False
 
     def get_hash_backups(self) -> dict[str, str]:
