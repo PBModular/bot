@@ -127,6 +127,8 @@ class BackupManager:
                         dirs.remove('.git')
                     rel_dir = os.path.relpath(root, source_dir)
                     for file in files:
+                        if file == "backup_meta.json":
+                            continue
                         file_path = os.path.join(root, file)
                         arcname = os.path.join(rel_dir, file) if rel_dir != '.' else file
                         zipf.write(file_path, arcname)
