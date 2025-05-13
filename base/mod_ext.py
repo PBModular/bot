@@ -1,4 +1,6 @@
 import logging
+import sys
+import os
 from base.module import BaseModule, Handler
 from typing import Union, Tuple
 
@@ -20,9 +22,13 @@ class ModuleExtension:
         self.logger = base_mod.logger
         self.state_machine = base_mod.state_machine
         self.get_sm = base_mod.get_sm
+        self.module_path = base_mod.module_path
 
         # Save base ref
         self.__base_mod = base_mod
+
+        # Set the extension's path to the directory of its code file
+        self.extension_path = os.path.dirname(sys.modules[self.__class__.__module__].__file__)
 
         # Register methods
         base_mod.register_all(ext=self)
