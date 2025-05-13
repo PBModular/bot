@@ -99,32 +99,35 @@ class BaseModule(ABC):
         loaded_info_func: Callable,
         bot_db_session: Session,
         bot_db_engine: Engine,
+        module_path: str,
     ):
         self.bot = bot
         self.__loaded_info = loaded_info_func
+        self.module_path = module_path
 
         # Attempt to load config.yaml
-        try:
-            config_file = ModuleConfig.from_yaml_file("./config.yaml")
-            self.module_info = config_file.info
-            self.module_permissions = config_file.permissions
-            self.module_config = config_file.config
-            self.logger = logging.getLogger(self.module_info.name)
-        except FileNotFoundError:
-            raise FileNotFoundError("config.yaml not found in the module directory. This file is mandatory.")
-        except Exception as e:
-            raise RuntimeError(f"Error loading or parsing config.yaml: {e}") from e 
+        config_path = os.path.join(self.module_path, "config.yaml")
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"config.yaml not found at {config_path}")
+        try: config_file = ModuleConfig.from_yaml_file(config_path)
+        except: raise ValueError(f"config.yaml is empty or invalid at {config_path}")
+
+        self.module_info = config_file.info
+        self.module_permissions = config_file.permissions
+        self.module_config = config_file.config
+        self.logger = logging.getLogger(self.module_info.name)
 
         # Load translations if available
+        strings_dir = os.path.join(self.module_path, "strings")
         self.cur_lang = config.language
-        try:
-            files = os.listdir("./strings/")
+        if os.path.exists(strings_dir):
+            files = os.listdir(strings_dir)
             self.rawS = {}
             for file in files:
-                self.rawS[file.removesuffix(".yaml")] = yaml.safe_load(
-                    open(f"./strings/{file}", encoding="utf-8")
-                )
-
+                if file.endswith(".yaml"):
+                    lang = file.removesuffix(".yaml")
+                    with open(os.path.join(strings_dir, file), encoding="utf-8") as f:
+                        self.rawS[lang] = yaml.safe_load(f)
             self.logger.info(f"Available translations: {list(self.rawS.keys())}")
             if config.language in self.rawS.keys():
                 if config.fallback_language in self.rawS.keys():
@@ -149,8 +152,6 @@ class BaseModule(ABC):
                     f"Can't select language... Using first in list, you've been warned!"
                 )
                 self.S = SafeDict.from_dict(list(self.rawS.values())[0])
-        except FileNotFoundError:
-            pass
 
         # Global bot database
         self.__bot_db_session = bot_db_session

@@ -48,9 +48,11 @@ class ModuleLoader:
 
         # Load extensions
         self.__extensions: dict[str, BaseExtension] = {}
-        extensions = os.listdir(path="./extensions/")
+        extensions_dir = os.path.join(self.__root_dir, "extensions")
+        extensions = os.listdir(path=extensions_dir)
         for ext in extensions:
-            if not os.path.isdir(f"./extensions/{ext}"):
+            ext_path = os.path.join(extensions_dir, ext)
+            if not os.path.isdir(ext_path):
                 continue
 
             try:
@@ -62,28 +64,13 @@ class ModuleLoader:
 
             for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
                 if BaseExtension in inspect.getmro(obj):
-                    os.chdir(f"./extensions/{ext}")
-                    try:
-                        # Check for dependencies update / install them
-                        if (
-                            config.update_deps_at_load
-                            and "requirements.txt" in os.listdir()
-                        ):
-                            self.mod_manager.install_deps(ext, "extensions")
-
-                        instance: BaseExtension = obj()
-                        name = instance.extension_info.name
-
-                        self.__extensions[name] = instance
-
-                        logger.info(f"Successfully loaded extension {name}!")
-                        os.chdir("../../")
-                    except Exception as e:
-                        logger.error(
-                            f"Error at loading extension {ext}! Printing traceback"
-                        )
-                        logger.exception(e)
-                        os.chdir(self.__root_dir)
+                    # Check dependencies using absolute path
+                    if config.update_deps_at_load and os.path.exists(os.path.join(ext_path, "requirements.txt")):
+                        self.mod_manager.install_deps(ext, "extensions")
+                    instance: BaseExtension = obj()
+                    name = instance.extension_info.name
+                    self.__extensions[name] = instance
+                    logger.info(f"Successfully loaded extension {name}!")
 
     def load_everything(self):
         """Load all modules with auto_load enabled and gather info for all modules"""
@@ -159,103 +146,96 @@ class ModuleLoader:
 
         :param name: Name of Python module inside modules dir
         """
-        module_path = f"./modules/{name}"
+        module_path = os.path.abspath(os.path.join(self.__root_dir, "modules", name))
         if not os.path.exists(module_path):
             logger.error(f"Module directory {module_path} does not exist")
             return None
         
-        try:
-            os.chdir(module_path)
+        req_path = os.path.join(module_path, "requirements.txt")
+        if os.path.exists(req_path):
+            if config.update_deps_at_load and not skip_deps:
+                self.mod_manager.install_deps(name, "modules")
 
-            if "requirements.txt" in os.listdir():
-                if config.update_deps_at_load and not skip_deps:
-                    self.mod_manager.install_deps(name, "modules")
-
-                # Load dependencies into dict
-                self.__modules_deps[name] = []
-                for req in requirements.parse(
-                        open("requirements.txt", encoding="utf-8")
-                ):
+            # Load dependencies into dict
+            self.__modules_deps[name] = []
+            with open(req_path, encoding="utf-8") as f:
+                for req in requirements.parse(f):
                     self.__modules_deps[name].append(req.name.lower())
 
-            try:
-                imported = importlib.import_module("modules." + name)
-            except ImportError as e:
-                logger.error(f"ImportError has occurred while loading module {name}!")
-                logger.exception(e)
-                return None
-
-            for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
-                if BaseModule in inspect.getmro(obj):
-                    try:
-                        instance: BaseModule = obj(
-                            self.__bot,
-                            self.get_modules_info,
-                            self.bot_db_session,
-                            self.bot_db_engine,
-                        )
-                        perms = instance.module_permissions
-                        info = instance.module_info
-
-                        # Version check
-                        if info.python:
-                            parts = tuple(map(int, info.python.split('.')))
-                            current_version = '.'.join(map(str, sys.version_info[:3]))
-                            if sys.version_info[1] != parts[1]:
-                                logger.warning(
-                                    f"Module {name} tested on Python {info.python}, "
-                                    f"current version is {current_version}, proceed with caution!"
-                                )
-
-                        # Don't allow modules with more than 1 word in name
-                        if len(info.name.split()) > 1:
-                            logger.warning(f"Module {name} has invalid name. Skipping!")
-                            del instance
-                            return None
-
-                        if Permissions.require_db in perms and not config.enable_db:
-                            logger.warning(f"Module {name} requires DB, but it's disabled. Skipping!")
-                            del instance
-                            return None
-
-                        if (Permissions.use_db in perms or Permissions.require_db in perms) and config.enable_db:
-                            os.chdir(self.__root_dir)
-                            asyncio.create_task(instance.set_db(Database(name)))
-                            os.chdir(module_path)
-
-                        if Permissions.use_loader in perms:
-                            instance.loader = self
-
-                        # Stage 1 init passed ok, applying extensions
-                        for ext_name, ext in self.__extensions.items():
-                            try:
-                                ext.on_module(instance)
-                            except Exception as e:
-                                logger.error(f"Extension {ext_name} failed on module {info.name}!")
-                                logger.exception(e)
-
-                        # Stage 2
-                        # Register everything for pyrogram
-                        instance.stage2()
-
-                        self.__modules[name] = instance
-                        self.__modules_info[name] = info
-                        self.__all_modules_info[name] = info
-
-                        # Custom init execution
-                        instance.on_init()
-
-                        # Clear hash backup if present
-                        self.mod_manager.clear_hash_backup(name)
-                        logger.info(f"Successfully imported module {info.name}!")
-                        return info.name
-                    except Exception as e:
-                        logger.error(f"Error loading module {name}! Printing traceback")
-                        logger.exception(e)
-                        return None
+        try:
+            imported = importlib.import_module("modules." + name)
+        except ImportError as e:
+            logger.error(f"ImportError has occurred while loading module {name}!")
+            logger.exception(e)
             return None
-        finally:
-            os.chdir(self.__root_dir)
+
+        for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
+            if BaseModule in inspect.getmro(obj):
+                try:
+                    instance: BaseModule = obj(
+                        self.__bot,
+                        self.get_modules_info,
+                        self.bot_db_session,
+                        self.bot_db_engine,
+                        module_path,
+                    )
+                    perms = instance.module_permissions
+                    info = instance.module_info
+
+                    # Version check
+                    if info.python:
+                        parts = tuple(map(int, info.python.split('.')))
+                        current_version = '.'.join(map(str, sys.version_info[:3]))
+                        if sys.version_info[1] != parts[1]:
+                            logger.warning(
+                                f"Module {name} tested on Python {info.python}, "
+                                f"current version is {current_version}, proceed with caution!"
+                            )
+
+                    # Don't allow modules with more than 1 word in name
+                    if len(info.name.split()) > 1:
+                        logger.warning(f"Module {name} has invalid name. Skipping!")
+                        del instance
+                        return None
+
+                    if Permissions.require_db in perms and not config.enable_db:
+                        logger.warning(f"Module {name} requires DB, but it's disabled. Skipping!")
+                        del instance
+                        return None
+
+                    if (Permissions.use_db in perms or Permissions.require_db in perms) and config.enable_db:
+                        asyncio.create_task(instance.set_db(Database(name)))
+
+                    if Permissions.use_loader in perms:
+                        instance.loader = self
+
+                    # Stage 1 init passed ok, applying extensions
+                    for ext_name, ext in self.__extensions.items():
+                        try:
+                            ext.on_module(instance)
+                        except Exception as e:
+                            logger.error(f"Extension {ext_name} failed on module {info.name}!")
+                            logger.exception(e)
+
+                    # Stage 2
+                    # Register everything for pyrogram
+                    instance.stage2()
+                    self.__modules[name] = instance
+                    self.__modules_info[name] = info
+                    self.__all_modules_info[name] = info
+
+                    # Custom init execution
+                    instance.on_init()
+
+                    # Clear hash backup if present
+                    self.mod_manager.clear_hash_backup(name)
+                    logger.info(f"Successfully imported module {info.name}!")
+                    return info.name
+                except Exception as e:
+                    logger.error(f"Error loading module {name}! Printing traceback")
+                    logger.exception(e)
+                    return None
+        return None
 
     async def unload_module(self, name: str):
         """
