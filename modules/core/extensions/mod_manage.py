@@ -154,7 +154,7 @@ class ModManageExtension(ModuleExtension):
         }
         
         await actions[action]()
-        if action != "delete":  # Delete already handles its own response
+        if action != "delete":
             await self._update_module_page(call, module_name)
 
     async def _reload_module(self, call: CallbackQuery, module_name: str):
@@ -236,14 +236,7 @@ class ModManageExtension(ModuleExtension):
                 # Log all skipped files
                 for file in skipped_files:
                     self.logger.warning(f"Skipped file during restoration: {file}")
-                
-                # Message with first 5 skipped files
-                if len(skipped_files) > 5:
-                    message = "Skipped files during restoration:\n" + "\n".join(skipped_files[:5]) + "\n...and more (check logs)"
-                else:
-                    message = "Skipped files during restoration:\n" + "\n".join(skipped_files)
-                await call.message.reply(message)
-            
+
             result = self.loader.load_module(module_name)
             status_key = "restore_success" if result else "restore_load_err"
             await call.message.reply(self.S["backup"][status_key].format(
@@ -478,7 +471,6 @@ class ModManageExtension(ModuleExtension):
                 await msg.edit_text(self.S["install"]["end_reqs"].format(name=result, reqs=req_list_str))
             else:
                 await msg.edit_text(self.S["install"]["down_end_next"].format(name=info_obj.name))
-                await msg.edit_text(self.S["install"]["loading"].format(name=info_obj.name))
                 result = self.loader.load_module(name)
                 if result is None:
                     await msg.edit_text(self.S["install"]["load_err"].format(name=info_obj.name))
@@ -592,7 +584,7 @@ class ModManageExtension(ModuleExtension):
         # Read Module Info
         await msg.edit_text(self.S["update"]["checking_info"].format(name=current_info.name))
         config_path = os.path.join(module_dir, "config.yaml")
-        new_info_obj: Optional[ModuleConfig.info] = None # Correctly ModuleInfo
+        new_info_obj: Optional[ModuleConfig.info] = None
         new_permissions = []
 
         try:

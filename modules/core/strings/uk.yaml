@@ -131,7 +131,7 @@ uninstall:
   not_found: "❌ Модуль <code>{name}</code> не знайдено!"
   ok: "✅ Модуль <code>{name}</code> успішно видалено!"
   err: "❌ Помилка під час видалення модуля <code>{name}</code>!"
-  unload_err_before_delete: "❌ Не вдалося вивантажити модуль {name} перед видаленням. Видалення скасовано, щоб уникнути проблем."
+  unload_err_before_delete: "❌ Не вдалося вивантажити модуль {name} перед видаленням."
   uninstall_core: "❌ Помилка: Модуль <code>Core</code> не може бути видалений!"
 
 update:

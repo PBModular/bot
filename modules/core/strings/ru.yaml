@@ -131,7 +131,7 @@ uninstall:
   not_found: "❌ Модуль <code>{name}</code> не найден!"
   ok: "✅ Модуль <code>{name}</code> успешно удален!"
   err: "❌ Ошибка при удалении модуля <code>{name}</code>!"
-  unload_err_before_delete: "❌ Не удалось выгрузить модуль {name} перед удалением. Удаление прервано во избежание проблем."
+  unload_err_before_delete: "❌ Не удалось выгрузить модуль {name} перед удалением."
   uninstall_core: "❌ Ошибка: Модуль <code>Core</code> не может быть удален!"
 
 update:
