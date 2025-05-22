@@ -10,9 +10,9 @@ import asyncio
 from copy import deepcopy
 
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardButton
+from pyrogram.types import Message, InlineKeyboardButton, CallbackQuery, InlineQuery
 from pyrogram.filters import Filter
-from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from pyrogram.handlers import MessageHandler, CallbackQueryHandler, InlineQueryHandler
 from pyrogram.handlers.handler import Handler
 from pyrogram.enums import ChatMemberStatus
 
@@ -249,6 +249,21 @@ class BaseModule(ABC):
                 final_filter = self.__add_fsm_filter(func, final_filter)
 
                 handler = CallbackQueryHandler(func, final_filter)
+                group = 0
+                self.bot.add_handler(handler, group=group)
+                self.__handlers.append((handler, group))
+
+            elif hasattr(func, "bot_inline_filter"):
+                # Func with @inline_query decorator
+                final_filter = filters.create(
+                    self.__check_role, handler=func, session=self.__bot_db_session
+                )
+                if func.bot_inline_filter is not None:
+                    final_filter = final_filter & func.bot_inline_filter
+
+                final_filter = self.__add_fsm_filter(func, final_filter)
+
+                handler = InlineQueryHandler(func, final_filter)
                 group = 0
                 self.bot.add_handler(handler, group=group)
                 self.__handlers.append((handler, group))
@@ -554,6 +569,26 @@ def message(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, l
 
     return _message
 
+def inline_query(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, list[State]]] = None):
+    """
+    Decorator for registering inline query handlers.
+    If FSM is present and the handler func has 4 args, then FSM for current user session is passed as a fourth parameter.
+
+    :param filters: Pyrogram filter for the inline query string (e.g., filters.regex(r"pattern")).
+                    If None, matches all inline queries if no more specific filter is set on other handlers.
+    :param fsm_state: FSM states at which this handler is allowed to run.
+    """
+    def _inline_query(func: Callable):
+        @wraps(func)
+        async def inner(self: BaseModule, client, update: InlineQuery):
+            await _launch_handler(func, self, client, update)
+
+        inner.bot_inline_filter = filters
+        if fsm_state is not None:
+            inner.bot_fsm_states = fsm_state if type(fsm_state) == list else [fsm_state]
+
+        return inner
+    return _inline_query
 
 async def _launch_handler(func: Callable, self: BaseModule, client, update):
     params = inspect.signature(func).parameters
