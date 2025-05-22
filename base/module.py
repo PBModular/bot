@@ -362,17 +362,26 @@ class BaseModule(ABC):
                 return True
 
             if "chat_owner" in allowed_to or "chat_admins" in allowed_to:
-                member = await client.get_chat_member(
-                    chat_id=update.chat.id, user_id=update.from_user.id
-                )
-                if (
-                    "chat_owner" in allowed_to
-                    and member.status == ChatMemberStatus.OWNER
-                ) or (
-                    "chat_admins" in allowed_to
-                    and member.status == ChatMemberStatus.ADMINISTRATOR
-                ):
-                    return True
+                chat_id_for_perm_check = None
+                # Determine chat_id based on update type
+                if hasattr(update, 'chat') and update.chat is not None:
+                    chat_id_for_perm_check = update.chat.id
+                elif hasattr(update, 'message') and update.message is not None and \
+                     hasattr(update.message, 'chat') and update.message.chat is not None:
+                    chat_id_for_perm_check = update.message.chat.id
+
+                if chat_id_for_perm_check is not None:
+                    member = await client.get_chat_member(
+                        chat_id=chat_id_for_perm_check, user_id=update.from_user.id
+                    )
+                    if (
+                        "chat_owner" in allowed_to
+                        and member.status == ChatMemberStatus.OWNER
+                    ) or (
+                        "chat_admins" in allowed_to
+                        and member.status == ChatMemberStatus.ADMINISTRATOR
+                    ):
+                        return True
 
             return False
     
