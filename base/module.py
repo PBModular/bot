@@ -19,7 +19,7 @@ from pyrogram.enums import ChatMemberStatus
 from base.db import Database
 from sqlalchemy import MetaData, Engine, select
 from sqlalchemy.orm import Session
-from db import CommandPermission, User
+from db import CommandPermission, User, FSMState
 
 import yaml
 from config import config
@@ -169,9 +169,6 @@ class BaseModule(ABC):
 
         # Auto-generated help
         self.__auto_help: Optional[HelpPage] = None
-
-        # State machines for users
-        self.__state_machines = {}
 
     def stage2(self):
         self.register_all()
@@ -387,13 +384,20 @@ class BaseModule(ABC):
     
     @staticmethod
     async def __check_fsm_state(flt: Filter, client: Client, update) -> bool:
-        machine = flt.state_machines.get(update.from_user.id)
-        if machine is None:
-            machine = flt.state_machine()
-            flt.state_machines[update.from_user.id] = machine
+        """Checks the state directly from the database."""
+        user_id = update.from_user.id
+        required_states = flt.handler.bot_fsm_states
         
-        for state in flt.handler.bot_fsm_states:
-            if machine.cur_state == state:
+        async with flt.session() as session:
+            current_state_name = await session.scalar(
+                select(FSMState.state).where(FSMState.user_id == user_id)
+            )
+
+        if current_state_name is None:
+            return any(state is None for state in required_states)
+
+        for req_state in required_states:
+            if req_state is not None and req_state.name == current_state_name:
                 return True
         
         return False
@@ -493,16 +497,17 @@ class BaseModule(ABC):
     
     def get_sm(self, update) -> Optional[StateMachine]:
         """
-        Get state machine for current user session
+        Get a state machine controller for the current user session.
 
         :param update: Pyrogram update object (Message, CallbackQuery, etc.)
         """
-        machine = self.__state_machines.get(update.from_user.id)
-        if machine is None:
-            machine = self.state_machine()
-            self.__state_machines[update.from_user.id] = machine
-        
-        return machine
+        if self.state_machine is None:
+            return None
+
+        return self.state_machine(
+            user_id=update.from_user.id, 
+            session_maker=self.__bot_db_session
+        )
 
 
 def command(cmds: Union[list[str], str], filters: Optional[Filter] = None, fsm_state: Optional[Union[State, list[State]]] = None):
@@ -601,18 +606,19 @@ def inline_query(filters: Optional[Filter] = None, fsm_state: Optional[Union[Sta
 
 async def _launch_handler(func: Callable, self: BaseModule, client, update):
     params = inspect.signature(func).parameters
-    if len(params) == 2:
-        # FSM is not used, client obj is not used
-        await func(self, update)
-    elif self.state_machine is None and len(params) >= 3:
-        # FSM is not used, client obj used
-        await func(self, client, update)
-    elif self.state_machine is not None and len(params) == 3:
-        # FSM is used, client obj isn't
-        await func(self, update, self.get_sm(update))
-    elif self.state_machine is not None and len(params) >= 4:
-        await func(self, client, update, self.get_sm(update))
-
+    if self.state_machine is None:
+        # FSM not used, call as before
+        if len(params) >= 3:
+            await func(self, client, update)
+        else:
+            await func(self, update)
+    else:
+        # FSM is used, provide the controller instance
+        sm_controller = self.get_sm(update)
+        if len(params) >= 4:
+            await func(self, client, update, sm_controller)
+        else: # Handles funcs with (self, update, sm) signature
+            await func(self, update, sm_controller)
 
 def allowed_for(roles: Union[list[str], str]):
     """

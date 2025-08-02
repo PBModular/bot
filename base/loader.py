@@ -247,9 +247,6 @@ class ModuleLoader:
         if name in self.__modules_info:
             self.__all_modules_info[name] = self.__modules_info[name]
 
-        if module := self.__modules.get(name):
-            module._BaseModule__state_machines.clear()
-
         self.__modules[name].on_unload()
         await self.__modules[name].unregister_all()
         self.__modules.pop(name)
