@@ -1,4 +1,5 @@
 import logging
+import time
 from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
@@ -42,6 +43,11 @@ class Permissions(str, Enum):
     use_db = "use_db"
     require_db = "require_db"
     use_loader = "use_loader"
+
+class RateLimitScope(str, Enum):
+    USER = "user"
+    CHAT = "chat"
+    GLOBAL = "global"
 
 
 @dataclass
@@ -169,6 +175,9 @@ class BaseModule(ABC):
 
         # Auto-generated help
         self.__auto_help: Optional[HelpPage] = None
+
+        # Storage for rate limiting: {func_name: {entity_id: [timestamps]}}
+        self._rl_storage: dict[str, dict[str | int, list[float]]] = {}
 
     def stage2(self):
         self.register_all()
@@ -603,6 +612,71 @@ def inline_query(filters: Optional[Filter] = None, fsm_state: Optional[Union[Sta
 
         return inner
     return _inline_query
+
+def rate_limit(rate: int = 1, per: int = 5, scope: RateLimitScope = RateLimitScope.USER):
+    """
+    Decorator to rate limit a module function.
+
+    :param rate: Number of allowed calls within the time window.
+    :param per: Time window in seconds.
+    :param scope: The entity to limit (USER, CHAT, or GLOBAL).
+    """
+    def decorator(func: Callable):
+        @wraps(func)
+        async def wrapper(self: BaseModule, *args, **kwargs):
+            update = None
+            for arg in args:
+                if hasattr(arg, 'from_user') or hasattr(arg, 'chat') or hasattr(arg, 'answer'):
+                    update = arg
+                    break
+
+            if not update:
+                return await func(self, *args, **kwargs)
+
+            # Identify the entity ID based on the scope
+            entity_id: Union[int, str, None] = None
+            user = getattr(update, "from_user", None)
+
+            # Bypass rate limit for the owner
+            if user:
+                if user.id == config.owner or user.username == config.owner:
+                    return await func(self, *args, **kwargs)
+
+            if scope == RateLimitScope.USER:
+                entity_id = user.id if user else None
+            elif scope == RateLimitScope.CHAT:
+                if hasattr(update, 'chat') and update.chat:
+                    entity_id = update.chat.id
+                elif hasattr(update, 'message') and update.message and update.message.chat:
+                    entity_id = update.message.chat.id
+            elif scope == RateLimitScope.GLOBAL:
+                entity_id = "global"
+
+            if entity_id is None:
+                return await func(self, *args, **kwargs)
+
+            handler_name = func.__name__
+            if handler_name not in self._rl_storage:
+                self._rl_storage[handler_name] = {}
+            if entity_id not in self._rl_storage[handler_name]:
+                self._rl_storage[handler_name][entity_id] = []
+
+            history = self._rl_storage[handler_name][entity_id]
+            now = time.time()
+            cutoff = now - per
+
+            # Clean up old timestamps
+            self._rl_storage[handler_name][entity_id] = [t for t in history if t > cutoff]
+            history = self._rl_storage[handler_name][entity_id]
+
+            if len(history) >= rate:
+                return # Stop execution
+
+            history.append(now)
+            return await func(self, *args, **kwargs)
+
+        return wrapper
+    return decorator
 
 async def _launch_handler(func: Callable, self: BaseModule, client, update):
     params = inspect.signature(func).parameters
