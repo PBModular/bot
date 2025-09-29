@@ -179,6 +179,9 @@ class BaseModule(ABC):
         # Storage for rate limiting: {func_name: {entity_id: [timestamps]}}
         self._rl_storage: dict[str, dict[str | int, list[float]]] = {}
 
+        # Locks for rate limiting to prevent race conditions
+        self._rl_locks: dict[str, dict[str | int, asyncio.Lock]] = {}
+
     def stage2(self):
         self.register_all()
         # Load extensions
@@ -613,13 +616,14 @@ def inline_query(filters: Optional[Filter] = None, fsm_state: Optional[Union[Sta
         return inner
     return _inline_query
 
-def rate_limit(rate: int = 1, per: int = 5, scope: RateLimitScope = RateLimitScope.USER):
+def rate_limit(rate: int = 1, per: int = 5, scope: RateLimitScope = RateLimitScope.USER, queue: bool = False):
     """
     Decorator to rate limit a module function.
 
     :param rate: Number of allowed calls within the time window.
     :param per: Time window in seconds.
     :param scope: The entity to limit (USER, CHAT, or GLOBAL).
+    :param queue: If True, wait and execute the function later instead of dropping the request.
     """
     def decorator(func: Callable):
         @wraps(func)
@@ -638,17 +642,14 @@ def rate_limit(rate: int = 1, per: int = 5, scope: RateLimitScope = RateLimitSco
             user = getattr(update, "from_user", None)
 
             # Bypass rate limit for the owner
-            if user:
-                if user.id == config.owner or user.username == config.owner:
-                    return await func(self, *args, **kwargs)
+            if user and (user.id == config.owner or user.username == config.owner):
+                return await func(self, *args, **kwargs)
 
             if scope == RateLimitScope.USER:
                 entity_id = user.id if user else None
             elif scope == RateLimitScope.CHAT:
-                if hasattr(update, 'chat') and update.chat:
-                    entity_id = update.chat.id
-                elif hasattr(update, 'message') and update.message and update.message.chat:
-                    entity_id = update.message.chat.id
+                 chat = getattr(update, 'chat', None) or getattr(getattr(update, 'message', None), 'chat', None)
+                 entity_id = chat.id if chat else None
             elif scope == RateLimitScope.GLOBAL:
                 entity_id = "global"
 
@@ -656,23 +657,42 @@ def rate_limit(rate: int = 1, per: int = 5, scope: RateLimitScope = RateLimitSco
                 return await func(self, *args, **kwargs)
 
             handler_name = func.__name__
-            if handler_name not in self._rl_storage:
-                self._rl_storage[handler_name] = {}
-            if entity_id not in self._rl_storage[handler_name]:
-                self._rl_storage[handler_name][entity_id] = []
+            wait_time = 0
 
-            history = self._rl_storage[handler_name][entity_id]
-            now = time.time()
-            cutoff = now - per
+            if handler_name not in self._rl_locks:
+                self._rl_locks[handler_name] = {}
+            if entity_id not in self._rl_locks[handler_name]:
+                self._rl_locks[handler_name][entity_id] = asyncio.Lock()
 
-            # Clean up old timestamps
-            self._rl_storage[handler_name][entity_id] = [t for t in history if t > cutoff]
-            history = self._rl_storage[handler_name][entity_id]
+            lock = self._rl_locks[handler_name][entity_id]
 
-            if len(history) >= rate:
-                return # Stop execution
+            async with lock:
+                if handler_name not in self._rl_storage:
+                    self._rl_storage[handler_name] = {}
+                if entity_id not in self._rl_storage[handler_name]:
+                    self._rl_storage[handler_name][entity_id] = []
 
-            history.append(now)
+                history = self._rl_storage[handler_name][entity_id]
+                now = time.time()
+
+                # Clean up old timestamps
+                history = [t for t in history if t > now - per]
+
+                if len(history) >= rate:
+                    if not queue:
+                        return
+                    else:
+                        release_time = history[0] + per
+                        wait_time = release_time - now
+                        history.append(release_time)
+                        history.pop(0)
+                else:
+                    history.append(now)                
+                self._rl_storage[handler_name][entity_id] = history
+
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+            
             return await func(self, *args, **kwargs)
 
         return wrapper
