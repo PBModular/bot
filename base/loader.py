@@ -361,3 +361,15 @@ class ModuleLoader:
             module = self.__modules[name]
             await self.unload_module(name)
         return module
+
+    async def stop(self):
+            """
+            Gracefully stop loader and unload all modules..
+            """
+            logger.info("Stopping Module Loader...")
+            loaded_modules = list(self.__modules.keys())
+            for name in loaded_modules:
+                try:
+                    await self.unload_module(name)
+                except Exception as e:
+                    logger.error(f"Failed to unload module {name} during shutdown: {e}")

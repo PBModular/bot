@@ -150,6 +150,9 @@ def main(update_conf: bool = False):
                 logger.exception("An error occurred during bot runtime.")
             finally:
                 logger.warning("Stopping bot...")
+
+                if loader:
+                    await loader.stop()
                 await bot.stop()
                 if engine:
                     await engine.dispose()
