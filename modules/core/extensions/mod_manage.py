@@ -824,7 +824,7 @@ class ModManageExtension(ModuleExtension):
                 await reply_func(self.S["load"]["load_err"].format(name=name))
                 return None
             if not silent:
-                await reply_func(self.S["load"]["ok"].format(result))
+                await reply_func(self.S["load"]["ok"].format(name=result))
             return result
         except FileNotFoundError:
             await reply_func(self.S["load"]["not_found"].format(name=name))
