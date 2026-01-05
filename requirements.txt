@@ -5,7 +5,7 @@ dataclass-wizard==0.39.0
 SQLAlchemy==2.0.45
 requirements-parser==0.13.0
 packaging
-aiosqlite==0.21.1
+aiosqlite==0.22.1
 colorama
 tzdata
 uvloop
