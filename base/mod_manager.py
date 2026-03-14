@@ -180,7 +180,7 @@ class ModuleManager:
 
                     obj = classes[0][1]  # Use first detected class
                     instance: DBMigration = obj()
-                    instance.apply(prev_db.session, prev_db.engine, prev_db_meta)
+                    instance.apply(prev_db.session_maker, prev_db.engine, prev_db_meta)
 
         return p.returncode, p.stdout.decode("utf-8"), backup_path
 
