@@ -336,6 +336,9 @@ class BaseModule(ABC):
 
     @staticmethod
     async def __check_role(flt: Filter, client: Client, update) -> bool:
+        if update.from_user is None:
+            return False
+
         async with flt.session() as session:
             if hasattr(flt.handler, "bot_cmds"):
                 db_command = await session.scalar(
@@ -401,6 +404,9 @@ class BaseModule(ABC):
     @staticmethod
     async def __check_fsm_state(flt: Filter, client: Client, update) -> bool:
         """Checks the state directly from the database."""
+        if update.from_user is None:
+            return False
+
         user_id = update.from_user.id
         required_states = flt.handler.bot_fsm_states
         
