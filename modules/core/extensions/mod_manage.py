@@ -302,10 +302,11 @@ class ModManageExtension(ModuleExtension):
         await self._restore_backup(call, module_name, backups[int(index)])
 
     @allowed_for("owner")
-    @callback_query(filters.regex(r"^(confirm|cancel)_update_restore_(.*)$"))
+    @callback_query(filters.regex(r"^(confirm|cancel)_update_restore_(.+)$"))
     async def handle_update_restore(self, _, call: CallbackQuery):
         """Handle update failure restoration decisions."""
-        action, module_name = call.data.split("_")[0], call.data.split("_")[3]
+        match = re.match(r"^(confirm|cancel)_update_restore_(.+)$", call.data)
+        action, module_name = match.group(1), match.group(2)
         msg = await call.message.edit_text(self.S["backup"]["restoring"].format(name=module_name))
         
         if action == "confirm":
