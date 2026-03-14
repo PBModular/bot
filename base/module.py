@@ -341,11 +341,13 @@ class BaseModule(ABC):
 
         async with flt.session() as session:
             if hasattr(flt.handler, "bot_cmds"):
+                raw_text = getattr(update, "text", None) or ""
+                cmd_name = raw_text.split()[0].lstrip("/").split("@")[0] if raw_text else ""
                 db_command = await session.scalar(
                     select(CommandPermission).where(
-                        CommandPermission.command == update.text.split()[0][1:]
+                        CommandPermission.command == cmd_name
                     )
-                )
+                ) if cmd_name else None
                 if db_command is None and not hasattr(flt.handler, "bot_allowed_for"):
                     return True
 
