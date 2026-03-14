@@ -182,6 +182,9 @@ class BaseModule(ABC):
         # Locks for rate limiting to prevent race conditions
         self._rl_locks: dict[str, dict[str | int, asyncio.Lock]] = {}
 
+        # State machine registry: {user_id: StateMachine}
+        self.__state_machines: dict[int, StateMachine] = {}
+
     def stage2(self):
         self.register_all()
         # Load extensions
