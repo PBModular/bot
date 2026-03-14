@@ -137,7 +137,7 @@ def main(update_conf: bool = False):
                 bot_db_session=session_maker,
                 bot_db_engine=engine,
             )
-            loader.load_everything()
+            await loader.load_everything()
             logger.info("Module loading complete.")
 
             # Launch bot
