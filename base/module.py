@@ -327,6 +327,7 @@ class BaseModule(ABC):
             return final_filter & filters.create(
                 self.__check_fsm_state,
                 handler=func,
+                session=self.__bot_db_session,
                 state_machines=self.__state_machines,
                 state_machine=self.state_machine
             )
