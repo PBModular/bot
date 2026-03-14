@@ -77,11 +77,11 @@ class ModuleManager:
                 logger.error(p.stdout.decode("utf-8"))
                 return None
 
-            cmd_check = (
-                f"cd {self.__root_dir}/{directory}/{name} && git rev-list --count HEAD..origin"
-            )
             p_check = subprocess.run(
-                cmd_check, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                ["git", "rev-list", "--count", "HEAD..origin"],
+                cwd=repo_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
             )
 
             if p_check.returncode != 0:
