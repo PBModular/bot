@@ -47,7 +47,12 @@ class ModuleManager:
             logger.error(f"Error while cloning module {name}!")
             logger.error(f"Printing STDOUT and STDERR:")
             logger.error(p.stdout.decode("utf-8"))
-            subprocess.run(["rm", f"{self.__root_dir}/modules/{name}"])
+            leftover = os.path.join(self.__root_dir, "modules", name)
+            if os.path.exists(leftover):
+                try:
+                    shutil.rmtree(leftover)
+                except Exception as cleanup_err:
+                    logger.warning(f"Failed to clean up partial clone at {leftover}: {cleanup_err}")
 
         return p.returncode, p.stdout.decode("utf-8")
 
