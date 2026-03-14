@@ -2,8 +2,7 @@ import inspect
 from typing import Optional, Type
 from copy import copy
 
-from sqlalchemy import select, update, delete
-from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from db import FSMState
@@ -63,19 +62,21 @@ class StateMachine:
 
     async def set_state(self, state: Optional[State], data: Optional[dict] = None):
         """Set the user's state and optionally overwrite their data."""
+        state_name = state.name if state else None
         async with self.__session_maker() as session:
-            state_name = state.name if state else None
-
-            stmt = sqlite_upsert(FSMState).values(
-                user_id=self.user_id,
-                state=state_name,
-                data=data if data is not None else {}
+            db_state = await session.scalar(
+                select(FSMState).where(FSMState.user_id == self.user_id)
             )
-            stmt = stmt.on_conflict_do_update(
-                index_elements=['user_id'],
-                set_={'state': state_name, 'data': stmt.excluded.data}
-            )
-            await session.execute(stmt)
+            if db_state is None:
+                session.add(FSMState(
+                    user_id=self.user_id,
+                    state=state_name,
+                    data=data if data is not None else {}
+                ))
+            else:
+                db_state.state = state_name
+                if data is not None:
+                    db_state.data = data
             await session.commit()
 
     async def get_data(self) -> dict:
@@ -85,19 +86,20 @@ class StateMachine:
 
     async def update_data(self, **kwargs):
         """Update fields in the user's data dictionary."""
-        current_data = await self.get_data()
-        current_data.update(kwargs)
-        
         async with self.__session_maker() as session:
-            stmt = sqlite_upsert(FSMState).values(
-                user_id=self.user_id,
-                data=current_data
+            db_state = await session.scalar(
+                select(FSMState).where(FSMState.user_id == self.user_id)
             )
-            stmt = stmt.on_conflict_do_update(
-                index_elements=['user_id'],
-                set_={'data': stmt.excluded.data}
-            )
-            await session.execute(stmt)
+            if db_state is None:
+                session.add(FSMState(
+                    user_id=self.user_id,
+                    state=None,
+                    data=kwargs
+                ))
+            else:
+                current = dict(db_state.data or {})
+                current.update(kwargs)
+                db_state.data = current
             await session.commit()
             
     async def clear(self, keep_data: bool = False):
