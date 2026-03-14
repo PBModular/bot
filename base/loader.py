@@ -203,9 +203,6 @@ class ModuleLoader:
                         del instance
                         return None
 
-                    if (Permissions.use_db in perms or Permissions.require_db in perms) and config.enable_db:
-                        await instance.set_db(Database(name))
-
                     if Permissions.use_loader in perms:
                         instance.loader = self
 
@@ -224,8 +221,12 @@ class ModuleLoader:
                     self.__modules_info[name] = info
                     self.__all_modules_info[name] = info
 
-                    # Custom init execution
+                    # Custom init execution — must run before set_db so that
+                    # on_db_ready() can safely access attributes set in on_init()
                     instance.on_init()
+
+                    if (Permissions.use_db in perms or Permissions.require_db in perms) and config.enable_db:
+                        await instance.set_db(Database(name))
 
                     # Clear hash backup if present
                     self.mod_manager.clear_hash_backup(name)
