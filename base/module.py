@@ -193,7 +193,19 @@ class BaseModule(ABC):
 
     async def unregister_all(self):
         """Unregister handlers"""
-        del self.__extensions
+        for ext in self.__extensions:
+            try:
+                ext.on_unload()
+            except Exception as e:
+                self.logger.warning(
+                    f"Extension {type(ext).__name__} raised during on_unload: {e}"
+                )
+            try:
+                # Name-mangled attribute: ModuleExtension.__base_mod
+                ext._ModuleExtension__base_mod = None
+            except Exception:
+                pass
+        self.__extensions.clear()
 
         # Unregister handlers
         for handler, group in self.__handlers:
@@ -203,7 +215,7 @@ class BaseModule(ABC):
 
         command_registry.remove_all(self.module_info.name)
 
-        # Close database synchronously within async context
+        # Close database
         if self.__db:
             await self.__db.engine.dispose()
             self.__db = None

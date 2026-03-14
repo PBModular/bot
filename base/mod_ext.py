@@ -40,6 +40,12 @@ class ModuleExtension:
         """Custom init goes here"""
         pass
 
+    def on_unload(self):
+        """
+        Called just before the extension is torn down during module unloading.
+        """
+        pass
+
     @property
     def db(self):
         return self.__base_mod.db
