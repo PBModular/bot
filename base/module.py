@@ -322,7 +322,7 @@ class BaseModule(ABC):
         if hasattr(func, "bot_fsm_states"):
             if self.state_machine is None:
                 self.logger.warning(f"Handler {func.__name__} tries to use FSM, but it wasn't defined!")
-                return
+                return final_filter
 
             return final_filter & filters.create(
                 self.__check_fsm_state,
