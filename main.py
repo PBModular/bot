@@ -84,22 +84,13 @@ def get_last_commit_info():
 
 def main(update_conf: bool = False):
     if config.token and config.api_id and config.api_hash:
-        # Try to run bot
-        try:
-            bot = Client(
-                name="bot",
-                api_id=config.api_id,
-                api_hash=config.api_hash,
-                bot_token=config.token,
-                parse_mode=ParseMode.HTML,
-            )
-
-        # Reset token and again run main
-        except BadRequest:
-            config.token = None
-            config.api_id = None
-            config.api_hash = None
-            main(update_conf=True)
+        bot = Client(
+            name="bot",
+            api_id=config.api_id,
+            api_hash=config.api_hash,
+            bot_token=config.token,
+            parse_mode=ParseMode.HTML,
+        )
 
         # All ok, write token to config
         if update_conf:
@@ -143,6 +134,16 @@ def main(update_conf: bool = False):
             # Launch bot
             try:
                 await bot.start()
+            except BadRequest:
+                logger.error("Invalid bot token or API credentials. Clearing config and restarting credential input.")
+                config.token = None
+                config.api_id = None
+                config.api_hash = None
+                config.to_yaml_file(CONF_FILE)
+                if engine:
+                    await engine.dispose()
+                return
+            try:
                 user = await bot.get_me()
                 logger.info(f"Bot started as @{user.username} (ID: {user.id})")
                 await idle()
