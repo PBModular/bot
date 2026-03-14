@@ -18,6 +18,7 @@ class ModManageExtension(ModuleExtension):
             'update': {}
         }
         self.last_page: Dict[int, int] = {}
+        self.pending_restores: Dict[int, Tuple[str, str]] = {}
 
     def _generate_paginated_buttons(self, items: List[Tuple[str, ModuleConfig]],
                                     page: int, items_per_page: int = 5) -> InlineKeyboardMarkup:
@@ -564,8 +565,9 @@ class ModManageExtension(ModuleExtension):
         if code != 0:
             await msg.edit_text(self.S["update"]["err"].format(name=current_info.name, out=stdout))
             if backup_path:
+                self.pending_restores[msg.id] = (int_name, backup_path)
                 keyboard = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"confirm_restore_{int_name}_{backup_path}"),
+                    [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"do_restore_from_backup_{msg.id}"),
                     InlineKeyboardButton(self.S["no_btn"], callback_data=f"cancel_update_restore_{int_name}")]
                 ])
                 await msg.edit_text(
@@ -595,8 +597,9 @@ class ModManageExtension(ModuleExtension):
             else:
                 await msg.edit_text(self.S["update"]["config_yaml_missing_after_update"].format(name=current_info.name))
                 if backup_path:
+                    self.pending_restores[msg.id] = (int_name, backup_path)
                     keyboard = InlineKeyboardMarkup([
-                        [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"confirm_restore_{int_name}_{backup_path}"),
+                        [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"do_restore_from_backup_{msg.id}"),
                         InlineKeyboardButton(self.S["no_btn"], callback_data=f"cancel_update_restore_{int_name}")]
                     ])
                     await msg.edit_text(
@@ -610,8 +613,9 @@ class ModManageExtension(ModuleExtension):
             await msg.edit_text(self.S["update"]["config_parse_err_after_update"].format(name=current_info.name, error=e))
             self.logger.error(f"Failed to parse updated config.yaml for {int_name}: {e}", exc_info=True)
             if backup_path:
+                self.pending_restores[msg.id] = (int_name, backup_path)
                 keyboard = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"confirm_restore_{int_name}_{backup_path}"),
+                    [InlineKeyboardButton(self.S["backup"]["restore_btn"], callback_data=f"do_restore_from_backup_{msg.id}"),
                     InlineKeyboardButton(self.S["no_btn"], callback_data=f"cancel_update_restore_{int_name}")]
                 ])
                 await msg.edit_text(
@@ -660,10 +664,12 @@ class ModManageExtension(ModuleExtension):
         msg, int_name, old_ver, old_reqs, backup_path, new_info_obj = confirmation_data
         display_name = new_info_obj.name
 
+        if backup_path:
+            self.pending_restores[msg.id] = (int_name, backup_path)
         try_again_keyboard = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(self.S["backup"]["restore_btn"] if backup_path else self.S["abort_btn"],
-                                   callback_data=f"confirm_restore_{int_name}_{backup_path}" if backup_path else f"cancel_update_restore_{int_name}"),
+                                   callback_data=f"do_restore_from_backup_{msg.id}" if backup_path else f"cancel_update_restore_{int_name}"),
                 InlineKeyboardButton(self.S["abort_btn"] if backup_path else self.S["ok_btn"],
                                    callback_data=f"cancel_update_restore_{int_name}")
             ]
@@ -768,19 +774,19 @@ class ModManageExtension(ModuleExtension):
             self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info_obj)
 
     @allowed_for("owner")
-    @callback_query(filters.regex(r"^confirm_restore_(.+)_([^_].+)$"))
-    async def confirm_restore_path(self, _, call: CallbackQuery):
-        """Confirm and execute specific backup restoration using path."""
-        match = re.match(r"^confirm_restore_(.+)_([^_].+)$", call.data)
-        if not match:
-            await call.answer(self.S["error"])
+    @callback_query(filters.regex(r"^do_restore_from_backup_(\d+)$"))
+    async def do_restore_from_backup(self, _, call: CallbackQuery):
+        """Execute a backup restoration triggered by an update failure."""
+        match = re.match(r"^do_restore_from_backup_(\d+)$", call.data)
+        msg_id = int(match.group(1))
+
+        pending = self.pending_restores.pop(msg_id, None)
+        if not pending:
+            await call.answer(self.S["backup"]["restore_expired"] if "restore_expired" in self.S.get("backup", {}) else "Restore session expired.")
             return
 
-        module_name, backup_path = match.groups()
-
+        module_name, backup_path = pending
         if not os.path.exists(backup_path) or not backup_path.endswith(".zip"):
-            await call.message.reply(self.S["backup"]["invalid_backup_path"])
-            # Maybe refresh the view? Go back? Edit message?
             await call.message.edit_text(self.S["backup"]["invalid_backup_path_edit"])
             return
 
@@ -790,7 +796,7 @@ class ModManageExtension(ModuleExtension):
         if success:
             if skipped:
                 await call.message.reply(self.S["backup"]["restore_skipped_files"].format(count=len(skipped)))
-                self.logger.warning(f"Skipped files during manual restore: {skipped}")
+                self.logger.warning(f"Skipped files during update-failure restore: {skipped}")
             result = await self.loader.load_module(module_name)
             status_key = "restore_success" if result else "restore_load_err"
             await call.message.edit_text(self.S["backup"][status_key].format(
