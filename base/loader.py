@@ -1,5 +1,4 @@
 from base.module import BaseModule, ModuleInfo, Permissions, HelpPage
-from base.base_ext import BaseExtension
 from base.db import Database
 from config import config
 from base.mod_manager import ModuleManager
@@ -45,32 +44,6 @@ class ModuleLoader:
         
         # Initialize the module manager
         self.mod_manager = ModuleManager(root_dir)
-
-        # Load extensions
-        self.__extensions: dict[str, BaseExtension] = {}
-        extensions_dir = os.path.join(self.__root_dir, "extensions")
-        extensions = os.listdir(path=extensions_dir)
-        for ext in extensions:
-            ext_path = os.path.join(extensions_dir, ext)
-            if not os.path.isdir(ext_path):
-                continue
-
-            try:
-                imported = importlib.import_module("extensions." + ext)
-            except ImportError as e:
-                logger.error(f"ImportError has occurred while loading extension {ext}!")
-                logger.exception(e)
-                continue
-
-            for obj_name, obj in inspect.getmembers(imported, inspect.isclass):
-                if BaseExtension in inspect.getmro(obj):
-                    # Check dependencies using absolute path
-                    if config.update_deps_at_load and os.path.exists(os.path.join(ext_path, "requirements.txt")):
-                        self.mod_manager.install_deps(ext, "extensions")
-                    instance: BaseExtension = obj()
-                    name = instance.extension_info.name
-                    self.__extensions[name] = instance
-                    logger.info(f"Successfully loaded extension {name}!")
 
     async def load_everything(self):
         """Load all modules with auto_load enabled and gather info for all modules"""
@@ -205,14 +178,6 @@ class ModuleLoader:
 
                     if Permissions.use_loader in perms:
                         instance.loader = self
-
-                    # Stage 1 init passed ok, applying extensions
-                    for ext_name, ext in self.__extensions.items():
-                        try:
-                            ext.on_module(instance)
-                        except Exception as e:
-                            logger.error(f"Extension {ext_name} failed on module {info.name}!")
-                            logger.exception(e)
 
                     # Stage 2
                     # Register everything for pyrogram
