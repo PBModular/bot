@@ -506,8 +506,7 @@ class ModManageExtension(ModuleExtension):
         result = self.loader.mod_manager.uninstall_module(int_name, current_deps)
 
         if result:
-            if int_name in self.loader.get_all_modules_info():
-                del self.loader.get_all_modules_info()[int_name]
+            self.loader.remove_module_info(int_name)
             await message.reply(self.S["uninstall"]["ok"].format(name=name))
         else:
             await message.reply(self.S["uninstall"]["err"].format(name=name))

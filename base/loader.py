@@ -290,6 +290,23 @@ class ModuleLoader:
         """
         return self.__all_modules_info
 
+    def remove_module_info(self, name: str) -> bool:
+        """
+        Remove a module's info entry from both info registries.
+        Should be called after a module is fully uninstalled.
+
+        :param name: Internal name of the module directory
+        :return: True if the entry existed and was removed, False if not found
+        """
+        removed = False
+        if name in self.__all_modules_info:
+            del self.__all_modules_info[name]
+            removed = True
+        if name in self.__modules_info:
+            del self.__modules_info[name]
+            removed = True
+        return removed
+
     def get_module_info(self, name: str) -> Optional[ModuleInfo]:
         """
         Get module info regardless of load status
