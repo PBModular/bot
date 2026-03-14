@@ -369,7 +369,7 @@ class ModManageExtension(ModuleExtension):
             return
 
         msg = await message.reply(self.S["install"]["start"].format(name=name))
-        module_dir = self.module_path
+        module_dir = os.path.join(os.getcwd(), "modules", name)
 
         # Clean up potentially leftover failed attempts
         if os.path.exists(module_dir):
@@ -440,7 +440,7 @@ class ModManageExtension(ModuleExtension):
             return
 
         msg, name, info_obj = confirmation_data
-        module_dir = self.module_path
+        module_dir = os.path.join(os.getcwd(), "modules", name)
         reqs_path = os.path.join(module_dir, "requirements.txt")
 
         if action == "no":
