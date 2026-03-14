@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import subprocess
 import sys
 from urllib.parse import urlparse
@@ -167,25 +168,38 @@ class ModuleManager:
         if prev_db is not None and os.path.exists(
             f"{self.__root_dir}/{directory}/{name}/db_migrations"
         ):
-            for file in os.listdir(
-                f"{self.__root_dir}/{directory}/{name}/db_migrations"
-            ):
-                mig_ver = file.removesuffix(".py")
-                if version.parse(prev_version) < version.parse(mig_ver):
-                    logger.info(
-                        f"Migrating database for module {name} to version {mig_ver}..."
-                    )
-                    imported = importlib.import_module(
-                        f"modules.{name}.db_migrations.{mig_ver}"
-                    )
-                    classes = inspect.getmembers(imported, inspect.isclass)
-                    if len(classes) == 0:
-                        logger.error("Invalid migration! No DBMigration classes found!")
-                        continue
+            migrations_dir = f"{self.__root_dir}/{directory}/{name}/db_migrations"
 
-                    obj = classes[0][1]  # Use first detected class
-                    instance: DBMigration = obj()
-                    instance.apply(prev_db.session_maker, prev_db.engine, prev_db_meta)
+            pending = []
+            for file in os.listdir(migrations_dir):
+                if not file.endswith(".py") or file.startswith("__"):
+                    continue
+                mig_ver = file.removesuffix(".py")
+                try:
+                    parsed = version.parse(mig_ver)
+                except Exception:
+                    logger.warning(f"Skipping migration file with unparseable version: {file}")
+                    continue
+                if version.parse(prev_version) < parsed:
+                    pending.append((parsed, mig_ver))
+
+            pending.sort(key=lambda x: x[0])
+
+            for parsed_ver, mig_ver in pending:
+                logger.info(f"Migrating database for module {name} to version {mig_ver}...")
+                imported = importlib.import_module(
+                    f"modules.{name}.db_migrations.{mig_ver}"
+                )
+                classes = [
+                    cls for _, cls in inspect.getmembers(imported, inspect.isclass)
+                    if issubclass(cls, DBMigration) and cls is not DBMigration
+                ]
+                if not classes:
+                    logger.error(f"Invalid migration {mig_ver}! No DBMigration subclass found!")
+                    continue
+
+                instance: DBMigration = classes[0]()
+                instance.apply(prev_db.session_maker, prev_db.engine, prev_db_meta)
 
         return p.returncode, p.stdout.decode("utf-8"), backup_path
 
