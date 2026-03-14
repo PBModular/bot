@@ -72,7 +72,7 @@ class ModuleLoader:
                     self.__extensions[name] = instance
                     logger.info(f"Successfully loaded extension {name}!")
 
-    def load_everything(self):
+    async def load_everything(self):
         """Load all modules with auto_load enabled and gather info for all modules"""
         modules = os.listdir(path="./modules/")
         if "core" in modules:
@@ -105,7 +105,7 @@ class ModuleLoader:
                 logger.info(f"Module {module} has auto_load set to False, skipping loading")
         
         for module in modules_to_load:
-            self.load_module(module)
+            await self.load_module(module)
         
         # Populate info for all modules (loaded or not)
         for module in all_modules:
@@ -140,7 +140,7 @@ class ModuleLoader:
                 except Exception as e:
                     logger.error(f"Error creating info for non-loaded module {module}: {e}")
 
-    def load_module(self, name: str, skip_deps: bool = False) -> Optional[str]:
+    async def load_module(self, name: str, skip_deps: bool = False) -> Optional[str]:
         """
         Main loading method
 
@@ -204,7 +204,7 @@ class ModuleLoader:
                         return None
 
                     if (Permissions.use_db in perms or Permissions.require_db in perms) and config.enable_db:
-                        asyncio.create_task(instance.set_db(Database(name)))
+                        await instance.set_db(Database(name))
 
                     if Permissions.use_loader in perms:
                         instance.loader = self
