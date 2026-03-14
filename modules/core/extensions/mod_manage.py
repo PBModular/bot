@@ -237,7 +237,7 @@ class ModManageExtension(ModuleExtension):
                 for file in skipped_files:
                     self.logger.warning(f"Skipped file during restoration: {file}")
 
-            result = self.loader.load_module(module_name)
+            result = await self.loader.load_module(module_name)
             status_key = "restore_success" if result else "restore_load_err"
             await call.message.reply(self.S["backup"][status_key].format(
                 name=module_name,
@@ -310,7 +310,7 @@ class ModManageExtension(ModuleExtension):
         if action == "confirm":
             success = self.loader.mod_manager.revert_update(module_name, "modules")
             if success:
-                self.loader.load_module(module_name)
+                await self.loader.load_module(module_name)
             await msg.edit_text(self.S["backup"]["restore_success" if success else "restore_failed"].format(name=module_name))
         else:
             await msg.edit_text(self.S["backup"]["restore_canceled"].format(name=module_name))
@@ -462,7 +462,7 @@ class ModManageExtension(ModuleExtension):
                     return
 
                 await msg.edit_text(self.S["install"]["loading"].format(name=info_obj.name))
-                result = self.loader.load_module(name)
+                result = await self.loader.load_module(name)
                 if result is None:
                     await msg.edit_text(self.S["install"]["load_err"].format(name=info_obj.name))
                     return
@@ -471,7 +471,7 @@ class ModManageExtension(ModuleExtension):
                 await msg.edit_text(self.S["install"]["end_reqs"].format(name=result, reqs=req_list_str))
             else:
                 await msg.edit_text(self.S["install"]["down_end_next"].format(name=info_obj.name))
-                result = self.loader.load_module(name)
+                result = await self.loader.load_module(name)
                 if result is None:
                     await msg.edit_text(self.S["install"]["load_err"].format(name=info_obj.name))
                     return
@@ -483,9 +483,8 @@ class ModManageExtension(ModuleExtension):
 
     async def mod_uninstall(self, message: Message, name: str) -> None:
         """Uninstall a module."""
-        try:
-            int_name = self.loader.get_int_name(name)
-        except:
+        int_name = self.loader.get_int_name(name)
+        if int_name is None:
             await message.reply(self.S["uninstall"]["not_found"].format(name=name))
             return
 
@@ -555,7 +554,7 @@ class ModManageExtension(ModuleExtension):
             await msg.edit_text(self.S["update"]["prepare_err"].format(name=current_info.name, error=e))
             self.logger.error(f"Error unloading module {int_name} before update: {e}", exc_info=True)
             if not self.loader.get_module(int_name):
-                self.loader.load_module(int_name)
+                await self.loader.load_module(int_name)
             return
 
         # Git Pull
@@ -575,7 +574,7 @@ class ModManageExtension(ModuleExtension):
                 )
             else:
                 await msg.reply(self.S["update"]["err_no_backup"].format(name=current_info.name))
-            self.loader.load_module(int_name)
+            await self.loader.load_module(int_name)
             return
 
         if not backup_path:
@@ -679,7 +678,7 @@ class ModManageExtension(ModuleExtension):
                     if skipped_files:
                         await msg.reply(self.S["backup"]["restore_skipped_files"].format(count=len(skipped_files)))
                         self.logger.warning(f"Skipped files during update revert restore: {skipped_files}")
-                    result = self.loader.load_module(int_name)
+                    result = await self.loader.load_module(int_name)
                     if result is None:
                         await msg.edit_text(self.S["backup"]["restore_load_err"].format(name=display_name))
                     else:
@@ -688,7 +687,7 @@ class ModManageExtension(ModuleExtension):
                     await msg.edit_text(self.S["backup"]["restore_failed"].format(name=display_name))
             else:
                 await msg.edit_text(self.S["update"]["abort_no_backup"].format(name=display_name))
-                self.loader.load_module(int_name)
+                await self.loader.load_module(int_name)
             return
 
         await msg.edit_text(self.S["update"]["processing"].format(name=display_name))
@@ -706,7 +705,7 @@ class ModManageExtension(ModuleExtension):
                     return
 
                 await msg.edit_text(self.S["update"]["loading"].format(name=display_name))
-                result = self.loader.load_module(int_name, skip_deps=False)
+                result = await self.loader.load_module(int_name, skip_deps=False)
                 if result is None:
                     await msg.edit_text(self.S["install"]["load_err"].format(name=display_name), reply_markup=try_again_keyboard)
                     self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info_obj)
@@ -737,7 +736,7 @@ class ModManageExtension(ModuleExtension):
                     self.S["update"]["reqs"] + "\n" + req_list_str
             else:
                 await msg.edit_text(self.S["update"]["loading"].format(name=display_name))
-                result = self.loader.load_module(int_name, skip_deps=False)
+                result = await self.loader.load_module(int_name, skip_deps=False)
                 if result is None:
                     await msg.edit_text(self.S["install"]["load_err"].format(name=display_name), reply_markup=try_again_keyboard)
                     self.confirmations["update"][call.message.id] = (msg, int_name, old_ver, old_reqs, backup_path, new_info_obj)
@@ -792,7 +791,7 @@ class ModManageExtension(ModuleExtension):
             if skipped:
                 await call.message.reply(self.S["backup"]["restore_skipped_files"].format(count=len(skipped)))
                 self.logger.warning(f"Skipped files during manual restore: {skipped}")
-            result = self.loader.load_module(module_name)
+            result = await self.loader.load_module(module_name)
             status_key = "restore_success" if result else "restore_load_err"
             await call.message.edit_text(self.S["backup"][status_key].format(
                 name=module_name,
@@ -819,7 +818,7 @@ class ModManageExtension(ModuleExtension):
             return None
             
         try:
-            result = self.loader.load_module(name)
+            result = await self.loader.load_module(name)
             if result is None:
                 await reply_func(self.S["load"]["load_err"].format(name=name))
                 return None
