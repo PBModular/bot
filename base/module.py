@@ -25,7 +25,8 @@ from db import CommandPermission, User, FSMState
 import yaml
 from config import config
 from base import command_registry
-from dataclass_wizard import YAMLWizard
+from dataclass_wizard.mixins.yaml import YAMLWizard
+from dataclass_wizard import LoadMeta
 from base.states import StateMachine, State
 
 
@@ -56,6 +57,7 @@ class ModuleConfig(YAMLWizard):
     permissions: list[Permissions] = field(default_factory=list)
     config: dict = field(default_factory=dict)
 
+LoadMeta(case='AUTO').bind_to(ModuleConfig)
 
 @dataclass
 class HelpPage:

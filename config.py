@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from dataclass_wizard import YAMLWizard
+from dataclass_wizard.mixins.yaml import YAMLWizard
 import os
 import shutil
 from typing import Union
+
+from dataclass_wizard import LoadMeta
 
 CONF_FILE = "config.yaml"
 
@@ -20,6 +22,7 @@ class Config(YAMLWizard):
     db_file_name: str
     owner: Union[int, str]
 
+LoadMeta(case='AUTO').bind_to(Config)
 
 # Load from YAML
 if CONF_FILE not in os.listdir("./"):
