@@ -2,6 +2,7 @@ from pyrogram import Client, idle
 from pyrogram.enums import ParseMode
 from pyrogram.errors.exceptions.bad_request_400 import BadRequest
 from base.loader import ModuleLoader
+from base.db import sqlite_connect_args, apply_sqlite_pragmas
 from config import config, CONF_FILE
 from logging.handlers import RotatingFileHandler
 from colorama import init, Fore, Style
@@ -108,7 +109,8 @@ def main(update_conf: bool = False):
                 else:
                     logger.info(f"Database disabled. Using file: {config.db_file_name}")
 
-                engine = create_async_engine(db_uri)
+                engine = create_async_engine(db_uri, connect_args=sqlite_connect_args(db_uri))
+                apply_sqlite_pragmas(engine, db_uri)
                 session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
                 async with engine.begin() as conn:

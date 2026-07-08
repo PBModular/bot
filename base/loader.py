@@ -179,16 +179,15 @@ class ModuleLoader:
                     if Permissions.use_loader in perms:
                         instance.loader = self
 
+                    # Custom init execution — must run before stage2()/set_db.
+                    instance.on_init()
+
                     # Stage 2
                     # Register everything for pyrogram
                     instance.stage2()
                     self.__modules[name] = instance
                     self.__modules_info[name] = info
                     self.__all_modules_info[name] = info
-
-                    # Custom init execution — must run before set_db so that
-                    # on_db_ready() can safely access attributes set in on_init()
-                    instance.on_init()
 
                     if (Permissions.use_db in perms or Permissions.require_db in perms) and config.enable_db:
                         await instance.set_db(Database(name))
@@ -200,6 +199,19 @@ class ModuleLoader:
                 except Exception as e:
                     logger.error(f"Error loading module {name}! Printing traceback")
                     logger.exception(e)
+                    # Roll back any partial registration so a failed load
+                    # never leaves stale commands/handlers behind for the
+                    # next (re)load attempt.
+                    local_instance = locals().get("instance")
+                    if local_instance is not None:
+                        try:
+                            await local_instance.unregister_all()
+                        except Exception as cleanup_err:
+                            logger.warning(
+                                f"Failed to clean up after failed load of {name}: {cleanup_err}"
+                            )
+                        self.__modules.pop(name, None)
+                        self.__modules_info.pop(name, None)
                     return None
         return None
 

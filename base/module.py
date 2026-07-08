@@ -20,6 +20,7 @@ from pyrogram.enums import ChatMemberStatus
 from base.db import Database
 from sqlalchemy import MetaData, Engine, select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import DBAPIError
 from db import CommandPermission, User, FSMState
 
 import yaml
@@ -28,6 +29,9 @@ from base import command_registry
 from dataclass_wizard.mixins.yaml import YAMLWizard
 from dataclass_wizard import LoadMeta
 from base.states import StateMachine, State
+import itertools
+
+_auto_msg_group_counter = itertools.count(1)
 
 
 @dataclass
@@ -305,7 +309,9 @@ class BaseModule(ABC):
                 final_filter = self.__add_fsm_filter(func, final_filter)
 
                 handler = MessageHandler(func, final_filter)
-                group = 0
+                group = getattr(func, "bot_msg_group", None)
+                if group is None:
+                    group = next(_auto_msg_group_counter)
                 self.bot.add_handler(handler, group=group)
                 self.__handlers.append((handler, group))
 
@@ -349,73 +355,109 @@ class BaseModule(ABC):
             return final_filter
 
     @staticmethod
+    def __check_role_logger() -> logging.Logger:
+        return logging.getLogger("base.module.check_role")
+
+    @staticmethod
     async def __check_role(flt: Filter, client: Client, update) -> bool:
         if update.from_user is None:
             return False
 
-        async with flt.session() as session:
-            if hasattr(flt.handler, "bot_cmds"):
-                raw_text = getattr(update, "text", None) or ""
-                cmd_name = raw_text.split()[0].lstrip("/").split("@")[0] if raw_text else ""
-                db_command = await session.scalar(
-                    select(CommandPermission).where(
-                        CommandPermission.command == cmd_name
-                    )
-                ) if cmd_name else None
-                if db_command is None and not hasattr(flt.handler, "bot_allowed_for"):
-                    return True
+        owner = getattr(flt.handler, "__self__", None)
+        log = getattr(owner, "logger", None) or BaseModule.__check_role_logger()
+        handler_name = getattr(flt.handler, "__name__", repr(flt.handler))
 
-                allowed_to = (
-                    db_command.allowed_for.split(":")
-                    if db_command
-                    else flt.handler.bot_allowed_for
-                )
-            else:
-                if not hasattr(flt.handler, "bot_allowed_for"):
-                    return True
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            try:
+                async with flt.session() as session:
+                    if hasattr(flt.handler, "bot_cmds"):
+                        raw_text = getattr(update, "text", None) or ""
+                        cmd_name = raw_text.split()[0].lstrip("/").split("@")[0] if raw_text else ""
+                        db_command = await session.scalar(
+                            select(CommandPermission).where(
+                                CommandPermission.command == cmd_name
+                            )
+                        ) if cmd_name else None
+                        if db_command is None and not hasattr(flt.handler, "bot_allowed_for"):
+                            return True
 
-                allowed_to = flt.handler.bot_allowed_for
+                        allowed_to = (
+                            db_command.allowed_for.split(":")
+                            if db_command
+                            else flt.handler.bot_allowed_for
+                        )
+                    else:
+                        if not hasattr(flt.handler, "bot_allowed_for"):
+                            return True
 
-            db_user = await session.scalar(
-                select(User).where(User.id == update.from_user.id)
-            )
-            if (
-                "all" in allowed_to
-                or f"@{update.from_user.username}" in allowed_to
-                or (db_user is not None and db_user.role in allowed_to)
-                or update.from_user.username == config.owner
-                or update.from_user.id == config.owner
-            ):
-                return True
-            if "owner" in allowed_to and (
-                update.from_user.id == config.owner
-                or update.from_user.username == config.owner
-            ):
-                return True
+                        allowed_to = flt.handler.bot_allowed_for
 
-            if "chat_owner" in allowed_to or "chat_admins" in allowed_to:
-                chat_id_for_perm_check = None
-                # Determine chat_id based on update type
-                if hasattr(update, 'chat') and update.chat is not None:
-                    chat_id_for_perm_check = update.chat.id
-                elif hasattr(update, 'message') and update.message is not None and \
-                     hasattr(update.message, 'chat') and update.message.chat is not None:
-                    chat_id_for_perm_check = update.message.chat.id
-
-                if chat_id_for_perm_check is not None:
-                    member = await client.get_chat_member(
-                        chat_id=chat_id_for_perm_check, user_id=update.from_user.id
+                    db_user = await session.scalar(
+                        select(User).where(User.id == update.from_user.id)
                     )
                     if (
-                        "chat_owner" in allowed_to
-                        and member.status == ChatMemberStatus.OWNER
-                    ) or (
-                        "chat_admins" in allowed_to
-                        and member.status == ChatMemberStatus.ADMINISTRATOR
+                        "all" in allowed_to
+                        or f"@{update.from_user.username}" in allowed_to
+                        or (db_user is not None and db_user.role in allowed_to)
+                        or update.from_user.username == config.owner
+                        or update.from_user.id == config.owner
+                    ):
+                        return True
+                    if "owner" in allowed_to and (
+                        update.from_user.id == config.owner
+                        or update.from_user.username == config.owner
                     ):
                         return True
 
-            return False
+                    if "chat_owner" in allowed_to or "chat_admins" in allowed_to:
+                        chat_id_for_perm_check = None
+                        # Determine chat_id based on update type
+                        if hasattr(update, 'chat') and update.chat is not None:
+                            chat_id_for_perm_check = update.chat.id
+                        elif hasattr(update, 'message') and update.message is not None and \
+                             hasattr(update.message, 'chat') and update.message.chat is not None:
+                            chat_id_for_perm_check = update.message.chat.id
+
+                        if chat_id_for_perm_check is not None:
+                            try:
+                                member = await client.get_chat_member(
+                                    chat_id=chat_id_for_perm_check, user_id=update.from_user.id
+                                )
+                            except Exception as e:
+                                log.warning(
+                                    f"[{handler_name}] get_chat_member failed during "
+                                    f"permission check (chat={chat_id_for_perm_check}, "
+                                    f"user={update.from_user.id}): {e!r}"
+                                )
+                                return False
+                            if (
+                                "chat_owner" in allowed_to
+                                and member.status == ChatMemberStatus.OWNER
+                            ) or (
+                                "chat_admins" in allowed_to
+                                and member.status == ChatMemberStatus.ADMINISTRATOR
+                            ):
+                                return True
+
+                    return False
+            except DBAPIError as e:
+                if attempt >= max_attempts:
+                    log.error(
+                        f"[{handler_name}] permission check DB error persisted "
+                        f"after {max_attempts} attempts, denying: {e!r}"
+                    )
+                    return False
+                log.warning(
+                    f"[{handler_name}] transient DB error on permission check "
+                    f"(attempt {attempt}/{max_attempts}), retrying: {e!r}"
+                )
+                await asyncio.sleep(0.15 * attempt)
+            except Exception as e:
+                log.exception(f"[{handler_name}] unexpected error in permission check: {e!r}")
+                return False
+
+        return False
     
     @staticmethod
     async def __check_fsm_state(flt: Filter, client: Client, update) -> bool:
@@ -598,13 +640,18 @@ def callback_query(filters: Optional[Filter] = None, fsm_state: Optional[Union[S
     return _callback_query
 
 
-def message(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, list[State]]] = None):
+def message(
+    filters: Optional[Filter] = None,
+    fsm_state: Optional[Union[State, list[State]]] = None,
+    group: Optional[int] = None,
+):
     """
     Decorator for registering all messages handler.
     If FSM is present and the handler func has 4 args, then FSM for current user session is passed as a fourth parameter.
-    
+
     :param filters: Final combined filter for validation. See https://docs.pyrogram.org/topics/use-filters. Highly recommended to set this!
     :param fsm_state: FSM states at which this handler is allowed to run
+    :param group: Pyrogram dispatch group (lower = higher priority, checked first).
     """
 
     def _message(func: Callable):
@@ -613,6 +660,7 @@ def message(filters: Optional[Filter] = None, fsm_state: Optional[Union[State, l
             await _launch_handler(func, self, client, update)
         
         inner.bot_msg_filter = filters
+        inner.bot_msg_group = group
         
         if fsm_state is not None:
             inner.bot_fsm_states = fsm_state if type(fsm_state) == list else [fsm_state]
@@ -729,16 +777,18 @@ async def _launch_handler(func: Callable, self: BaseModule, client, update):
     if self.state_machine is None:
         # FSM not used, call as before
         if len(params) >= 3:
-            await func(self, client, update)
+            call = func(self, client, update)
         else:
-            await func(self, update)
+            call = func(self, update)
     else:
         # FSM is used, provide the controller instance
         sm_controller = self.get_sm(update)
         if len(params) >= 4:
-            await func(self, client, update, sm_controller)
+            call = func(self, client, update, sm_controller)
         else: # Handles funcs with (self, update, sm) signature
-            await func(self, update, sm_controller)
+            call = func(self, update, sm_controller)
+
+    await call
 
 def allowed_for(roles: Union[list[str], str]):
     """
