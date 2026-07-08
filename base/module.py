@@ -197,6 +197,85 @@ class BaseModule(ABC):
         for ext in self.module_extensions:
             self.__extensions.append(ext(self))
 
+    # Tracks in-flight handler-removal tasks so they can't be garbage
+    # collected mid-flight and so failures are never silently lost.
+    __pending_removals: set = set()
+
+    async def _dispatcher_remove_handler(self, handler, group: int):
+        """
+        Client.remove_handler() LOOKS synchronous but isn't: pyrogram's
+        Dispatcher.remove_handler() just does `self.loop.create_task(fn())`
+        and returns immediately, discarding the Task. The actual
+        `self.groups[group].remove(handler)` happens at some later,
+        unspecified point in the event loop, and if that inner fn() raises
+        """
+
+        dispatcher = getattr(self.bot, "dispatcher", None)
+        locks = getattr(dispatcher, "locks_list", None)
+        groups = getattr(dispatcher, "groups", None)
+        if dispatcher is None or locks is None or groups is None:
+            self.bot.remove_handler(handler, group)
+            return
+
+        mod_name = self.module_info.name
+
+        async def _do_remove():
+            for lock in locks:
+                await lock.acquire()
+            try:
+                if group in groups and handler in groups[group]:
+                    groups[group].remove(handler)
+                else:
+                    self.logger.warning(
+                        f"[{mod_name}] Handler {handler!r} (group {group}) "
+                        f"was already gone when trying to remove it during unload."
+                    )
+            finally:
+                for lock in locks:
+                    lock.release()
+
+        task = asyncio.create_task(_do_remove())
+        BaseModule.__pending_removals.add(task)
+
+        def _on_done(t: asyncio.Task):
+            BaseModule.__pending_removals.discard(t)
+            if t.cancelled():
+                return
+            exc = t.exception()
+            if exc is not None:
+                self.logger.error(
+                    f"[{mod_name}] Failed to remove handler {handler!r} "
+                    f"(group {group}) from the dispatcher: {exc!r}. "
+                    f"This handler may still be live — investigate."
+                )
+
+        task.add_done_callback(_on_done)
+
+    @classmethod
+    def pending_handler_removal_count(cls) -> int:
+        """
+        Diagnostic helper: how many background handler-removal tasks
+        (scheduled by unregister_all(), see _dispatcher_remove_handler) are
+        still in flight across ALL modules right now.
+        """
+        return len(cls.__pending_removals)
+
+    @classmethod
+    async def wait_for_pending_removals(cls, timeout: float = 5.0) -> bool:
+        """
+        Diagnostic helper for reliably verifying a module was actually torn
+        down. Waits (up to `timeout` seconds) for every currently-tracked
+        handler-removal task to finish.
+
+        Returns True if all of them finished within the timeout, False if
+        some are still pending.
+        """
+        pending = list(cls.__pending_removals)
+        if not pending:
+            return True
+        _done, still_pending = await asyncio.wait(pending, timeout=timeout)
+        return len(still_pending) == 0
+
     async def unregister_all(self):
         """Unregister handlers"""
         for ext in self.__extensions:
@@ -215,7 +294,7 @@ class BaseModule(ABC):
 
         # Unregister handlers
         for handler, group in self.__handlers:
-            self.bot.remove_handler(handler, group)
+            await self._dispatcher_remove_handler(handler, group)
 
         self.__handlers.clear()
 
