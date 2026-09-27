@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -14,6 +16,24 @@ from base.db_migration import DBMigration
 from base.mod_backup import BackupManager
 
 logger = logging.getLogger(__name__)
+
+_URL_CREDENTIALS_RE = re.compile(r"://[^/@\s]+@")
+
+
+def _redact_url(url: str) -> str:
+    """Strip any embedded user:pass@ credentials from a URL before it's logged."""
+    parsed = urlparse(url)
+    if parsed.username or parsed.password:
+        netloc = parsed.hostname or ""
+        if parsed.port:
+            netloc += f":{parsed.port}"
+        return parsed._replace(netloc=netloc).geturl()
+    return url
+
+
+def _redact_output(text: str) -> str:
+    """Best-effort scrub of leftover embedded URL credentials in subprocess output."""
+    return _URL_CREDENTIALS_RE.sub("://", text)
 
 
 class ModuleManager:
@@ -34,7 +54,7 @@ class ModuleManager:
         :param url: Git repository URL
         :return Tuple: with exit code and read STDOUT
         """
-        logger.info(f"Downloading module from git URL {url}!")
+        logger.info(f"Downloading module from git URL {_redact_url(url)}!")
         name = urlparse(url).path.split("/")[-1].removesuffix(".git")
         modules_dir = os.path.join(self.__root_dir, "modules")
         p = subprocess.run(
@@ -44,10 +64,11 @@ class ModuleManager:
             stderr=subprocess.STDOUT
         )
 
+        stdout_text = p.stdout.decode("utf-8")
         if p.returncode != 0:
             logger.error(f"Error while cloning module {name}!")
             logger.error(f"Printing STDOUT and STDERR:")
-            logger.error(p.stdout.decode("utf-8"))
+            logger.error(_redact_output(stdout_text))
             leftover = os.path.join(self.__root_dir, "modules", name)
             if os.path.exists(leftover):
                 try:
@@ -55,7 +76,7 @@ class ModuleManager:
                 except Exception as cleanup_err:
                     logger.warning(f"Failed to clean up partial clone at {leftover}: {cleanup_err}")
 
-        return p.returncode, p.stdout.decode("utf-8")
+        return p.returncode, _redact_output(stdout_text)
 
     def check_for_updates(self, name: str, directory: str) -> Optional[bool]:
         """
