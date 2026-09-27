@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 from typing import Optional, Type
 from copy import copy
@@ -38,6 +39,8 @@ class StateMachine:
     A controller for a user's state, persisted in the database.
     An instance of this class corresponds to a single user.
     """
+    __locks: dict[int, asyncio.Lock] = {}
+
     def __init__(self, user_id: int, session_maker: async_sessionmaker):
         self.user_id = user_id
         self.__session_maker = session_maker
@@ -47,6 +50,14 @@ class StateMachine:
         for name, member in members:
             member.__set_owner__(self.__class__, name)
             setattr(self, name, copy(member))
+
+    def _lock(self) -> asyncio.Lock:
+        """Get (creating if needed) this user's serialization lock."""
+        lock = StateMachine.__locks.get(self.user_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            StateMachine.__locks[self.user_id] = lock
+        return lock
 
     async def _get_db_state(self) -> Optional[FSMState]:
         """Helper to fetch the raw state object from the DB."""
@@ -60,8 +71,8 @@ class StateMachine:
         db_state = await self._get_db_state()
         return db_state.state if db_state else None
 
-    async def set_state(self, state: Optional[State], data: Optional[dict] = None):
-        """Set the user's state and optionally overwrite their data."""
+    async def _set_state_locked(self, state: Optional[State], data: Optional[dict] = None):
+        """Body of set_state(). Caller MUST already hold self._lock()."""
         state_name = state.name if state else None
         async with self.__session_maker() as session:
             db_state = await session.scalar(
@@ -79,6 +90,11 @@ class StateMachine:
                     db_state.data = data
             await session.commit()
 
+    async def set_state(self, state: Optional[State], data: Optional[dict] = None):
+        """Set the user's state and optionally overwrite their data."""
+        async with self._lock():
+            await self._set_state_locked(state, data)
+
     async def get_data(self) -> dict:
         """Get the data dictionary for the user."""
         db_state = await self._get_db_state()
@@ -86,29 +102,31 @@ class StateMachine:
 
     async def update_data(self, **kwargs):
         """Update fields in the user's data dictionary."""
-        async with self.__session_maker() as session:
-            db_state = await session.scalar(
-                select(FSMState).where(FSMState.user_id == self.user_id)
-            )
-            if db_state is None:
-                session.add(FSMState(
-                    user_id=self.user_id,
-                    state=None,
-                    data=kwargs
-                ))
-            else:
-                current = dict(db_state.data or {})
-                current.update(kwargs)
-                db_state.data = current
-            await session.commit()
-            
+        async with self._lock():
+            async with self.__session_maker() as session:
+                db_state = await session.scalar(
+                    select(FSMState).where(FSMState.user_id == self.user_id)
+                )
+                if db_state is None:
+                    session.add(FSMState(
+                        user_id=self.user_id,
+                        state=None,
+                        data=kwargs
+                    ))
+                else:
+                    current = dict(db_state.data or {})
+                    current.update(kwargs)
+                    db_state.data = current
+                await session.commit()
+
     async def clear(self, keep_data: bool = False):
         """Reset the machine to default state, optionally clearing data."""
-        if keep_data:
-            await self.set_state(None) # Only reset the state
-        else:
-            async with self.__session_maker() as session:
-                await session.execute(
-                    delete(FSMState).where(FSMState.user_id == self.user_id)
-                )
-                await session.commit()
+        async with self._lock():
+            if keep_data:
+                await self._set_state_locked(None)
+            else:
+                async with self.__session_maker() as session:
+                    await session.execute(
+                        delete(FSMState).where(FSMState.user_id == self.user_id)
+                    )
+                    await session.commit()
