@@ -433,6 +433,8 @@ class BaseModule(ABC):
         else:
             return final_filter
 
+    _PROTECTED_COMMANDS = {"allow_cmd", "reset_perms", "set_role", "reset_role"}
+
     @staticmethod
     def __check_role_logger() -> logging.Logger:
         return logging.getLogger("base.module.check_role")
@@ -453,11 +455,15 @@ class BaseModule(ABC):
                     if hasattr(flt.handler, "bot_cmds"):
                         raw_text = getattr(update, "text", None) or ""
                         cmd_name = raw_text.split()[0].lstrip("/").split("@")[0] if raw_text else ""
-                        db_command = await session.scalar(
-                            select(CommandPermission).where(
-                                CommandPermission.command == cmd_name
+                        db_command = (
+                            await session.scalar(
+                                select(CommandPermission).where(
+                                    CommandPermission.command == cmd_name
+                                )
                             )
-                        ) if cmd_name else None
+                            if cmd_name and cmd_name not in BaseModule._PROTECTED_COMMANDS
+                            else None
+                        )
                         if db_command is None and not hasattr(flt.handler, "bot_allowed_for"):
                             return True
 
