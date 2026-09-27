@@ -2,6 +2,7 @@ from base.mod_ext import ModuleExtension
 from base.module import command, allowed_for
 from base import command_registry
 from base.loader import ModuleLoader
+import html
 
 from pyrogram import Client
 from pyrogram.types import Message
@@ -148,7 +149,9 @@ class PermissionsExtension(ModuleExtension):
                 else:
                     text = self.S["perm_settings"]["perms_header"] + "\n"
                     for perm in permissions:
-                        text += f"/{perm.command}: <code>{perm.allowed_for.replace(':', ' ')}</code>\n"
+                        safe_cmd = html.escape(perm.command)
+                        safe_roles = html.escape(perm.allowed_for.replace(":", " "))
+                        text += f"/{safe_cmd}: <code>{safe_roles}</code>\n"
             else:
                 users = (await session.scalars(select(User))).all()
                 if len(users) == 0:
@@ -156,6 +159,8 @@ class PermissionsExtension(ModuleExtension):
                 else:
                     text = self.S["perm_settings"]["roles_header"] + "\n"
                     for user in users:
-                        text += f"@{user.name}: <code>{user.role}</code>\n"
+                        safe_name = html.escape(user.name or "")
+                        safe_role = html.escape(user.role or "")
+                        text += f"@{safe_name}: <code>{safe_role}</code>\n"
 
         await message.reply(text)

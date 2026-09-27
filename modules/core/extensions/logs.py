@@ -2,6 +2,7 @@ from base.mod_ext import ModuleExtension
 from base.module import command, allowed_for
 
 from pyrogram.types import Message
+import html
 
 
 class LogsExtension(ModuleExtension):
@@ -13,7 +14,7 @@ class LogsExtension(ModuleExtension):
         with open("bot.log") as file:
             for line in file.readlines()[-10:]:
                 logs += line
-        await message.reply(f"<code>{logs}</code>")
+        await message.reply(f"<code>{html.escape(logs)}</code>")
 
     @allowed_for("owner")
     @command("log_file")
@@ -30,5 +31,5 @@ class LogsExtension(ModuleExtension):
         with open("bot.log", "w"):
             pass
 
-        await message.reply(f"<code>{self.S['log_file']['answer_log_cleared']}</code>")
+        await message.reply(f"<code>{html.escape(str(self.S['log_file']['answer_log_cleared']))}</code>")
         self.logger.info("Log file cleared")
