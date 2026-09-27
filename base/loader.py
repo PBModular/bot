@@ -127,7 +127,7 @@ class ModuleLoader:
         req_path = os.path.join(module_path, "requirements.txt")
         if os.path.exists(req_path):
             if config.update_deps_at_load and not skip_deps:
-                self.mod_manager.install_deps(name, "modules")
+                await self.mod_manager.install_deps_async(name, "modules")
 
             # Load dependencies into dict
             self.__modules_deps[name] = []

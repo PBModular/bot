@@ -469,6 +469,25 @@ class ModuleManager:
             logger.error(f"Unexpected error updating auto_load for {name}: {e}", exc_info=True)
             return False
 
+    async def install_from_git_async(self, url: str) -> Tuple[int, str]:
+        return await asyncio.to_thread(self.install_from_git, url)
+
+    async def check_for_updates_async(self, name: str, directory: str) -> Optional[bool]:
+        return await asyncio.to_thread(self.check_for_updates, name, directory)
+
+    async def update_from_git_async(
+        self, name: str, directory: str, module=None
+    ) -> Tuple[int, str, Optional[str]]:
+        return await asyncio.to_thread(self.update_from_git, name, directory, module)
+
+    async def install_deps_async(self, name: str, directory: str) -> Tuple[int, Union[str, list[str]]]:
+        return await asyncio.to_thread(self.install_deps, name, directory)
+
+    async def restore_from_backup_async(
+        self, name: str, directory: str, backup_path: Optional[str] = None
+    ) -> bool:
+        return await asyncio.to_thread(self.restore_from_backup, name, directory, backup_path)
+
     def get_hash_backups(self) -> dict[str, str]:
         """
         Get the current hash backups dictionary
