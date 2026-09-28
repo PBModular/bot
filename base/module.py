@@ -349,11 +349,12 @@ class BaseModule(ABC):
 
             elif hasattr(func, "bot_callback_filter"):
                 # Func with @callback_query decorator
-                final_filter = filters.create(
-                    self.__check_role, handler=func, session=self.__bot_db_session
-                )
-                if func.bot_callback_filter is not None:
-                    final_filter = final_filter & func.bot_callback_filter
+                role_filter = self.__role_filter(func)
+                final_filter = func.bot_callback_filter
+                if role_filter is not None:
+                    final_filter = (role_filter & final_filter) if final_filter is not None else role_filter
+                if final_filter is None:
+                    final_filter = filters.all
 
                 final_filter = self.__add_fsm_filter(func, final_filter)
 
@@ -364,11 +365,12 @@ class BaseModule(ABC):
 
             elif hasattr(func, "bot_inline_filter"):
                 # Func with @inline_query decorator
-                final_filter = filters.create(
-                    self.__check_role, handler=func, session=self.__bot_db_session
-                )
-                if func.bot_inline_filter is not None:
-                    final_filter = final_filter & func.bot_inline_filter
+                role_filter = self.__role_filter(func)
+                final_filter = func.bot_inline_filter
+                if role_filter is not None:
+                    final_filter = (role_filter & final_filter) if final_filter is not None else role_filter
+                if final_filter is None:
+                    final_filter = filters.all
 
                 final_filter = self.__add_fsm_filter(func, final_filter)
 
@@ -379,11 +381,12 @@ class BaseModule(ABC):
 
             elif hasattr(func, "bot_msg_filter"):
                 # Func with @message decorator
-                final_filter = filters.create(
-                    self.__check_role, handler=func, session=self.__bot_db_session
-                )
-                if func.bot_msg_filter is not None:
-                    final_filter = final_filter & func.bot_msg_filter
+                role_filter = self.__role_filter(func)
+                final_filter = func.bot_msg_filter
+                if role_filter is not None:
+                    final_filter = (role_filter & final_filter) if final_filter is not None else role_filter
+                if final_filter is None:
+                    final_filter = filters.all
 
                 final_filter = self.__add_fsm_filter(func, final_filter)
 
@@ -417,6 +420,13 @@ class BaseModule(ABC):
             self.bot.add_handler(handler_instance, group=group)
             self.__handlers.append((handler_instance, group))
     
+    def __role_filter(self, func: Callable) -> Optional[Filter]:
+        if not hasattr(func, "bot_allowed_for"):
+            return None
+        return filters.create(
+            self.__check_role, handler=func, session=self.__bot_db_session
+        )
+
     def __add_fsm_filter(self, func: Callable, final_filter: Filter) -> Filter:
         if hasattr(func, "bot_fsm_states"):
             if self.state_machine is None:
