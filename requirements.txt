@@ -1,8 +1,8 @@
-pyrotgfork==2.2.24
-TgCrypto-pyrofork==1.2.8
+pyrotgfork==2.2.24.1
+tgcrypto2==1.3.6
 PyYAML==6.0.3
 dataclass-wizard==1.0.0
-SQLAlchemy==2.0.51
+sqlalchemy[asyncio]==2.1.4
 requirements-parser==0.13.1
 packaging
 aiosqlite==0.22.1
